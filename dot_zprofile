@@ -1,0 +1,3 @@
+# PATH for Homebrew (Apple Silicon Chip)
+export PATH=/opt/homebrew/bin:$PATH
+export PATH=/opt/homebrew/sbin:$PATH

@@ -1,0 +1,15 @@
+[user]
+	name =ved0el
+	email = contact@le0.dev
+
+[ghq]
+	root= ~/src
+
+[pull]
+	rebase = true
+
+[core]
+	editor = vi
+
+[init]
+	defaultBranch = main
