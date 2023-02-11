@@ -1,2 +1,3 @@
 # dotfiles
-zsh, tmux, etc... and personal dotfiles managed by [cheimoi](chezmoi.io)
+
+zsh, tmux, etc... and personal dotfiles managed by [chezmoi](https://chezmoi.io)
