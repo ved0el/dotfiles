@@ -1,0 +1,28 @@
+#!/bin/sh
+# Once-time execute requirements install script
+
+{{- if eq .chezmoi.os "darwin" -}}
+# darwin
+brew bundle --no-lock --file=/dev/stdin <<EOF
+brew "git"
+brew "go"
+brew "plantuml"
+brew "graphviz"
+brew "bat"
+brew "tmux"
+brew "fd"
+brew "tree"
+brew "nvm"
+brew "fzf"
+
+cask "brave-browser"
+cask "spotify"
+EOF
+
+{{- else if eq .chezmoi.os "linux" -}}
+# linux
+
+{{- else -}}
+# other operating system
+
+{{- end -}}
