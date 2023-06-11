@@ -1,0 +1,42 @@
+# Initiate zplug
+export ZPLUG_HOME=/opt/homebrew/opt/zplug
+source $ZPLUG_HOME/init.zsh
+
+# Install plugins if there are plugins that have not been installed
+if ! zplug check --verbose; then
+    printf "Install zplug? [y/N]: "
+    if read -q; then
+        echo; zplug install
+    fi
+fi
+
+# Manage zplug itself
+zplug 'zplug/zplug', hook-build:'zplug --self-manage'
+# Fish shell like syntax highlighting for Zsh.
+zplug "zsh-users/zsh-syntax-highlighting"
+# Fish-like fast/unobtrusive autosuggestions for zsh.
+zplug "zsh-users/zsh-autosuggestions"
+# real-time type-ahead autocompletion to Zsh
+zplug "marlonrichert/zsh-autocomplete"
+# zsh plugin that colorifies man pages
+zplug "ael-code/zsh-colored-man-pages"
+# Solarized dircolors plugin for zsh.
+zplug "joel-porquet/zsh-dircolors-solarized"
+# A next-generation cd command with an interactive filter
+zplug "b4b4r07/enhancd", use:init.sh
+
+
+# Then, source plugins and add commands to $PATH
+zplug load --verbose
+
+# zplug check returns true if the given repository exists
+if zplug check b4b4r07/enhancd; then
+    # setting if enhancd is available
+    export ENHANCD_FILTER=fzf-tmux
+fi
+
+
+# Enable Starship promt
+eval "$(starship init zsh)"
+
+alias dircolors='gdircolors'

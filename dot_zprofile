@@ -1,0 +1,4 @@
+# Enviroment PATH for some tools
+
+# Homebrew
+eval $(/opt/homebrew/bin/brew shellenv)
