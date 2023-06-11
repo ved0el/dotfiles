@@ -10,8 +10,6 @@ if ! zplug check --verbose; then
     fi
 fi
 
-# Manage zplug itself
-zplug 'zplug/zplug', hook-build:'zplug --self-manage'
 # Fish shell like syntax highlighting for Zsh.
 zplug "zsh-users/zsh-syntax-highlighting"
 # Fish-like fast/unobtrusive autosuggestions for zsh.
@@ -29,6 +27,7 @@ zplug "b4b4r07/enhancd", use:init.sh
 # Then, source plugins and add commands to $PATH
 zplug load --verbose
 
+
 # zplug check returns true if the given repository exists
 if zplug check b4b4r07/enhancd; then
     # setting if enhancd is available
@@ -39,4 +38,6 @@ fi
 # Enable Starship promt
 eval "$(starship init zsh)"
 
+
 alias dircolors='gdircolors'
+alias cz='chezmoi'
