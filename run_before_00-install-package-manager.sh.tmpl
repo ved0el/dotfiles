@@ -14,8 +14,6 @@ fi
 # Install Xcode if not existed
 if ! command -v brew >/dev/null; then
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  chown -R $(whoami) /opt/homebrew
-  chmod u+w /opt/homebrew
 fi
 
 {{- else if eq .chezmoi.os "linux" -}}
