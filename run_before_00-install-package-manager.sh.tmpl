@@ -7,14 +7,15 @@
 set -eu
 
 # Install Xcode if not existed
-if ! command -v xcode-select --version > /dev/null; then
+if ! command -v xcode-select > /dev/null; then
   xcode-select --install
 fi
 
 # Install Xcode if not existed
 if ! command -v brew >/dev/null; then
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
-
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  chown -R $(whoami) /opt/homebrew
+  chmod u+w /opt/homebrew
 fi
 
 {{- else if eq .chezmoi.os "linux" -}}
