@@ -12,9 +12,40 @@
 
 shell = "zsh"
 
-[plugins]
+[templates]
+defer = "{{ hooks?.pre | nl }}{% for file in files %}zsh-defer source \"{{ file }}\"\n{% endfor %}{{ hooks?.post | nl }}"
 
-# For example:
-#
-# [plugins.base16]
-# github = "chriskempson/base16-shell"
+
+[plugins.zsh-defer]
+github = "romkatv/zsh-defer"
+
+[plugins.zsh-autosuggestions]
+github = 'zsh-users/zsh-autosuggestions'
+apply = ["defer"]
+
+[plugins.fast-syntax-highlight]
+github = 'zdharma-continuum/fast-syntax-highlighting'
+apply = ["defer"]
+
+[plugins.zsh-completions]
+github = 'zsh-users/zsh-completions'
+apply = ["defer"]
+
+[plugins.fzf-tab]
+github = 'Aloxaf/fzf-tab'
+apply = ["defer"]
+
+[plugins.enhancd]
+github = 'b4b4r07/enhancd'
+use = ["init.sh"]
+# apply = ["defer"]
+
+[plugins.k]
+github = 'supercrabtree/k'
+use = ['k.sh']
+apply = ["defer"]
+
+[plugins.ni]
+github = 'azu/ni.zsh'
+use = ['ni.zsh']
+apply = ["defer"]
