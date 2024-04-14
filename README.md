@@ -3,5 +3,6 @@
 1. Manual install
 
 ```zsh
-curl -fsSL https://raw.githubusercontent.com/ved0el/dotfiles/main/bin/install.sh -o install.sh && bash install.sh
+curl -o- https://raw.githubusercontent.com/ved0el/dotfiles/main/bin/install.sh -o install.sh
+bash install.sh
 ```

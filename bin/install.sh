@@ -43,6 +43,7 @@ set_dotfiles_dir() {
                 break
                 ;;
             q)
+                echo -e ""
                 exit 0
                 clear_screen
                 ;;
@@ -106,6 +107,7 @@ setup_menu() {
                 uninstall
                 ;;
             q)
+                echo -e ""
                 exit 0
                 clear_screen
                 ;;
