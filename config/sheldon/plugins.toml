@@ -38,7 +38,7 @@ apply = ["defer"]
 [plugins.enhancd]
 github = 'b4b4r07/enhancd'
 use = ["init.sh"]
-# apply = ["defer"]
+apply = ["defer"]
 
 [plugins.k]
 github = 'supercrabtree/k'
@@ -49,3 +49,11 @@ apply = ["defer"]
 github = 'azu/ni.zsh'
 use = ['ni.zsh']
 apply = ["defer"]
+
+[plugins.powerlevel10k]
+github = 'romkatv/powerlevel10k'
+use = ['{{ name }}.zsh-theme']
+hooks.post = '''
+ZLE_RPROMPT_INDENT=0
+source $DOTFILES_DIR/p10k.zsh
+'''
