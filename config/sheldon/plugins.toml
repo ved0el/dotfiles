@@ -10,6 +10,8 @@
 #
 # See the documentation for more https://github.com/rossmacarthur/sheldon#readme
 
+# reference: https://zenn.dev/fuzmare/articles/zsh-plugin-manager-cache
+
 shell = "zsh"
 
 [templates]
@@ -19,41 +21,48 @@ defer = "{{ hooks?.pre | nl }}{% for file in files %}zsh-defer source \"{{ file 
 [plugins.zsh-defer]
 github = "romkatv/zsh-defer"
 
-[plugins.zsh-autosuggestions]
-github = 'zsh-users/zsh-autosuggestions'
-apply = ["defer"]
-
-[plugins.fast-syntax-highlight]
-github = 'zdharma-continuum/fast-syntax-highlighting'
-apply = ["defer"]
-
-[plugins.zsh-completions]
-github = 'zsh-users/zsh-completions'
-apply = ["defer"]
-
 [plugins.fzf-tab]
-github = 'Aloxaf/fzf-tab'
+github = "Aloxaf/fzf-tab"
 apply = ["defer"]
+hooks.pre = "autoload -Uz compinit && compinit"
 
 [plugins.enhancd]
-github = 'b4b4r07/enhancd'
+github = "b4b4r07/enhancd"
 use = ["init.sh"]
 apply = ["defer"]
 
 [plugins.k]
-github = 'supercrabtree/k'
-use = ['k.sh']
+github = "supercrabtree/k"
+use = ["k.sh"]
 apply = ["defer"]
 
 [plugins.ni]
-github = 'azu/ni.zsh'
-use = ['ni.zsh']
+github = "azu/ni.zsh"
+use = ["ni.zsh"]
+apply = ["defer"]
+
+[plugins.zsh-completions]
+github = "zsh-users/zsh-completions"
+apply = ["defer"]
+
+[plugins.coloredmanpages]
+github = "ael-code/zsh-colored-man-pages"
+apply = ["defer"]
+
+[plugins.zsh-autosuggestions]
+github = "zsh-users/zsh-autosuggestions"
+apply = ["defer"]
+
+[plugins.fast-syntax-highlight]
+github = "zdharma-continuum/fast-syntax-highlighting"
+apply = ["defer"]
+
+[plugins.nvm]
+local = "/home/le0/.dotfiles/zshrc.d/pluginrc"
+use = ["nvm.zsh"]
 apply = ["defer"]
 
 [plugins.powerlevel10k]
-github = 'romkatv/powerlevel10k'
-use = ['{{ name }}.zsh-theme']
-hooks.post = '''
-ZLE_RPROMPT_INDENT=0
-source $DOTFILES_DIR/p10k.zsh
-'''
+github = "romkatv/powerlevel10k"
+use = ["{{ name }}.zsh-theme"]
+hooks.post = "ZLE_RPROMPT_INDENT=0 && source $DOTFILES_DIR/p10k.zsh"
