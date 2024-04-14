@@ -1,3 +1,5 @@
+#!/usr/bin/env zsh
+
 export ZSHRC_GLOBAL_CONFIG_DIR="$ZSHRC_CONFIG_DIR/global"
 
 # Check if there are any files with the specified format

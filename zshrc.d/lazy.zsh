@@ -1,3 +1,5 @@
+#!/usr/bin/env zsh
+
 # Check if there are any files with the specified format
 if ls "$ZSHRC_GLOBAL_CONFIG_DIR"/*_l.zsh &> /dev/null; then
     # Loop through files in $ZSHRC_GLOBAL_CONFIG_DIR

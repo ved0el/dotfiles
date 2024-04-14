@@ -1,10 +1,12 @@
+#!/usr/bin/env zsh
+
 # ghq - Manage remote repository clones
 # https://github.com/x-motemen/ghq
 export GHQ_ROOT="$HOME/Workspaces/src/"
 
 # enhancd - an enhanced cd command integrated with a command line fuzzy finder based on UNIX concept
 # https://github.com/babarot/enhancd
-export ENHANCD_FILTER="fzf --preview 'exa -al --tree --level 1 \
+export ENHANCD_FILTER="fzf --preview 'eza -al --tree --level 1 \
         --group-directories-first --git-ignore \
         --header --git --no-user --no-time --no-filesize --no-permissions {}' \
         --preview-window right,50% --height 35% --reverse --ansi \
@@ -27,3 +29,7 @@ export FZF_CTRL_T_OPTS="--preview 'bat --color=always
                                        --style=header,grid --line-range :100 {}'"
 export FZF_ALT_C_COMMAND="fd --type d"
 export FZF_ALT_C_OPTS="--preview 'tree -C {} | head -100'"
+
+# nvm - node version manager
+# https://github.com/nvm-sh/nvm
+export NVM_DIR="$HOME/.dotfiles/data/nvm"
