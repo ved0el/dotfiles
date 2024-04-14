@@ -1,4 +1,4 @@
-# /usr/bin/zsh
+#!/usr/bin/env zsh
 
 # bat - a cat clone with wings
 # https://github.com/sharkdp/bat

@@ -1,4 +1,4 @@
-# /usr/bin/zsh
+#!/usr/bin/env zsh
 
 # sheldon - fast, configurable, shell plugin manager
 # https://github.com/rossmacarthur/sheldon

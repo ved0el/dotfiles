@@ -1,4 +1,4 @@
-# /usr/bin/zsh
+#!/usr/bin/env zsh
 
 # fzf - command-line fuzzy finder
 # https://github.com/junegunn/fzf

@@ -1,4 +1,4 @@
-# /usr/bin/zsh
+#!/usr/bin/env zsh
 
 # eza - modern, maintained replacement for ls
 # https://github.com/eza-community/eza

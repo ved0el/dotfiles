@@ -1,4 +1,4 @@
-# /usr/bin/zsh
+#!/usr/bin/env zsh
 
 # fd - find entries in the filesystem
 # https://github.com/sharkdp/fd

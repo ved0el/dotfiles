@@ -1,4 +1,4 @@
-# /usr/bin/zsh
+#!/usr/bin/env zsh
 
 # rg - recursively search the current directory for lines matching a pattern
 # https://github.com/BurntSushi/ripgrep
