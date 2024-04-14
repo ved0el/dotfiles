@@ -9,10 +9,10 @@ if [[ ":$PATH:" != *":$DOTFILES_DIR/bin:"* ]]; then
   export PATH="$PATH:$DOTFILES_DIR/bin"
 fi
 
+# Source non-lazy configurations
+source "$ZSHRC_CONFIG_DIR/nonlazy.zsh"
+source "$ZSHRC_CONFIG_DIR/pluginrc/sheldon.zsh"
+
 export NVM_DIR="$HOME/.dotfiles/data/nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-
-# Source non-lazy configurations
-source "$ZSHRC_CONFIG_DIR/nonlazy.zsh"
-source "$ZSHRC_CONFIG_DIR/config/sheldon.zsh"

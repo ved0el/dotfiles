@@ -1,3 +1,5 @@
+#!/usr/bin/env zsh
+
 # List of packages to check and install
 # Define the array of cmd - package pairs
 cmds=(
@@ -7,6 +9,7 @@ cmds=(
   "bat"
   "fzf"
   "eza"
+  "nvm"
 )
 
 # Check and install packages if not installed
