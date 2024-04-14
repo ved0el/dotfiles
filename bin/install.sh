@@ -44,6 +44,7 @@ set_dotfiles_dir() {
                 ;;
             q)
                 exit 0
+                clear_screen
                 ;;
             *)
                 display_error
@@ -106,6 +107,7 @@ setup_menu() {
                 ;;
             q)
                 exit 0
+                clear_screen
                 ;;
             *)
                 display_error
