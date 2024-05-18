@@ -12,6 +12,8 @@ export ENHANCD_FILTER="fzf --preview 'eza -al --tree --level 1 \
         --preview-window right,50% --height 35% --reverse --ansi \
         :fzy \
         :peco"
+export ENHANCD_ENABLE_DOUBLE_DOT="false"
+export ENHANCD_ENABLE_SINGLE_DOT="false"
 
 # fzf - a command-line fuzzy finder
 # https://github.com/junegunn/fzf
