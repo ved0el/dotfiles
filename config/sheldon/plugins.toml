@@ -26,6 +26,19 @@ github = "Aloxaf/fzf-tab"
 apply = ["defer"]
 hooks.pre = "autoload -Uz compinit && compinit"
 
+[plugins.zsh-completions]
+github = "zsh-users/zsh-completions"
+apply = ["defer"]
+
+[plugins.zsh-autosuggestions]
+github = "zsh-users/zsh-autosuggestions"
+apply = ["defer"]
+
+[plugins.fast-syntax-highlight]
+github = "zdharma-continuum/fast-syntax-highlighting"
+apply = ["defer"]
+
+
 [plugins.enhancd]
 github = "b4b4r07/enhancd"
 use = ["init.sh"]
@@ -41,25 +54,13 @@ github = "azu/ni.zsh"
 use = ["ni.zsh"]
 apply = ["defer"]
 
-[plugins.zsh-completions]
-github = "zsh-users/zsh-completions"
+[plugins.nvm]
+local = "/Users/le0/.dotfiles/zshrc.d/pluginrc"
+use = ["nvm.zsh"]
 apply = ["defer"]
 
 [plugins.coloredmanpages]
 github = "ael-code/zsh-colored-man-pages"
-apply = ["defer"]
-
-[plugins.zsh-autosuggestions]
-github = "zsh-users/zsh-autosuggestions"
-apply = ["defer"]
-
-[plugins.fast-syntax-highlight]
-github = "zdharma-continuum/fast-syntax-highlighting"
-apply = ["defer"]
-
-[plugins.nvm]
-local = "/home/le0/.dotfiles/zshrc.d/pluginrc"
-use = ["nvm.zsh"]
 apply = ["defer"]
 
 [plugins.powerlevel10k]
