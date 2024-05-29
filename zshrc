@@ -18,3 +18,6 @@ export NVM_DIR="$HOME/.dotfiles/data/nvm"
 # Source non-lazy configurations
 source "$ZSHRC_CONFIG_DIR/nonlazy.zsh"
 source "$ZSHRC_CONFIG_DIR/pluginrc/sheldon.zsh"
+
+# Source tmux config
+source "$ZSHRC_CONFIG_DIR/pluginrc/tmux.zsh"
