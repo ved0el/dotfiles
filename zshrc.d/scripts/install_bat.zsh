@@ -36,7 +36,7 @@ elif [[ $OSTYPE == "Linux" ]]; then
   print_message "bat" "apt"
   sudo apt update &>/dev/null || print_warning "apt"
   sudo apt install -y bat
-  ln -s $(which batcat) ~/.local/bin/bat
+  # ln -s $(which batcat) ~/.local/bin/bat
   if [ $? -ne 0 ]; then
     print_error "bat" "apt"
     exit 1

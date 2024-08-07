@@ -33,7 +33,7 @@ if [[ $OSTYPE == "Darwin" ]]; then
 
 # Linux
 elif [[ $OSTYPE == "Linux" ]]; then
-  print_message "sheldon" "apt"
+  print_message "rg" "apt"
   sudo apt update &>/dev/null || print_warning "apt"
   sudo apt install -y ripgrep
   if [ $? -ne 0 ]; then

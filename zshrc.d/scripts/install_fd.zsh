@@ -33,7 +33,7 @@ if [[ $OSTYPE == "Darwin" ]]; then
 
 # Linux
 elif [[ $OSTYPE == "Linux" ]]; then
-  print_message "sheldon" "apt"
+  print_message "fd-find" "apt"
   sudo apt update &>/dev/null || print_warning "apt"
   sudo apt install -y fd-find
   ln -s $(which fdfind) $DOTFILES_DIR/bin/fd
