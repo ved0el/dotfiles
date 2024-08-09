@@ -55,7 +55,7 @@ use = ["ni.zsh"]
 apply = ["defer"]
 
 [plugins.nvm]
-local = "/Users/le0/.dotfiles/zshrc.d/pluginrc"
+local = "$DOTFILES_DIR/zshrc.d/pluginrc"
 use = ["nvm.zsh"]
 apply = ["defer"]
 
