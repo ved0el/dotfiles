@@ -25,6 +25,7 @@ ensure_zcompiled() {
 plugins_toml="$SHELDON_CONFIG_DIR/plugins.toml"
 temp_plugins_toml="/tmp/plugins.toml"
 
+# Ensure proper quoting for paths and use 'sed' to replace placeholders
 sed -e "s|{{DOTFILES_DIR}}|$DOTFILES_DIR|g" "$plugins_toml" > "$temp_plugins_toml"
 
 # Source Sheldon cache

@@ -36,9 +36,25 @@ elif [[ $OSTYPE == "Linux" ]]; then
   print_message "fd-find" "apt"
   sudo apt update &>/dev/null || print_warning "apt"
   sudo apt install -y fd-find
-  ln -s $(which fdfind) $DOTFILES_DIR/bin/fd
   if [ $? -ne 0 ]; then
     print_error "fd" "apt"
     exit 1
   fi
+
+  # Ensure fd command is available and link it correctly
+  if ! command -v fd &> /dev/null; then
+    if command -v fdfind &> /dev/null; then
+      ln -sf $(which fdfind) /usr/local/bin/fd
+      if [ $? -ne 0 ]; then
+        print_error "fd" "linking"
+        exit 1
+      fi
+    else
+      print_error "fd" "apt"
+      exit 1
+    fi
+  fi
+else
+  echo -e "\033[1;31mUnsupported OS type: $OSTYPE\033[m"
+  exit 1
 fi

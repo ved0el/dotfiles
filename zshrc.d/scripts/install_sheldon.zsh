@@ -18,26 +18,42 @@ print_error() {
   echo -e "\033[1;31mError:\033[m Failed to install \033[1;36m$1\033[m via $2."
 }
 
-# Checking os type
+# Check if a command exists
+command_exists() {
+  command -v "$1" &> /dev/null
+}
+
+# Checking OS type
 OSTYPE=$(uname -s)
 
 # MacOS
 if [[ $OSTYPE == "Darwin" ]]; then
   print_message "sheldon" "Homebrew"
-  brew update &>/dev/null || print_warning "Homebrew"
-  brew install sheldon
-  if [ $? -ne 0 ]; then
-    print_error "sheldon" "Homebrew"
+  if brew update &>/dev/null; then
+    brew install sheldon
+    if ! command_exists sheldon; then
+      print_error "sheldon" "Homebrew"
+      exit 1
+    fi
+  else
+    print_warning "Homebrew"
     exit 1
   fi
 
 # Linux
 elif [[ $OSTYPE == "Linux" ]]; then
   print_message "sheldon" "curl"
-  curl --proto '=https' -fLsS https://rossmacarthur.github.io/install/crate.sh \
-  | bash -s -- --repo rossmacarthur/sheldon --to $DOTFILES_DIR/bin
-  if [ $? -ne 0 ]; then
-    print_error "sheldon" "apt"
+  if curl --proto '=https' -fLsS https://rossmacarthur.github.io/install/crate.sh | bash -s -- --repo rossmacarthur/sheldon --to "$DOTFILES_DIR/bin"; then
+    if ! command_exists sheldon; then
+      print_error "sheldon" "curl"
+      exit 1
+    fi
+  else
+    print_error "sheldon" "curl"
     exit 1
   fi
+
+else
+  echo -e "\033[1;31mUnsupported OS type: $OSTYPE\033[m"
+  exit 1
 fi
