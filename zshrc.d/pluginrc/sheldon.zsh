@@ -2,6 +2,7 @@
 
 export SHELDON_CONFIG_DIR="$XDG_CONFIG_HOME/sheldon"
 export SHELDON_DATA_DIR="$XDG_DATA_HOME/sheldon"
+export DOTFILES_DIR="$HOME/.dotfiles"
 
 # Override "source" command by adding zcompile process
 source() {
@@ -23,9 +24,14 @@ ensure_zcompiled() {
 
 # Replace placeholders in plugins.toml with environment variable values
 plugins_toml="$SHELDON_CONFIG_DIR/plugins.toml"
+temp_plugins_toml="/tmp/plugins.toml"
 
 # Ensure proper quoting for paths and use 'sed' to replace placeholders
-sed -e "s|{{DOTFILES_DIR}}|$DOTFILES_DIR|g" "$plugins_toml" > "$plugins_toml"
+sed -e "s|{{DOTFILES_DIR}}|$DOTFILES_DIR|g" "$SHELDON_CONFIG_DIR/plugins.toml" > "$temp_plugins_toml"
+
+
+# Replace the original file with the modified one
+mv "$temp_plugins_toml" "$plugins_toml"
 
 # Source Sheldon cache
 sheldon_cache="$SHELDON_CONFIG_DIR/cache.zsh"
