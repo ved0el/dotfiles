@@ -13,7 +13,7 @@ fi
 
 # Function to load nvm
 load_nvm() {
-  export NVM_DIR="$HOME/.dotfiles/data/nvm"
+  export NVM_DIR="$HOME/.nvm"
   # Suppress output by redirecting stdout and stderr to /dev/null
   {
     [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # Load nvm
