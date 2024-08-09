@@ -11,15 +11,11 @@ if [[ ":$PATH:" != *":$DOTFILES_DIR/bin:"* ]]; then
   export PATH="$PATH:$DOTFILES_DIR/bin"
 fi
 
-function load-nvm {
+# nvm
+if [[ "x${TERM_PROGRAM}" != "xvscode" ]]; then
   export NVM_DIR="$HOME/.dotfiles/data/nvm"
   [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
   [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-}
-
-# nvm
-if [[ "x${TERM_PROGRAM}" != "xvscode" ]]; then
-  load-nvm
 fi
 
 # Source non-lazy configurations
