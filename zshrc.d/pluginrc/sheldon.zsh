@@ -21,15 +21,19 @@ ensure_zcompiled() {
   fi
 }
 
+# Replace placeholders in plugins.toml with environment variable values
+plugins_toml="$SHELDON_CONFIG_DIR/plugins.toml"
+temp_plugins_toml="/tmp/plugins.toml"
+
+sed -e "s|{{DOTFILES_DIR}}|$DOTFILES_DIR|g" "$plugins_toml" > "$temp_plugins_toml"
+
 # Source Sheldon cache
 sheldon_cache="$SHELDON_CONFIG_DIR/cache.zsh"
-sheldon_toml="$SHOULD_CONFIG_DIR/plugins.toml"
-if [[ ! -r "$sheldon_cache" || "$sheldon_toml" -nt "$sheldon_cache" ]]; then
+if [[ ! -r "$sheldon_cache" || "$temp_plugins_toml" -nt "$sheldon_cache" ]]; then
   sheldon source > "$sheldon_cache"
 fi
 source "$sheldon_cache"
-unset sheldon_cache sheldon_toml
+unset sheldon_cache
 
-# Source lazy configurations using zsh-defer
-zsh-defer source "$ZSH_CONFIG_DIR/lazy.zsh"
-zsh-defer unfunction source
+# Clean up temporary file
+rm "$temp_plugins_toml"
