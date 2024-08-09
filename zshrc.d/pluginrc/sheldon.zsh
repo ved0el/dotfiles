@@ -2,7 +2,6 @@
 
 export SHELDON_CONFIG_DIR="$XDG_CONFIG_HOME/sheldon"
 export SHELDON_DATA_DIR="$XDG_DATA_HOME/sheldon"
-export DOTFILES_DIR="$HOME/.dotfiles"
 
 # Override "source" command by adding zcompile process
 source() {
