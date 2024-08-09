@@ -24,12 +24,13 @@ command_exists() {
 }
 
 # Installing NVM
-export NVM_DIR="${XDG_DATA_HOME:-$HOME/.nvm}"
+export NVM_DIR="$HOME/.nvm"
 mkdir -p "$NVM_DIR"
+
 print_message "nvm" "curl"
 
 # Download and install nvm
-if curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash; then
+if curl -sS https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash; then
   # Load nvm
   source "$NVM_DIR/nvm.sh"
 

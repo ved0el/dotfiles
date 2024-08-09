@@ -14,14 +14,19 @@ fi
 # Function to load nvm
 load_nvm() {
   export NVM_DIR="$HOME/.dotfiles/data/nvm"
-  [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # Load nvm
-  [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"  # Load nvm bash_completion
+  # Suppress output by redirecting stdout and stderr to /dev/null
+  {
+    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # Load nvm
+    [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"  # Load nvm bash_completion
+  } &> /dev/null
 }
 
 # Load nvm if not in VSCode
 if [[ "$TERM_PROGRAM" != "vscode" ]]; then
-  load_nvm > /dev/null 2>&1
+  load_nvm
 fi
+
+
 
 # Source non-lazy configurations
 source "$ZSHRC_CONFIG_DIR/nonlazy.zsh"
