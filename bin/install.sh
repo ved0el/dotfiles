@@ -5,7 +5,7 @@ clear_screen() {
     printf "\033c"
 }
 
-# Function to display error message and wait for a key press
+# Function to display error message
 display_error() {
     clear_screen
     echo -e "\033[31mInvalid choice. Please choose 1, 2, 3, or q.\033[m"
@@ -36,8 +36,13 @@ set_dotfiles_dir() {
             2)
                 echo -e ""
                 read -p "Input directory: " DOTFILES_DIR
-                echo -e "New directory is: $DOTFILES_DIR"
-                break
+                if [ -z "$DOTFILES_DIR" ] || [ ! -d "$DOTFILES_DIR" ]; then
+                    echo -e "\033[31mInvalid directory. Please provide a valid directory.\033[m"
+                    sleep 1
+                else
+                    echo -e "New directory is: $DOTFILES_DIR"
+                    break
+                fi
                 ;;
             3)
                 break
@@ -45,7 +50,6 @@ set_dotfiles_dir() {
             q)
                 echo -e ""
                 exit 0
-                clear_screen
                 ;;
             *)
                 display_error
@@ -57,8 +61,13 @@ set_dotfiles_dir() {
 # Function to clone repository
 clone_repository() {
     clear_screen
-    echo -e "Clone repository into \033[0;36mDOTFILES_DIR\033[m..."
-    git clone https://github.com/ved0el/dotfiles.git "$DOTFILES_DIR"
+    echo -e "Cloning repository into \033[0;36m$DOTFILES_DIR\033[m..."
+    if git clone https://github.com/ved0el/dotfiles.git "$DOTFILES_DIR"; then
+        echo -e "\033[32mRepository cloned successfully.\033[m"
+    else
+        echo -e "\033[31mFailed to clone the repository. Please check the URL or your connection.\033[m"
+        exit 1
+    fi
     sleep 1
 }
 
@@ -67,8 +76,15 @@ install() {
     for file in "$DOTFILES_DIR"/*; do
         if [[ -f "$file" ]]; then
             target="$HOME/.$(basename "$file")"
+            if [[ -e "$target" ]]; then
+                read -p "File $target already exists. Overwrite? (y/n): " overwrite
+                if [[ $overwrite != "y" ]]; then
+                    echo "Skipping $target"
+                    continue
+                fi
+            fi
             echo "Linking $file to $target"
-            ln -s "$file" "$target"
+            ln -sf "$file" "$target"
         fi
     done
 }
@@ -85,8 +101,12 @@ uninstall() {
         fi
     done
 
-    # Remove repository folder
-    rm -rf "$DOTFILES_DIR"
+    # Confirm before removing repository folder
+    read -p "Do you want to remove the repository folder $DOTFILES_DIR? (y/n): " remove_repo
+    if [[ $remove_repo == "y" ]]; then
+        rm -rf "$DOTFILES_DIR"
+        echo "Removed repository folder $DOTFILES_DIR"
+    fi
 }
 
 # Function to display setup menu
@@ -101,6 +121,8 @@ setup_menu() {
 
         case $choice in
             1)
+                set_dotfiles_dir
+                clone_repository
                 install
                 ;;
             2)
@@ -109,7 +131,6 @@ setup_menu() {
             q)
                 echo -e ""
                 exit 0
-                clear_screen
                 ;;
             *)
                 display_error
@@ -127,13 +148,16 @@ setup_menu() {
 initial() {
     clear_screen
     echo -e "Executing \033[0;36mexec zsh\033[m to complete the setup..."
-    exec zsh
+    if command -v zsh >/dev/null 2>&1; then
+        exec zsh
+    else
+        echo -e "\033[31mZsh is not installed. Please install it and run the script again.\033[m"
+        exit 1
+    fi
 }
 
 # Main function
 main() {
-    set_dotfiles_dir
-    clone_repository
     setup_menu
     initial
 }
