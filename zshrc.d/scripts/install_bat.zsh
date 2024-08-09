@@ -18,8 +18,8 @@ print_error() {
   echo -e "\033[1;31mError:\033[m Failed to install \033[1;36m$1\033[m via $2."
 }
 
-# Checking os type
-local OSTYPE=$(uname -s)
+# Checking OS type
+OSTYPE=$(uname -s)
 
 # MacOS
 if [[ $OSTYPE == "Darwin" ]]; then
@@ -35,11 +35,15 @@ if [[ $OSTYPE == "Darwin" ]]; then
 elif [[ $OSTYPE == "Linux" ]]; then
   print_message "bat" "apt"
   sudo apt update &>/dev/null || print_warning "apt"
-  sudo apt install -y bat
-  mkdir -p ~/.local/bin
-  ln -s $(which batcat) ~/.local/bin/bat
+  sudo apt install -y bat || sudo apt install -y batcat
   if [ $? -ne 0 ]; then
     print_error "bat" "apt"
     exit 1
+  fi
+
+  # Creating symlink for batcat if installed as batcat
+  if [[ ! -f ~/.local/bin/bat && -f $(which batcat) ]]; then
+    mkdir -p ~/.local/bin
+    ln -s $(which batcat) ~/.local/bin/bat
   fi
 fi

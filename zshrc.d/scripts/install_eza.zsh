@@ -19,7 +19,7 @@ print_error() {
 }
 
 # Checking os type
-local OSTYPE=$(uname -s)
+OSTYPE=$(uname -s)
 
 # MacOS
 if [[ $OSTYPE == "Darwin" ]]; then
