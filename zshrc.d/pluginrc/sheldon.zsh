@@ -3,6 +3,8 @@
 export SHELDON_CONFIG_DIR="$XDG_CONFIG_HOME/sheldon"
 export SHELDON_DATA_DIR="$XDG_DATA_HOME/sheldon"
 
+echo "\033[1;35mLoading\033[m sheldon config..."
+
 # Override "source" command by adding zcompile process
 source() {
   local file="$1"
@@ -16,7 +18,6 @@ ensure_zcompiled() {
   local compiled="$file.zwc"
 
   if [[ ! -r "$compiled" || "$file" -nt "$compiled" ]]; then
-    echo "\033[1;36mCompiling\033[m $file"
     zcompile "$file"
   fi
 }

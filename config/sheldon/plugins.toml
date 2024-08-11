@@ -54,11 +54,6 @@ github = "azu/ni.zsh"
 use = ["ni.zsh"]
 apply = ["defer"]
 
-[plugins.nvm]
-local = "{{DOTFILES_DIR}}/zshrc.d/pluginrc"
-use = ["nvm.zsh"]
-apply = ["defer"]
-
 [plugins.coloredmanpages]
 github = "ael-code/zsh-colored-man-pages"
 apply = ["defer"]

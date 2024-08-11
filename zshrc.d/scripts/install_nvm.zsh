@@ -32,7 +32,12 @@ print_message "nvm" "curl"
 # Download and install nvm
 if curl -sS https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash; then
   # Load nvm
-  source "$NVM_DIR/nvm.sh"
+  if [ -s "$NVM_DIR/nvm.sh" ]; then
+    . "$NVM_DIR/nvm.sh"
+  fi
+  if [ -s "$NVM_DIR/bash_completion" ]; then
+    . "$NVM_DIR/bash_completion"
+  fi
 
   # Verify installation
   if command_exists nvm; then

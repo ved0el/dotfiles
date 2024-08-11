@@ -9,24 +9,8 @@ export ZSHRC_CONFIG_DIR="$DOTFILES_DIR/zshrc.d"
 # Ensure DOTFILES_DIR/bin is in PATH
 if ! command -v "$DOTFILES_DIR/bin" &> /dev/null; then
   export PATH="$PATH:$DOTFILES_DIR/bin"
+  echo "Added \033[1;36m$DOTFILES_DIR/bin\033[m to \033[1;32m\$PATH\033[m"
 fi
-
-# Function to load nvm
-load_nvm() {
-  export NVM_DIR="$HOME/.nvm"
-  # Suppress output by redirecting stdout and stderr to /dev/null
-  {
-    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # Load nvm
-    [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"  # Load nvm bash_completion
-  } &> /dev/null
-}
-
-# Load nvm if not in VSCode
-if [[ "$TERM_PROGRAM" != "vscode" ]]; then
-  load_nvm
-fi
-
-
 
 # Source non-lazy configurations
 source "$ZSHRC_CONFIG_DIR/nonlazy.zsh"
@@ -36,3 +20,7 @@ source "$ZSHRC_CONFIG_DIR/pluginrc/sheldon.zsh"
 if [[ "$TERM_PROGRAM" != "vscode" && -z "$SSH_CONNECTION" ]]; then
   source "$ZSHRC_CONFIG_DIR/pluginrc/tmux.zsh"
 fi
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
