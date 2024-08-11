@@ -44,10 +44,11 @@ if [[ $OSTYPE == "Darwin" ]]; then
 elif [[ $OSTYPE == "Linux" ]]; then
   print_message "eza" "manual installation"
   VERSION=$(curl -s https://api.github.com/repos/eza-community/eza/releases/latest | grep 'tag_name' | cut -d '"' -f 4)
-  curl -LO https://github.com/eza-community/eza/releases/download/${VERSION}/eza_x86_64-unknown-linux-musl.tar.gz
-  tar -xzf eza_x86_64-unknown-linux-musl.tar.gz
+  OSARCH=$(arch)
+  curl -LO https://github.com/eza-community/eza/releases/download/${VERSION}/eza_${OSARCH}-unknown-linux-gnu.tar.gz
+  tar -xzf eza_${OSARCH}-unknown-linux-gnu.tar.gz
   sudo mv eza /usr/local/bin/
-  rm eza_x86_64-unknown-linux-musl.tar.gz
+  rm eza_${OSARCH}-unknown-linux-gnu.tar.gz
   if ! command_exists eza; then
     print_error "eza" "manual installation"
     exit 1
