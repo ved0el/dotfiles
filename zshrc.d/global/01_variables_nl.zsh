@@ -7,8 +7,8 @@ export GHQ_ROOT="$HOME/Workspaces/src/"
 # enhancd - an enhanced cd command integrated with a command line fuzzy finder based on UNIX concept
 # https://github.com/babarot/enhancd
 export ENHANCD_FILTER="fzf --preview 'eza -al --tree --level 1 \
-        --group-directories-first --git-ignore \
-        --header --git --no-user --no-time --no-filesize --no-permissions {}' \
+        --group-directories-first \
+        --header --no-user --no-time --no-filesize --no-permissions {}' \
         --preview-window right,50% --height 35% --reverse --ansi \
         :fzy :peco"
 export ENHANCD_ENABLE_DOUBLE_DOT="false"
