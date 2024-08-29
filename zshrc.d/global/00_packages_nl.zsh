@@ -25,7 +25,7 @@ check_and_install_packages() {
         continue
       fi
     else
-      echo "\033[1;36m$cmd\033[m was installed. Skipping..."
+      # echo "\033[1;36m$cmd\033[m was installed. Skipping..."
     fi
   done
 }
