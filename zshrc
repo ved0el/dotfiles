@@ -1,3 +1,10 @@
+# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
+# Initialization code that may require console input (password prompts, [y/n]
+# confirmations, etc.) must go above this block; everything else may go below.
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
 # Exported variables
 export LANG="en_US.UTF-8"
 export LC_ALL="en_US.UTF-8"
@@ -24,3 +31,6 @@ source "$ZSHRC_CONFIG_DIR/pluginrc/sheldon.zsh"
 if [[ "$TERM_PROGRAM" != "vscode" && -z "$SSH_CONNECTION" ]]; then
   source "$ZSHRC_CONFIG_DIR/pluginrc/tmux.zsh"
 fi
+
+# To customize prompt, run `p10k configure` or edit ~/.dotfiles/p10k.zsh.
+[[ ! -f ~/.dotfiles/p10k.zsh ]] || source ~/.dotfiles/p10k.zsh
