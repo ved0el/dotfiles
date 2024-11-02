@@ -52,8 +52,7 @@ elif [[ $OSTYPE == "Linux" ]]; then
 
     # Creating symlink for batcat if installed as batcat
     if ! command_exists bat && command_exists batcat; then
-      mkdir -p ~/.local/bin
-      ln -sf $(which batcat) ~/.local/bin/bat
+      sudo ln -sf $(which batcat) /usr/local/bin/bat
     fi
   else
     print_warning "apt"
