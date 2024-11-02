@@ -9,7 +9,7 @@ export ZSHRC_CONFIG_DIR="$DOTFILES_DIR/zshrc.d"
 # Ensure DOTFILES_DIR/bin is in PATH
 if [[ ":$PATH:" != *":$DOTFILES_DIR/bin:"* ]]; then
   export PATH="$PATH:$DOTFILES_DIR/bin"
-  echo "Added \033[1;36m$DOTFILES_DIR/bin\033[m to \033[1;32m\$PATH\033[m"
+  # echo "Added \033[1;36m$DOTFILES_DIR/bin\033[m to \033[1;32m\$PATH\033[m"
 fi
 
 export NVM_DIR="$HOME/.nvm"
