@@ -44,7 +44,7 @@ elif [[ $OSTYPE == "Linux" ]]; then
   # Ensure fd command is available and link it correctly
   if ! command -v fd &> /dev/null; then
     if command -v fdfind &> /dev/null; then
-      ln -sf $(which fdfind) /usr/local/bin/fd
+      sudo ln -sf $(which fdfind) /usr/local/bin/fd
       if [ $? -ne 0 ]; then
         print_error "fd" "linking"
         exit 1
