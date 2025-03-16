@@ -9,7 +9,7 @@ cmds=(
   "bat"
   "fzf"
   "eza"
-  "nvm"
+  # "nvm"
 )
 
 # Check and install packages if not installed
