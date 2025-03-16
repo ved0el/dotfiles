@@ -19,9 +19,9 @@ if [[ ":$PATH:" != *":$DOTFILES_DIR/bin:"* ]]; then
   # echo "Added \033[1;36m$DOTFILES_DIR/bin\033[m to \033[1;32m\$PATH\033[m"
 fi
 
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+# export NVM_DIR="$HOME/.nvm"
+# [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+# [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
 # Source non-lazy configurations
 source "$ZSHRC_CONFIG_DIR/nonlazy.zsh"
@@ -34,3 +34,12 @@ fi
 
 # To customize prompt, run `p10k configure` or edit ~/.dotfiles/p10k.zsh.
 [[ ! -f ~/.dotfiles/p10k.zsh ]] || source ~/.dotfiles/p10k.zsh
+
+# History configuration
+HISTFILE=~/.zsh_history
+HISTSIZE=10000
+SAVEHIST=10000
+setopt SHARE_HISTORY          # Share history between sessions
+setopt APPEND_HISTORY         # Append to history file
+setopt INC_APPEND_HISTORY     # Add commands to history as they are typed
+setopt HIST_IGNORE_DUPS      # Don't record duplicates
