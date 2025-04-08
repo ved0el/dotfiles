@@ -2,6 +2,8 @@
 
 alias zshsrc="source ~/.zshrc"
 alias zshedit="open ~/.zshrc"
-alias ls="eza"
-alias cat="bat"
 alias ..="cd .."
+alias ls="eza"
+alias ps="procs"
+alias find="fd"
+alias cat="bat"

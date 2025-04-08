@@ -117,15 +117,41 @@ uninstall() {
   fi
 }
 
+# Function to re-link symbolic links
+relink() {
+
+  clear_screen
+  echo -e "Re-linking dotfiles..."
+
+  for file in "$HOME/.dotfiles"/*; do
+    if [[ -f "$file" ]]; then
+      target="$HOME/.$(basename "$file")"
+      if [[ -e "$target" ]]; then
+        read -p "File $target already exists. Overwrite? (y/n): " overwrite
+        if [[ $overwrite != "y" ]]; then
+          echo "Skipping $target"
+          continue
+        fi
+      fi
+      echo "Re-linking $file to $target"
+      ln -sf "$file" "$target"
+    fi
+  done
+
+  echo -e "\033[32mAll files have been re-linked.\033[m"
+  sleep 1
+}
+
 # Function to display setup menu
 setup_menu() {
   while true; do
     clear_screen
     echo -e "(1) Install"
     echo -e "(2) Update"
-    echo -e "(3) Uninstall"
-    echo -e "(q) Quit"
-    echo -n "Choice [123q]: "
+    echo -e "(3) Re-link"
+    echo -e "(4) Uninstall"
+    echo -e "(5) Quit"
+    echo -n "Choice [12345]: "
     read -rsn1 choice
 
     case $choice in
@@ -139,9 +165,12 @@ setup_menu() {
         install
         ;;
       3)
+        relink
+        ;;
+      4)
         uninstall
         ;;
-      q)
+      5)
         echo -e ""
         exit 0
         ;;
@@ -151,7 +180,7 @@ setup_menu() {
     esac
 
     # Ensure input is one of the allowed choices
-    if [[ $choice =~ ^[12q]$ ]]; then
+    if [[ $choice =~ ^[12345]$ ]]; then
       break
     fi
   done
