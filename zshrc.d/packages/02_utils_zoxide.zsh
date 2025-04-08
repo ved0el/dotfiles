@@ -21,8 +21,8 @@ install_methods=(
 pre_install() {
   export _ZO_FZF_OPTS="--preview 'eza -al --tree --level 1 \
     --group-directories-first \
-    --header --no-user --no-time --no-filesize --no-permissions {}' \
-    --preview-window right,50% --height 35% --reverse --ansi"
+    --header --no-user --no-time --no-filesize --no-permissions {2..}' \
+    --preview-window right,50% --height 35% --reverse --ansi --with-nth 2.."
 }
 
 # Post-installation commands
@@ -33,18 +33,20 @@ post_install() {
 
   # Initialize zoxide
   eval "$(zoxide init zsh)"
+  alias cd="zi"
 }
 
 # Initialization function
 init() {
   export _ZO_FZF_OPTS="--preview 'eza -al --tree --level 1 \
     --group-directories-first \
-    --header --no-user --no-time --no-filesize --no-permissions {}' \
-    --preview-window right,50% --height 35% --reverse --ansi"
+    --header --no-user --no-time --no-filesize --no-permissions {2..}' \
+    --preview-window right,50% --height 35% --reverse --ansi --with-nth 2.."
 
   if command -v zoxide >/dev/null; then
     eval "$(zoxide init zsh)"
   fi
+  alias cd="zi"
 
 }
 
