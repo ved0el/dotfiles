@@ -28,7 +28,7 @@ post_install() {
   fi
 
   # Initialize goenv
-  eval "$(goenv init -)"
+  eval "$(goenv init - zsh)"
 
   local latest_version=$(goenv install -l | grep -v '[a-zA-Z]' | tail -1 | tr -d '[[:space:]]')
   goenv install $latest_version
@@ -39,11 +39,7 @@ post_install() {
 init() {
   export GOENV_ROOT="$HOME/.goenv"
   export PATH="$PATH:$GOENV_ROOT/bin:$GOROOT/bin:$GOPATH/bin"
-
-  # Initialize goenv if installed
-  if command -v goenv >/dev/null; then
-        eval "$(goenv init -)"
-  fi
+  eval "$(goenv init - zsh)"
 }
 
 if ! is_package_installed "$PACKAGE_NAME"; then
