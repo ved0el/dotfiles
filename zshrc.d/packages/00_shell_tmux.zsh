@@ -34,21 +34,21 @@ install_methods=(
 )
 
 pre_install() {
-    export TMUX_PLUGIN_PATH="$HOME/.tmux/plugins"
+    export TMUX_PLUGIN_MANAGER_PATH="$HOME/.tmux/plugins"
 }
 
 # Post-installation commands
 post_install() {
     # Install Tmux Plugin Manager (tpm)
-    if [[ ! -d $TMUX_PLUGIN_PATH/tpm ]]; then
-        git clone https://github.com/tmux-plugins/tpm $TMUX_PLUGIN_PATH/tpm
+    if [[ ! -d $TMUX_PLUGIN_MANAGER_PATH/tpm ]]; then
+        git clone https://github.com/tmux-plugins/tpm $TMUX_PLUGIN_MANAGER_PATH/tpm
     fi
 
-    [[ -f $HOME/.tmux.conf ]] && $TMUX_PLUGIN_PATH/tpm/bin/install_plugins
+    [[ -f $HOME/.tmux.conf ]] && $TMUX_PLUGIN_MANAGER_PATH/tpm/bin/install_plugins
 }
 
 init() {
-    export TMUX_PLUGIN_PATH="$HOME/.tmux/plugins"
+    export TMUX_PLUGIN_MANAGER_PATH="$HOME/.tmux/plugins"
 }
 
 # Main installation flow
