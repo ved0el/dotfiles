@@ -7,22 +7,7 @@
 # Package information
 PACKAGE_NAME="tmux"
 PACKAGE_DESC="A terminal multiplexer"
-
-# Check if we're in an appropriate environment for tmux
-should_install_tmux() {
-    # Check if we're in SSH session
-    [[ -n "$SSH_CLIENT" ]] || [[ -n "$SSH_TTY" ]] && return 1
-
-    # Check for common IDE/embedded terminals
-    [[ "$TERM_PROGRAM" == "vscode" ]] && return 1
-    [[ "$TERMINAL_EMULATOR" == "JetBrains-JediTerm" ]] && return 1
-    [[ -n "$CURSOR_TERMINAL" ]] && return 1
-
-    # Check if we're in an interactive shell
-    [[ ! -t 1 ]] && return 1
-
-    return 0
-}
+PACKAGE_DEPS=""
 
 # Installation methods
 typeset -A install_methods
@@ -39,12 +24,16 @@ pre_install() {
 
 # Post-installation commands
 post_install() {
+  if ! is_package_installed "$PACKAGE_NAME"; then
+    log_error "$PACKAGE_NAME is not executable"
+  else
     # Install Tmux Plugin Manager (tpm)
     if [[ ! -d $TMUX_PLUGIN_MANAGER_PATH/tpm ]]; then
         git clone https://github.com/tmux-plugins/tpm $TMUX_PLUGIN_MANAGER_PATH/tpm
     fi
 
     [[ -f $HOME/.tmux.conf ]] && $TMUX_PLUGIN_MANAGER_PATH/tpm/bin/install_plugins
+  fi
 }
 
 init() {
@@ -52,12 +41,15 @@ init() {
 }
 
 # Main installation flow
-if should_install_tmux; then
-    if ! is_package_installed "$PACKAGE_NAME"; then
-        pre_install
-        install_package $PACKAGE_NAME $PACKAGE_DESC "${(@kv)install_methods}"
-        post_install
-    else
-        init
-    fi
+# Main installation flow
+if is_dependency_installed "$PACKAGE_DEPS"; then
+  if ! is_package_installed "$PACKAGE_NAME"; then
+      pre_install
+      install_package $PACKAGE_NAME $PACKAGE_DESC "${(@kv)install_methods}"
+      post_install
+  else
+    init
+  fi
+else
+  log_error "Failed to install $PACKAGE_NAME"
 fi

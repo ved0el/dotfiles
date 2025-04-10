@@ -7,6 +7,7 @@
 # Package information
 PACKAGE_NAME="nvm"
 PACKAGE_DESC="Node Version Manager"
+PACKAGE_DEPS=""
 
 # Installation methods
 typeset -A install_methods
@@ -25,14 +26,15 @@ pre_install() {
 
 post_install(){
   if ! is_package_installed "$PACKAGE_NAME"; then
-    log_success "$PACKAGE_NAME is already installed"
+    log_error "$PACKAGE_NAME is not executable"
+  else
+    # Load nvm
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
+
+    # Install Node.js LTS version
+    nvm install --lts
+    nvm use lts
   fi
-
-  # Load nvm
-  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
-
-  # Install Node.js LTS version
-  nvm install --lts
 }
 
 init(){
@@ -40,10 +42,15 @@ init(){
 }
 
 # Main installation flow
-if ! is_package_installed "$PACKAGE_NAME"; then
-  pre_install
-  install_package $PACKAGE_NAME $PACKAGE_DESC "${(@kv)install_methods}"
-  post_install
+# Main installation flow
+if is_dependency_installed "$PACKAGE_DEPS"; then
+  if ! is_package_installed "$PACKAGE_NAME"; then
+      pre_install
+      install_package $PACKAGE_NAME $PACKAGE_DESC "${(@kv)install_methods}"
+      post_install
+  else
+    init
+  fi
 else
-  init
+  log_error "Failed to install $PACKAGE_NAME"
 fi

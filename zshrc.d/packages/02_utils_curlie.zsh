@@ -7,6 +7,7 @@
 # Package information
 PACKAGE_NAME="curlie"
 PACKAGE_DESC="The power of curl, the ease of use of httpie"
+PACKAGE_DEPS="go"
 
 # Installation methods
 typeset -A install_methods
@@ -23,10 +24,10 @@ pre_install() {
 # Post-installation function
 post_install() {
   if ! is_package_installed "$PACKAGE_NAME"; then
-    log_success "$PACKAGE_NAME is already installed"
+    log_error "$PACKAGE_NAME is not executable"
+  else
+    alias curl ="curlie"
   fi
-
-  alias curl ="curlie"
 }
 
 # Initialization function
@@ -34,11 +35,15 @@ init(){
   return
 }
 
-# main
-if ! is_package_installed "$PACKAGE_NAME"; then
-  pre_install
-  install_package $PACKAGE_NAME $PACKAGE_DESC "${(@kv)install_methods}"
-  post_install
+# Main installation flow
+if is_dependency_installed "$PACKAGE_DEPS"; then
+  if ! is_package_installed "$PACKAGE_NAME"; then
+      pre_install
+      install_package $PACKAGE_NAME $PACKAGE_DESC "${(@kv)install_methods}"
+      post_install
+  else
+    init
+  fi
 else
-  init
+  log_error "Failed to install $PACKAGE_NAME"
 fi

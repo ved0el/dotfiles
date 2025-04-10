@@ -7,6 +7,7 @@
 # Package Information
 PACKAGE_NAME="goenv"
 PACKAGE_DESC="Go Version Management"
+PACKAGE_DEPS=""
 
 # Installation Methods
 typeset -A install_methods
@@ -23,17 +24,18 @@ pre_install() {
 # Post-installation function
 post_install() {
   export PATH="$PATH:$GOENV_ROOT/bin:$GOROOT/bin:$GOPATH/bin"
+
   if ! is_package_installed "$PACKAGE_NAME"; then
-    log_success "$PACKAGE_NAME is already installed"
+    log_error "$PACKAGE_NAME is not executable"
+  else
+    # Initialize goenv
+    eval "$(goenv init - zsh)"
+
+    local latest_version=$(goenv install -l | grep -v '[a-zA-Z]' | tail -1 | tr -d '[[:space:]]')
+    goenv install $latest_version
+    goenv global $latest_version
+    goenv rehash
   fi
-
-  # Initialize goenv
-  eval "$(goenv init - zsh)"
-
-  local latest_version=$(goenv install -l | grep -v '[a-zA-Z]' | tail -1 | tr -d '[[:space:]]')
-  goenv install $latest_version
-  goenv global $latest_version
-  goenv rehash
 }
 
 init() {
@@ -42,10 +44,16 @@ init() {
   eval "$(goenv init - zsh)"
 }
 
-if ! is_package_installed "$PACKAGE_NAME"; then
-  pre_install
-  install_package $PACKAGE_NAME $PACKAGE_DESC "${(@kv)install_methods}"
-  post_install
+# Main installation flow
+# Main installation flow
+if is_dependency_installed "$PACKAGE_DEPS"; then
+  if ! is_package_installed "$PACKAGE_NAME"; then
+      pre_install
+      install_package $PACKAGE_NAME $PACKAGE_DESC "${(@kv)install_methods}"
+      post_install
+  else
+    init
+  fi
 else
-  init
+  log_error "Failed to install $PACKAGE_NAME"
 fi
