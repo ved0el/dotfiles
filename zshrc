@@ -37,8 +37,6 @@ source "$ZSHRC_CONFIG_DIR/functions/package_installer.zsh"
 source "$ZSHRC_CONFIG_DIR/plugins/sheldon.zsh"
 
 # Source tmux config if not in SSH session or VSCode
-if [[ "$TERM_PROGRAM" != "vscode"
-]] && [[ -z "$SSH_CONNECTION"
-]] && [ -t 1 ]; then
+if [[ "$TERM_PROGRAM" != "vscode" ]] && [[ -z "$SSH_CONNECTION" ]] && command -v tmux >/dev/null 2>&1; then
   source "$ZSHRC_CONFIG_DIR/plugins/tmux.zsh"
 fi

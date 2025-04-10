@@ -1,208 +1,430 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Function to clear the screen
-clear_screen() {
-  printf "\033c"
-}
+set -uo pipefail
 
-# Function to display error message
-display_error() {
+# =============================================================================
+#  Constants
+# =============================================================================
+readonly REPO_URL="https://github.com/ved0el/dotfiles.git"
+readonly DEFAULT_DOTFILES_ROOT="$HOME/.dotfiles"
+
+# Return codes
+readonly E_SUCCESS=0
+readonly E_ERROR=1
+readonly E_MENU_BACK=2
+
+# Platform-specific settings
+if [[ "$(uname)" == "Darwin" ]]; then
+  readonly sed_in_place="''"
+else
+  readonly sed_in_place=""
+fi
+
+# =============================================================================
+#  Helper Functions
+# =============================================================================
+clear_screen() { printf "\033c"; }
+
+log_info()    { echo -e "\033[1;34m[INFO]\033[0m $1"; }
+log_error()   { echo -e "\033[1;31m[ERROR]\033[0m $1"; }
+log_success() { echo -e "\033[1;32m[SUCCESS]\033[0m $1"; }
+log_warning() { echo -e "\033[1;33m[WARNING]\033[0m $1"; }
+
+show_header() {
   clear_screen
-  echo -e "\033[31mInvalid choice. Please choose 1, 2, 3, or q.\033[m"
-  sleep 1
+  cat << EOF
+╭───────────────────────────────────────╮
+│      Dotfiles Installer by ved0el     │
+╰───────────────────────────────────────╯
+
+Press 'h' for help, 'q' to quit
+EOF
+  echo
 }
 
-# Function to prompt for DOTFILES_DIR
-set_dotfiles_dir() {
-  while true; do
-    clear_screen
-    echo -e "\033[0;36mDOTFILES_DIR\033[m is the location where repository will be saved."
-    echo -e "Current value is: \033[0;36m$DOTFILES_DIR\033[m"
-    echo -e ""
-    echo -e "Do you want to change it?"
-    echo -e ""
-    echo -e "(1) Default (\033[0;36m\$HOME/.dotfiles\033[m)."
-    echo -e "(2) Yes."
-    echo -e "(3) No."
-    echo -e "(q) Quit and do nothing."
-    echo -n "Choice [123q]: "
-    read -rsn1 choice
+show_usage() {
+  clear_screen
+  cat << EOF
+╭───────────────────────────────────────╮
+│      Dotfiles Installer by ved0el     │
+╰───────────────────────────────────────╯
 
+Usage:
+  ./install.sh                         # Interactive installation
+  curl -fsSL <url> | bash              # Quick install
+  curl -fsSL <url> | DOTFILES_* bash   # Install with overrides
+
+Environment Variables:
+  DOTFILES_ROOT    - Directory to clone dotfiles into (e.g., $HOME/.dotfiles)
+  DOTFILES_PROFILE - Installation profile (e.g., "minimal", "server", "full")
+
+Profiles:
+  minimal  - Basic installation (default)
+  server   - Shell + utilities (no development tools)
+  full     - Full development machine setup
+
+Press any key to continue...
+EOF
+  read -rsn1
+}
+
+# =============================================================================
+#  Core Functions
+# =============================================================================
+update_zshenv() {
+  local key="$1"
+  local value="$2"
+  local zshenv="$HOME/.zshenv"
+
+  touch "$zshenv" || {
+    log_error "Cannot create/access $zshenv"
+    return "$E_ERROR"
+  }
+
+  if [[ "$(uname)" == "Darwin" ]]; then
+    sed -i '' "/^export ${key}=/d" "$zshenv" 2>/dev/null || :
+  else
+    sed -i "/^export ${key}=/d" "$zshenv" 2>/dev/null || :
+  fi
+
+  echo "export ${key}=${value}" >> "$zshenv"
+}
+
+set_dotfiles_root() {
+  if [[ -n "${DOTFILES_ROOT:-}" ]]; then
+    if [[ ! "$DOTFILES_ROOT" =~ ^/ ]]; then
+      DOTFILES_ROOT="$HOME/$DOTFILES_ROOT"
+    fi
+
+    if [[ -d "$DOTFILES_ROOT" ]] || mkdir -p "$DOTFILES_ROOT" 2>/dev/null; then
+      log_info "Using directory: $DOTFILES_ROOT"
+      update_zshenv "DOTFILES_ROOT" "$DOTFILES_ROOT"
+      return $E_SUCCESS
+    else
+      log_error "Invalid directory provided in DOTFILES_ROOT"
+      return $E_ERROR
+    fi
+  fi
+
+  while true; do
+    show_header
+    log_info "Setting up dotfiles directory..."
+    echo
+    echo "Current directory: $DEFAULT_DOTFILES_ROOT"
+    echo
+    echo "1) Use default"
+    echo "2) Set custom directory"
+    echo
+    echo -n "Choice [12hq]: "
+
+    read -rsn1 choice
+    echo
     case $choice in
       1)
-        export DOTFILES_DIR="$HOME/.dotfiles"
-        break
-        ;;
-      2)
-        echo -e ""
-        read -p "Input directory: " DOTFILES_DIR
-        if [ -z "$DOTFILES_DIR" ] || [ ! -d "$DOTFILES_DIR" ]; then
-          echo -e "\033[31mInvalid directory. Please provide a valid directory.\033[m"
-          sleep 1
+        DOTFILES_ROOT="$DEFAULT_DOTFILES_ROOT"
+        if mkdir -p "$DOTFILES_ROOT" 2>/dev/null; then
+          update_zshenv "DOTFILES_ROOT" "$DOTFILES_ROOT"
+          return $E_SUCCESS
         else
-          echo -e "New directory is: $DOTFILES_DIR"
-          break
+          log_error "Failed to create directory"
+          sleep 1
         fi
-        ;;
-      3)
-        break
-        ;;
-      q)
-        echo -e ""
-        exit 0
-        ;;
-      *)
-        display_error
-        ;;
-    esac
-  done
-}
-
-# Function to clone repository
-clone_repository() {
-  clear_screen
-  echo -e "Cloning repository into \033[0;36m$DOTFILES_DIR\033[m..."
-  if git clone https://github.com/ved0el/dotfiles.git "$DOTFILES_DIR"; then
-    echo -e "\033[32mRepository cloned successfully.\033[m"
-  else
-    echo -e "\033[31mFailed to clone the repository. Please check the URL or your connection.\033[m"
-    exit 1
-  fi
-  sleep 1
-}
-
-# Function to fetch repository
-fetch_repository() {
-  clear_screen
-  echo -e "Fetching latest commit..."
-  cd $DOTFILES_DIR || exit
-  git pull
-}
-
-# Function to install symbolic links
-install() {
-  for file in "$DOTFILES_DIR"/*; do
-    if [[ -f "$file" ]]; then
-      target="$HOME/.$(basename "$file")"
-      if [[ -e "$target" ]]; then
-        read -p "File $target already exists. Overwrite? (y/n): " overwrite
-        if [[ $overwrite != "y" ]]; then
-          echo "Skipping $target"
-          continue
-        fi
-      fi
-      echo "Linking $file to $target"
-      ln -sf "$file" "$target"
-    fi
-  done
-}
-
-# Function to remove symbolic links
-uninstall() {
-  for file in "$DOTFILES_DIR"/*; do
-    if [[ -f "$file" ]]; then
-      target="$HOME/.$(basename "$file")"
-      if [[ -L "$target" && $(readlink -f "$target") == "$(realpath "$file")" ]]; then
-        rm "$target"
-        echo "Removed link $target"
-      fi
-    fi
-  done
-
-  # Confirm before removing repository folder
-  read -p "Do you want to remove the repository folder $DOTFILES_DIR? (y/n): " remove_repo
-  if [[ $remove_repo == "y" ]]; then
-    rm -rf "$DOTFILES_DIR"
-    echo "Removed repository folder $DOTFILES_DIR"
-  fi
-}
-
-# Function to re-link symbolic links
-relink() {
-
-  clear_screen
-  echo -e "Re-linking dotfiles..."
-
-  for file in "$HOME/.dotfiles"/*; do
-    if [[ -f "$file" ]]; then
-      target="$HOME/.$(basename "$file")"
-      if [[ -e "$target" ]]; then
-        read -p "File $target already exists. Overwrite? (y/n): " overwrite
-        if [[ $overwrite != "y" ]]; then
-          echo "Skipping $target"
-          continue
-        fi
-      fi
-      echo "Re-linking $file to $target"
-      ln -sf "$file" "$target"
-    fi
-  done
-
-  echo -e "\033[32mAll files have been re-linked.\033[m"
-  sleep 1
-}
-
-# Function to display setup menu
-setup_menu() {
-  while true; do
-    clear_screen
-    echo -e "(1) Install"
-    echo -e "(2) Update"
-    echo -e "(3) Re-link"
-    echo -e "(4) Uninstall"
-    echo -e "(5) Quit"
-    echo -n "Choice [12345]: "
-    read -rsn1 choice
-
-    case $choice in
-      1)
-        set_dotfiles_dir
-        clone_repository
-        install
         ;;
       2)
-        fetch_repository
-        install
-        ;;
-      3)
-        relink
-        ;;
-      4)
-        uninstall
-        ;;
-      5)
-        echo -e ""
-        exit 0
-        ;;
-      *)
-        display_error
-        ;;
-    esac
+        echo -n "Enter directory path: "
+        read -r custom_dir
+        if [[ ! "$custom_dir" =~ ^/ ]]; then
+          custom_dir="$HOME/$custom_dir"
+        fi
 
-    # Ensure input is one of the allowed choices
-    if [[ $choice =~ ^[12345]$ ]]; then
-      break
-    fi
+        if mkdir -p "$custom_dir" 2>/dev/null; then
+          DOTFILES_ROOT="$custom_dir"
+          update_zshenv "DOTFILES_ROOT" "$DOTFILES_ROOT"
+          return $E_SUCCESS
+        else
+          log_error "Invalid directory"
+          sleep 1
+        fi
+        ;;
+      h) show_usage ;;
+      q) exit 0 ;;
+      *) log_error "Invalid choice"; sleep 1 ;;
+    esac
   done
 }
 
-# Function to initialize the setup
-initial() {
-  clear_screen
-  echo -e "Executing \033[0;36mexec zsh\033[m to complete the setup..."
-  if command -v zsh >/dev/null 2>&1; then
-    exec zsh
-  else
-    echo -e "\033[31mZsh is not installed. Please install it and run the script again.\033[m"
-    exit 1
+set_profile() {
+  if [[ -n "${DOTFILES_PROFILE:-}" ]]; then
+    case "${DOTFILES_PROFILE,,}" in
+      full|server|minimal)
+        export_profile "${DOTFILES_PROFILE,,}"
+        return $E_SUCCESS
+        ;;
+      *)
+        log_error "Invalid profile: $DOTFILES_PROFILE"
+        export_profile "minimal"
+        return $E_SUCCESS
+        ;;
+    esac
+  fi
+
+  while true; do
+    show_header
+    log_info "Select installation profile:"
+    echo
+    echo "1) Full (shell + dev + utils)"
+    echo "2) Server (shell + utils)"
+    echo "3) Minimal (shell only)"
+    echo
+    echo -n "Choice [123hq]: "
+
+    read -rsn1 choice
+    echo
+    case $choice in
+      1) export_profile "full"; return $E_SUCCESS ;;
+      2) export_profile "server"; return $E_SUCCESS ;;
+      3) export_profile "minimal"; return $E_SUCCESS ;;
+      h) show_usage; continue ;;
+      q) exit 0 ;;
+      *) log_error "Invalid choice"; sleep 1 ;;
+    esac
+  done
+}
+
+export_profile() {
+  export DOTFILES_PROFILE="$1"
+  update_zshenv "DOTFILES_PROFILE" "$1"
+  log_success "Profile set to $1"
+}
+
+check_dependencies() {
+  local deps=(git curl sudo)
+  local missing=()
+
+  for dep in "${deps[@]}"; do
+    if ! command -v "$dep" >/dev/null 2>&1; then
+      missing+=("$dep")
+    fi
+  done
+
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    log_error "Missing required dependencies:"
+    printf '  • %s\n' "${missing[@]}"
+    return $E_ERROR
   fi
 }
 
-# Main function
-main() {
-  setup_menu
-  initial
+setup_repository() {
+  show_header
+  log_info "Setting up repository..."
+
+  if [[ -d "$DOTFILES_ROOT/.git" ]]; then
+    log_info "Updating existing repository..."
+    (cd "$DOTFILES_ROOT" && git pull) || {
+      log_error "Failed to update repository"
+      return $E_ERROR
+    }
+  else
+    log_info "Cloning new repository..."
+    git clone "$REPO_URL" "$DOTFILES_ROOT" || {
+      log_error "Failed to clone repository"
+      return $E_ERROR
+    }
+  fi
+
+  return $E_SUCCESS
 }
 
-# Run the main function
-main
+link_files() {
+  show_header
+  log_info "Creating symlinks..."
+
+  if [[ ! -d "$DOTFILES_ROOT" ]]; then
+    log_error "Source directory not found: $DOTFILES_ROOT"
+    return $E_ERROR
+  fi
+
+  local count=0
+  shopt -s nullglob
+  while IFS= read -r file; do
+    [[ ! -f "$file" ]] && continue
+    [[ "$(basename "$file")" =~ ^\.|\bREADME ]] && continue
+
+    local target="$HOME/.$(basename "$file")"
+    ln -sf "$file" "$target" && {
+      ((count++))
+      log_success "Linked: $target"
+    }
+  done < <(find "$DOTFILES_ROOT" -maxdepth 1 -type f)
+  shopt -u nullglob
+
+  log_success "Linked $count files"
+  return $E_SUCCESS
+}
+
+do_uninstall() {
+  if [[ -z "${DOTFILES_ROOT:-}" ]]; then
+    if [[ -f "$HOME/.zshenv" ]]; then
+      source "$HOME/.zshenv"
+    fi
+    DOTFILES_ROOT="${DOTFILES_ROOT:-$DEFAULT_DOTFILES_ROOT}"
+  fi
+
+  if [[ ! -d "$DOTFILES_ROOT" ]]; then
+    log_error "Directory not found: $DOTFILES_ROOT"
+    return $E_ERROR
+  fi
+
+  local count=0
+  shopt -s nullglob
+  while IFS= read -r file; do
+    [[ ! -f "$file" ]] && continue
+    local target="$HOME/.$(basename "$file")"
+    if [[ -L "$target" ]]; then
+      rm -f "$target"
+      ((count++))
+      log_success "Removed: $target"
+    fi
+  done < <(find "$DOTFILES_ROOT" -maxdepth 1 -type f)
+  shopt -u nullglob
+
+  if [[ -d "$DOTFILES_ROOT" ]]; then
+    rm -rf "$DOTFILES_ROOT"
+    log_success "Removed directory: $DOTFILES_ROOT"
+  fi
+
+  if [[ -f "$HOME/.zshenv" ]]; then
+    if [[ "$(uname)" == "Darwin" ]]; then
+      sed -i '' '/^export DOTFILES_/d' "$HOME/.zshenv"
+    else
+      sed -i '/^export DOTFILES_/d' "$HOME/.zshenv"
+    fi
+    log_success "Cleaned up environment variables"
+  fi
+
+  log_success "Uninstalled $count files"
+  return $E_SUCCESS
+}
+
+show_uninstall_confirm() {
+  while true; do
+    show_header
+    log_warning "Are you sure you want to uninstall dotfiles?"
+    echo
+    echo "This will:"
+    echo "  • Remove all symlinks"
+    echo "  • Delete the repository"
+    echo "  • Clean up environment variables"
+    echo
+    echo "1) Yes, uninstall everything"
+    echo "2) No, return to main menu"
+    echo
+    echo -n "Choice [12hq]: "
+
+    read -rsn1 choice
+    echo
+    case $choice in
+      1) do_uninstall; return $E_SUCCESS ;;
+      2) return $E_MENU_BACK ;;
+      h) show_usage; continue ;;
+      q) exit 0 ;;
+      *) log_error "Invalid choice"; sleep 1; continue ;;
+    esac
+  done
+}
+
+show_menu() {
+  while true; do
+    show_header
+    echo "1) Install/Update"
+    echo "2) Uninstall"
+    echo
+    echo -n "Choice [12hq]: "
+
+    read -rsn1 choice
+    echo
+    case $choice in
+      1)
+        set_dotfiles_root || continue
+        set_profile || continue
+        setup_repository || continue
+        link_files || continue
+        return $E_SUCCESS
+        ;;
+      2)
+        show_uninstall_confirm
+        case $? in
+          $E_MENU_BACK) continue ;;
+          $E_SUCCESS) return $E_SUCCESS ;;
+          *) continue ;;
+        esac
+        ;;
+      h) show_usage; continue ;;
+      q) exit 0 ;;
+      *) log_error "Invalid choice"; sleep 1; continue ;;
+    esac
+  done
+}
+
+main() {
+  if ! check_dependencies; then
+    exit $E_ERROR
+  fi
+
+  if ! [[ -t 0 && -t 1 ]] && [[ -z "${DOTFILES_PROFILE:-}" ]]; then
+    export DOTFILES_PROFILE="minimal"
+  fi
+
+  show_menu
+  local status=$?
+
+  if [[ $status -eq $E_SUCCESS ]]; then
+    log_success "Operation completed successfully!"
+    if command -v zsh >/dev/null 2>&1; then
+      log_info "Starting new shell..."
+      exec zsh -l
+    fi
+  fi
+
+  exit $status
+}
+
+interactive_menu() {
+  if ! [[ -t 0 && -t 1 ]]; then
+    echo "No terminal detected. Running in non-interactive mode."
+    main
+    return
+  fi
+
+  while true; do
+    show_header
+    echo "1) Install/Update"
+    echo "2) Uninstall"
+    echo "h) Help"
+    echo "q) Quit"
+    echo
+    echo -n "Choice: [12hq]"
+
+    read -rp "" choice
+    case $choice in
+      1) main; break ;;
+      2) do_uninstall; break ;;
+      h) show_usage ;;
+      q) exit 0 ;;
+      *) log_error "Invalid choice, try again" ;;
+    esac
+  done
+}
+
+
+# Run the main logic depending on the execution type.
+if [[ -n "${PS1:-}" ]]; then
+  # Interactive execution (has a terminal/TTY)
+  interactive_menu
+elif [[ "${BASH_SOURCE[0]:-}" == "${0}" ]]; then
+  # Direct execution (e.g., ./install.sh)
+  main
+elif [[ -z "${BASH_SOURCE[0]:-}" ]]; then
+  # Non-interactive execution (e.g., curl | bash)
+  main
+fi

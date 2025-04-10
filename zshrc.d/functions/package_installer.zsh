@@ -5,6 +5,11 @@
 # =============================================================================
 
 # -----------------------------------------------------------------------------
+# Constants
+# -----------------------------------------------------------------------------
+readonly DEFAULT_PROFILE="minimal"
+
+# -----------------------------------------------------------------------------
 # Logging Functions
 # -----------------------------------------------------------------------------
 log_info()    { echo -e "\033[1;34m[INFO]\033[0m $1" }
@@ -39,36 +44,70 @@ get_package_manager() {
 }
 
 # -----------------------------------------------------------------------------
+# Profile Management
+# -----------------------------------------------------------------------------
+get_profile() {
+  # Try current environment first
+  local profile="${DOTFILES_PROFILE:-}"
+
+  # Try loading from zshenv if not set
+  if [[ -z "$profile" && -f "$HOME/.zshenv" ]]; then
+    source "$HOME/.zshenv"
+    profile="${DOTFILES_PROFILE:-}"
+  fi
+
+  # Return profile or default
+  echo "${profile:-$DEFAULT_PROFILE}"
+}
+
+should_install_package() {
+  local package_type="$1"
+  local profile=$(get_profile)
+
+  case "$profile" in
+    full)
+      # Install everything in full profile
+      return 0
+      ;;
+    server)
+      # Install shell and utils, but not dev tools
+      [[ "$package_type" =~ ^(00_shell|02_utils) ]] && return 0
+      ;;
+    minimal)
+      # Install shell (except tmux) and utils
+      if [[ "$package_type" =~ ^(00_shell|02_utils) ]]; then
+        [[ "$package_type" == *"tmux"* ]] && return 1
+        return 0
+      fi
+      ;;
+  esac
+  return 1
+}
+
+# -----------------------------------------------------------------------------
 # Package Management
 # -----------------------------------------------------------------------------
 is_package_installed() {
   command -v "$1" &>/dev/null
 }
 
-# -----------------------------------------------------------------------------
-# Installation Scripts Management
-# -----------------------------------------------------------------------------
-run_installation_scripts() {
-  local script_dir="$ZSHRC_CONFIG_DIR/packages"
-  local scripts=($script_dir/*.zsh)
+is_dependency_installed() {
+  local deps=($1)  # Split into array automatically in zsh
 
-  if [[ ${#scripts} -eq 0 ]]; then
-    log_warning "No installation scripts found in $script_dir"
-    return 1
-  fi
+  # Skip if no deps
+  [[ -z "$deps" ]] && return 0
 
-  for script in "${scripts[@]}"; do
-    if [[ -x "$script" ]]; then
-      source "$script"
-    else
-      log_warning "Script $script is not executable"
+  # Check each dependency
+  for dep in $deps; do
+    if ! is_package_installed "$dep"; then
+      log_warning "Missing required dependencies: $dep"
+      return 1
     fi
   done
+
+  return 0
 }
 
-# -----------------------------------------------------------------------------
-# Package Installation
-# -----------------------------------------------------------------------------
 install_package() {
   local name="$1"
   local desc="$2"
@@ -76,7 +115,7 @@ install_package() {
 
   log_info "Installing $name - $desc"
 
-  # Get package manager and installation command
+  # Get package manager
   local pm=$(get_package_manager)
 
   # Process installation methods
@@ -89,14 +128,55 @@ install_package() {
     shift 2
   done
 
-  # Get and execute installation command
+  # Get installation command
   local cmd="${install_methods[$pm]:-${install_methods[custom]}}"
   if [[ -z "$cmd" ]]; then
     log_error "No installation method available for $pm"
     return 1
   fi
 
-  eval "$cmd"
+  # Execute installation
+  eval "$cmd" || {
+    log_error "Failed to install $name"
+    return 1
+  }
+  log_success "Installed $name successfully"
+}
+
+# -----------------------------------------------------------------------------
+# Installation Scripts Management
+# -----------------------------------------------------------------------------
+run_installation_scripts() {
+  local script_dir="$ZSHRC_CONFIG_DIR/packages"
+  local scripts=($script_dir/*.zsh)
+  local profile=$(get_profile)
+
+  if [[ ${#scripts} -eq 0 ]]; then
+    log_warning "No installation scripts found in $script_dir"
+    return 1
+  fi
+
+
+  # Sort scripts to ensure correct installation order
+  scripts=("${(@n)scripts}")
+
+  for script in "${scripts[@]}"; do
+    # Skip non-executable scripts
+    if [[ ! -x "$script" ]]; then
+      log_warning "Script not executable: $script"
+      continue
+    fi
+
+    local basename=$(basename "$script")
+    local package_type="${basename%_*}"  # Get prefix (00_shell, 01_dev, 02_utils)
+
+    # Check if package should be installed for current profile
+    if should_install_package "$basename"; then
+      source "$script" && ((count++))
+    fi
+  done
+
+  return 0
 }
 
 # -----------------------------------------------------------------------------
