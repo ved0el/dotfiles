@@ -32,7 +32,7 @@ post_install() {
 
 # Initialization function
 init(){
-  return
+  alias curl ="curlie"
 }
 
 # Main installation flow

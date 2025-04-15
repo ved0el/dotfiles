@@ -39,7 +39,7 @@ post_install() {
 
 # Initialization function
 init() {
-  return
+  alias find="fd"
 }
 
 # Main installation flow

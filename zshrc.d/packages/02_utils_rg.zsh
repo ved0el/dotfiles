@@ -28,13 +28,13 @@ post_install() {
   if ! is_package_installed "$PACKAGE_NAME"; then
     log_error "$PACKAGE_NAME is not executable"
   else
-    return
+    alias grep="rg"
   fi
 }
 
 # Initialization function
 init() {
-  return
+  alias grep="rg"
 }
 
 # Main installation flow

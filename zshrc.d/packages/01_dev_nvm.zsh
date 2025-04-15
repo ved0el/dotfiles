@@ -33,7 +33,7 @@ post_install(){
 
     # Install Node.js LTS version
     nvm install --lts
-    nvm use lts
+    nvm use --lts
   fi
 }
 
@@ -42,15 +42,16 @@ init(){
 }
 
 # Main installation flow
-# Main installation flow
-if is_dependency_installed "$PACKAGE_DEPS"; then
-  if ! is_package_installed "$PACKAGE_NAME"; then
-      pre_install
-      install_package $PACKAGE_NAME $PACKAGE_DESC "${(@kv)install_methods}"
-      post_install
-  else
-    init
-  fi
-else
-  log_error "Failed to install $PACKAGE_NAME"
+if [[ ! -d "$NVM_DIR" ]]; then
+    if is_dependency_installed "$PACKAGE_DEPS"; then
+    if ! is_package_installed "$PACKAGE_NAME"; then
+        pre_install
+        install_package $PACKAGE_NAME $PACKAGE_DESC "${(@kv)install_methods}"
+        post_install
+    else
+        init
+    fi
+    else
+    log_error "Failed to install $PACKAGE_NAME"
+    fi
 fi

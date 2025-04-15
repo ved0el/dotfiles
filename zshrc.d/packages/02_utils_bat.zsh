@@ -36,7 +36,7 @@ post_install() {
 }
 
 init(){
-  return
+  alias cat="bat"
 }
 
 # Main installation flow

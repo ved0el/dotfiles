@@ -33,7 +33,9 @@ post_install() {
 }
 
 # Initialization function
-init(){}
+init(){
+  alias ls="eza"
+}
 
 # Main installation flow
 if is_dependency_installed "$PACKAGE_DEPS"; then

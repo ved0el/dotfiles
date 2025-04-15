@@ -45,7 +45,6 @@ init() {
 }
 
 # Main installation flow
-# Main installation flow
 if is_dependency_installed "$PACKAGE_DEPS"; then
   if ! is_package_installed "$PACKAGE_NAME"; then
       pre_install

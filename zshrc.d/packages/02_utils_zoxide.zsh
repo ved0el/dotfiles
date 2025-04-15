@@ -32,21 +32,13 @@ post_install() {
     log_error "$PACKAGE_NAME is not executable"
   else
     eval "$(zoxide init zsh)"
-    alias cd="zi"
+    alias cd="z"
   fi
 }
 
 # Initialization function
 init() {
-  export _ZO_FZF_OPTS="--preview 'eza -al --tree --level 1 \
-    --group-directories-first \
-    --header --no-user --no-time --no-filesize --no-permissions {2..}' \
-    --preview-window right,50% --height 35% --reverse --ansi --with-nth 2.."
-
-  if command -v zoxide >/dev/null; then
-    eval "$(zoxide init zsh)"
-    alias cd="zi"
-  fi
+  return
 }
 
 # Main installation flow

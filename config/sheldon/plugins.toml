@@ -23,7 +23,6 @@ github = "romkatv/zsh-defer"
 
 [plugins.fast-syntax-highlight]
 github = "zdharma-continuum/fast-syntax-highlighting"
-hooks.pre = "zmodload zsh/zpty"
 
 # =============================================================================
 # Completion Plugins (Deferred)
@@ -46,7 +45,7 @@ hooks.pre = "autoload -Uz compinit && compinit -C"
 [plugins.zsh-autosuggestions]
 github = "zsh-users/zsh-autosuggestions"
 apply = ["defer"]
-hooks.pre = "export ZSH_AUTOSUGGEST_USE_ASYNC=true"
+hooks.pre = "zmodload zsh/zpty"
 
 [plugins.k]
 github = "supercrabtree/k"
@@ -66,9 +65,12 @@ apply = ["defer"]
 [plugins.zoxide]
 github = "ajeetdsouza/zoxide"
 apply = ["defer"]
+hooks.pre = "eval \"$(zoxide init --cmd cd zsh)\""
+hooks.post = "export _ZO_FZF_OPTS=\"--preview 'eza -al --tree --level 1 --group-directories-first --header --no-user --no-time --no-filesize --no-permissions {2..}' --preview-window right,50% --height 35% --reverse --ansi --with-nth 2..\""
 
-[plugins.tealdeer]
-github = "tealdeer-rs/tealdeer"
+[plugins.zsh-nvm]
+github = "lukechilds/zsh-nvm"
+use = ["zsh-nvm.plugin.zsh"]
 apply = ["defer"]
 
 # =============================================================================
@@ -77,6 +79,7 @@ apply = ["defer"]
 
 [plugins.powerlevel10k]
 github = "romkatv/powerlevel10k"
+apply = ["defer"]   
 hooks.post = """
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 """
