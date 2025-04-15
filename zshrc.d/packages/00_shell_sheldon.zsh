@@ -14,7 +14,7 @@ typeset -A install_methods
 install_methods=(
   [brew]="brew install sheldon"
   [cargo]="cargo install sheldon"
-  [custom]="curl --proto '=https' -fLsS https://rossmacarthur.github.io/install/crate.sh | bash -s -- --repo rossmacarthur/sheldon --to /usr/local/bin"
+  [custom]="curl --proto '=https' -fLsS https://rossmacarthur.github.io/install/crate.sh | bash -s -- --repo rossmacarthur/sheldon --to $DOTFILES_ROOT/bin"
 )
 
 # Pre-installation commands

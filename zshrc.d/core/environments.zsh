@@ -1,9 +1,9 @@
 # =============================================================================
 # Environment Configuration
 # =============================================================================
-# Ensure DOTFILES_DIR/bin is in PATH
-if [[ ":$PATH:" != *":$DOTFILES_DIR/bin:"* ]]; then
-  export PATH="$PATH:$DOTFILES_DIR/bin"
+# Ensure DOTFILES_ROOT/bin is in PATH
+if [[ ":$PATH:" != *":$DOTFILES_ROOT/bin:"* ]]; then
+  export PATH="$PATH:$DOTFILES_ROOT/bin"
 fi
 
 # Add local bin to PATH

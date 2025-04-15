@@ -15,7 +15,7 @@ install_methods=(
   [brew]="brew install zoxide"
   [apt]="sudo apt install -y zoxide"
   [pacman]="sudo pacman -S --noconfirm zoxide"
-  [custom]="curl --proto '=https' -fLsS https://rossmacarthur.github.io/install/crate.sh | bash -s -- --repo ajeetdsouza/zoxide --to $DOTFILES_DIR/bin"
+  [custom]="curl --proto '=https' -fLsS https://rossmacarthur.github.io/install/crate.sh | bash -s -- --repo ajeetdsouza/zoxide --to $DOTFILES_ROOT/bin"
 )
 
 # Pre-installation commands
