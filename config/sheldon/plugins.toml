@@ -79,6 +79,7 @@ apply = ["defer"]
 
 [plugins.powerlevel10k]
 github = "romkatv/powerlevel10k"
+use = ["powerlevel10k.zsh-theme"]
 hooks.post = """
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 """

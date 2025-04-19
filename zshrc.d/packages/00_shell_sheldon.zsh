@@ -30,7 +30,7 @@ post_install() {
   if ! is_package_installed "$PACKAGE_NAME"; then
     log_error "$PACKAGE_NAME is not executable"
   else
-    sheldon lock --update
+    eval "$(sheldon source)"
   fi
 }
 
