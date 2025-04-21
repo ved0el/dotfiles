@@ -7,10 +7,3 @@ function ensure_zcompiled() {
         zcompile "$file" &>/dev/null
     fi
 }
-
-function source() {
-    ensure_zcompiled "$1"
-    builtin source "$1"
-}
-
-ensure_zcompiled ~/.zshrc

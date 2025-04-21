@@ -19,10 +19,7 @@ install_methods=(
 
 # Pre-installation commands
 pre_install() {
-  # Create config directory if it doesn't exist
-  if [[ ! -d $XDG_CONFIG_HOME/sheldon ]]; then
-    mkdir -p $XDG_CONFIG_HOME/sheldon
-  fi
+  return
 }
 
 # Post-installation commands
@@ -36,10 +33,9 @@ post_install() {
 
 # Initialize
 init(){
-  return
+  eval "$(sheldon source)"
 }
 
-# Main installation flow
 # Main installation flow
 if is_dependency_installed "$PACKAGE_DEPS"; then
   if ! is_package_installed "$PACKAGE_NAME"; then

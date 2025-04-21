@@ -62,12 +62,6 @@ github = "azu/ni.zsh"
 use = ["ni.zsh"]
 apply = ["defer"]
 
-[plugins.zoxide]
-github = "ajeetdsouza/zoxide"
-apply = ["defer"]
-hooks.pre = "eval \"$(zoxide init --cmd cd zsh)\""
-hooks.post = "export _ZO_FZF_OPTS=\"--preview 'eza -al --tree --level 1 --group-directories-first --header --no-user --no-time --no-filesize --no-permissions {2..}' --preview-window right,50% --height 35% --reverse --ansi --with-nth 2..\""
-
 [plugins.zsh-nvm]
 github = "lukechilds/zsh-nvm"
 use = ["zsh-nvm.plugin.zsh"]
@@ -79,7 +73,3 @@ apply = ["defer"]
 
 [plugins.powerlevel10k]
 github = "romkatv/powerlevel10k"
-use = ["powerlevel10k.zsh-theme"]
-hooks.post = """
-[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
-"""

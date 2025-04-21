@@ -11,8 +11,7 @@ if [[ -d "$HOME/.local/bin" ]]; then
   export PATH="$PATH:$HOME/.local/bin"
 fi
 
-# =============================================================================
-# NVM Lazy Loading
-# =============================================================================
 
 export NVM_LAZY_LOAD="true"
+
+export POWERLEVEL9K_INSTANT_PROMPT_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache/p10k}"

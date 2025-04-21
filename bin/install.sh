@@ -34,7 +34,7 @@ show_header() {
   clear_screen
   cat << EOF
 ╭───────────────────────────────────────╮
-│      Dotfiles Installer by ved0el     │
+│      Dotfiles installer by ved0el     │
 ╰───────────────────────────────────────╯
 
 Press 'h' for help, 'q' to quit
@@ -46,7 +46,7 @@ show_usage() {
   clear_screen
   cat << EOF
 ╭───────────────────────────────────────╮
-│      Dotfiles Installer by ved0el     │
+│      Dotfiles installer by ved0el     │
 ╰───────────────────────────────────────╯
 
 Usage:
@@ -59,9 +59,9 @@ Environment Variables:
   DOTFILES_PROFILE - Installation profile (e.g., "minimal", "server", "full")
 
 Profiles:
-  minimal  - Basic installation (default)
-  server   - Shell + utilities (no development tools)
-  full     - Full development machine setup
+  full     - Full version for development machine
+  minimal  - Minimal version for development machine
+  server   - Basic version for remote server
 
 Press any key to continue...
 EOF
@@ -87,7 +87,7 @@ update_zshenv() {
     sed -i "/^export ${key}=/d" "$zshenv" 2>/dev/null || :
   fi
 
-  echo "export ${key}=${value}" >> "$zshenv"
+  echo "export ${key}=\"${value}\"" >> "$zshenv"
 }
 
 set_dotfiles_root() {
@@ -155,9 +155,9 @@ set_dotfiles_root() {
 
 set_profile() {
   if [[ -n "${DOTFILES_PROFILE:-}" ]]; then
-    case "${DOTFILES_PROFILE,,}" in
+    case "${DOTFILES_PROFILE}" in
       full|server|minimal)
-        export_profile "${DOTFILES_PROFILE,,}"
+        export_profile "${DOTFILES_PROFILE}"
         return $E_SUCCESS
         ;;
       *)
@@ -172,9 +172,14 @@ set_profile() {
     show_header
     log_info "Select installation profile:"
     echo
-    echo "1) Full (shell + dev + utils)"
-    echo "2) Server (shell + utils)"
-    echo "3) Minimal (shell only)"
+    echo "Profiles:"
+    echo "  • shell: sheldon, tmux"
+    echo "  • utils: bat, eza, fd, fzf, ripgrep, tealdeer, zoxide"
+    echo "  • dev  : nvm, goenv, pyenv, curlie"
+    echo
+    echo "1) Full (shell + utils + dev)"
+    echo "2) Server (shell (without tmux) + utils)"
+    echo "3) Minimal (shell (without tmux))"
     echo
     echo -n "Choice [123hq]: "
 
@@ -198,7 +203,7 @@ export_profile() {
 }
 
 check_dependencies() {
-  local deps=(git curl sudo)
+  local deps=(git curl sudo zsh)
   local missing=()
 
   for dep in "${deps[@]}"; do
@@ -246,6 +251,8 @@ link_files() {
 
   local count=0
   shopt -s nullglob
+
+  # Create symlinks for dotfiles
   while IFS= read -r file; do
     [[ ! -f "$file" ]] && continue
     [[ "$(basename "$file")" =~ ^\.|\bREADME ]] && continue
@@ -256,6 +263,25 @@ link_files() {
       log_success "Linked: $target"
     }
   done < <(find "$DOTFILES_ROOT" -maxdepth 1 -type f)
+
+  # Create symlinks for config files
+  if [[ -d "$DOTFILES_ROOT/config" ]]; then
+    while IFS= read -r file; do
+      [[ ! -f "$file" ]] && continue
+      [[ "$(basename "$file")" =~ ^\.gitignore$ ]] && continue
+
+      local relative_path="${file#$DOTFILES_ROOT/config/}"
+      local target="$HOME/.config/$relative_path"
+      local target_dir="$(dirname "$target")"
+
+      [[ ! -d "$target_dir" ]] && mkdir -p "$target_dir"
+
+      ln -sf "$file" "$target" && {
+        ((count++))
+        log_success "Linked: $target"
+      }
+    done < <(find "$DOTFILES_ROOT/config" -type f)
+  fi
   shopt -u nullglob
 
   log_success "Linked $count files"
@@ -277,20 +303,50 @@ do_uninstall() {
 
   local count=0
   shopt -s nullglob
+
+  # Remove dotfiles symlinks
   while IFS= read -r file; do
     [[ ! -f "$file" ]] && continue
     local target="$HOME/.$(basename "$file")"
     if [[ -L "$target" ]]; then
       rm -f "$target"
+      [[ -f "${target}.zwc" ]] && rm -f "${target}.zwc"
       ((count++))
       log_success "Removed: $target"
     fi
   done < <(find "$DOTFILES_ROOT" -maxdepth 1 -type f)
+
+  # Remove config symlinks
+  if [[ -d "$DOTFILES_ROOT/config" ]]; then
+    while IFS= read -r file; do
+      [[ ! -f "$file" ]] && continue
+      local relative_path="${file#$DOTFILES_ROOT/config/}"
+      local target="$HOME/.config/$relative_path"
+      if [[ -L "$target" ]]; then
+        rm -f "$target"
+        [[ -f "${target}.zwc" ]] && rm -f "${target}.zwc"
+        ((count++))
+        log_success "Removed: $target"
+      fi
+    done < <(find "$DOTFILES_ROOT/config" -type f)
+  fi
   shopt -u nullglob
 
   if [[ -d "$DOTFILES_ROOT" ]]; then
     rm -rf "$DOTFILES_ROOT"
     log_success "Removed directory: $DOTFILES_ROOT"
+  fi
+
+  # Remove sheldon cache
+  if [[ -d "$HOME/.cache/sheldon" ]]; then
+    rm -rf "$HOME/.cache/sheldon"
+    log_success "Removed sheldon cache"
+  fi
+
+  # Remove p10k cache
+  if [[ -d "$HOME/.cache" ]]; then
+    rm -rf "$HOME/.cache"/p10k-*
+    log_success "Removed p10k cache"
   fi
 
   if [[ -f "$HOME/.zshenv" ]]; then

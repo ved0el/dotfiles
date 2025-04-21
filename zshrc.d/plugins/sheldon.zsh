@@ -10,7 +10,7 @@ export SHELDON_CONFIG_FILE="${SHELDON_CONFIG_DIR}/plugins.toml"
 mkdir -p "${SHELDON_CACHE_DIR}" &>/dev/null
 
 # Cache files
-sheldon_cache="${SHELDON_CACHE_DIR}/sheldon.zsh"
+sheldon_cache="${SHELDON_CACHE_DIR}/cache.zsh"
 
 
 # Generate and load cache
@@ -18,5 +18,5 @@ if [[ ! -r "$sheldon_cache" || "$SHELDON_CONFIG_FILE" -nt "$sheldon_cache" ]]; t
     sheldon source > "$sheldon_cache" 2>/dev/null
 fi
 
-source "$sheldon_cache"
+ensure_zcompiled "$sheldon_cache"
 unset sheldon_cache

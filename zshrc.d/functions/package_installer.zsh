@@ -5,11 +5,6 @@
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# Constants
-# -----------------------------------------------------------------------------
-readonly DEFAULT_PROFILE="minimal"
-
-# -----------------------------------------------------------------------------
 # Logging Functions
 # -----------------------------------------------------------------------------
 log_info()    { echo -e "\033[1;34m[INFO]\033[0m $1" }
@@ -57,7 +52,7 @@ get_profile() {
   fi
 
   # Return profile or default
-  echo "${profile:-$DEFAULT_PROFILE}"
+  echo "${profile:-'minimal'}"
 }
 
 should_install_package() {
@@ -66,21 +61,18 @@ should_install_package() {
 
   case "$profile" in
     full)
-      # Install everything in full profile
       return 0
       ;;
     server)
-      # Install shell and utils, but not dev tools
-      [[ "$package_type" =~ ^(00_shell|02_utils) ]] && return 0
+      # Server profile only installs _shell_ and _utils_ packages (excluding tmux)
+      [[ "$package_type" =~ "(_shell|_utils)" ]] && ! [[ "$package_type" =~ "tmux" ]] && return 0
       ;;
     minimal)
-      # Install shell (except tmux) and utils
-      if [[ "$package_type" =~ ^(00_shell|02_utils) ]]; then
-        [[ "$package_type" == *"tmux"* ]] && return 1
-        return 0
-      fi
+      # Minimal profile only installs _shell_ package (excluding tmux)
+      [[ "$package_type" =~ "_shell" ]] && ! [[ "$package_type" =~ "tmux" ]] && return 0
       ;;
   esac
+
   return 1
 }
 
@@ -161,11 +153,6 @@ run_installation_scripts() {
   scripts=("${(@n)scripts}")
 
   for script in "${scripts[@]}"; do
-    # Skip non-executable scripts
-    if [[ ! -x "$script" ]]; then
-      log_warning "Script not executable: $script"
-      continue
-    fi
 
     local basename=$(basename "$script")
     local package_type="${basename%_*}"  # Get prefix (00_shell, 01_dev, 02_utils)
