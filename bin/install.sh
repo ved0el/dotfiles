@@ -255,7 +255,7 @@ link_files() {
   # Create symlinks for dotfiles
   while IFS= read -r file; do
     [[ ! -f "$file" ]] && continue
-    [[ "$(basename "$file")" =~ ^\.|\bREADME ]] && continue
+    [[ "$(basename "$file")" =~ ^\.|^[Rr][Ee][Aa][Dd][Mm][Ee](\.[Mm][Dd])?$ ]] && continue
 
     local target="$HOME/.$(basename "$file")"
     ln -sf "$file" "$target" && {
