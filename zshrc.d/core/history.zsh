@@ -20,3 +20,26 @@ setopt HIST_VERIFY           # Show command with history expansion to user befor
 setopt HIST_EXPIRE_DUPS_FIRST # Expire duplicate entries first when trimming history
 setopt HIST_FIND_NO_DUPS     # Don't display duplicates when searching
 setopt HIST_IGNORE_ALL_DUPS  # Delete old recorded entry if new entry is a duplicate 
+
+# Function to search command history using fzf
+function fzf-history-search() {
+  local selected=$(fc -l 1 | fzf --height 20 --reverse --margin=0,1 \
+    --bind ctrl-f:page-down,ctrl-b:page-up \
+    --marker='✚' --pointer='▶' --prompt='❯ ' --no-separator --scrollbar='█' \
+    --color='bg+:#262626,fg+:#dadada,hl:#f95189,hl+:#f95189' \
+    --color='border:#303030,info:#cfcfb0,header:#80a0ff,spinner:#36c692' \
+    --color='prompt:#87afff,pointer:#ff5189,marker:#f09479')
+  if [ -n "$selected" ]; then
+    local num=$(echo "$selected" | awk '{print $1}')
+    if [ -n "$num" ]; then
+      zle vi-fetch-history -n $num
+    fi
+  fi
+  zle reset-prompt
+}
+
+# Create a new widget
+zle -N fzf-history-search
+
+# Bind the widget to Ctrl+R
+bindkey '^R' fzf-history-search
