@@ -33,12 +33,15 @@ post_install() {
   else
     eval "$(zoxide init zsh)"
     alias cd="z"
+    alias cdi="zi"
   fi
 }
 
 # Initialization function
 init() {
-  return
+  eval "$(zoxide init zsh)"
+  alias cd="z"
+  alias cdi="zi"
 }
 
 # Main installation flow
