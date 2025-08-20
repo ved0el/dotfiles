@@ -1,42 +1,38 @@
 # =============================================================================
-# Environment Setup
+# Dotfiles Configuration
 # =============================================================================
-
-export LANG="en_US.UTF-8"
-export LC_ALL="C.UTF-8"
-export ZSHRC_CONFIG_DIR="$DOTFILES_ROOT/zshrc.d"
-
-# export NVM_DIR="$HOME/.nvm"
-# [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-# [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+# This file is automatically managed by the dotfiles installer
+# Core configuration is loaded from zshrc.d/core modules
 
 # =============================================================================
-# Core
+# Core System (modular, fast)
 # =============================================================================
-for file in "$ZSHRC_CONFIG_DIR"/core/*.zsh(N); do
-    if [[ -r "$file" ]]; then
-      source "$file"
-    fi
-done
+# Load all core modules in lexicographic order (supports numeric prefixes)
+if [[ -d "$DOTFILES_ROOT/zshrc.d/core" ]]; then
+  for core_file in "$DOTFILES_ROOT"/zshrc.d/core/*.zsh(N); do
+    source "$core_file"
+  done
+fi
 
 # =============================================================================
 # Plugins
 # =============================================================================
-
-# Load Sheldon plugin manager
-source "$ZSHRC_CONFIG_DIR/plugins/sheldon.zsh"
-
-# Source tmux config if not in SSH session or VSCode
-if [[ "$TERM_PROGRAM" != "vscode" ]] && [[ -z "$SSH_CONNECTION" ]] && command -v tmux >/dev/null 2>&1; then
-  source "$ZSHRC_CONFIG_DIR/plugins/tmux.zsh"
+# Load plugins via loop. Special-case tmux to avoid VSCode/SSH.
+if [[ -d "$DOTFILES_ROOT/zshrc.d/plugins" ]]; then
+  for plugin_file in "$DOTFILES_ROOT"/zshrc.d/plugins/*.zsh(N); do
+    case "${plugin_file:t}" in
+      tmux.zsh)
+        if [[ "$TERM_PROGRAM" != "vscode" ]] && [[ -z "$SSH_CONNECTION" ]] && command -v tmux >/dev/null 2>&1; then
+          source "$plugin_file"
+        fi
+        ;;
+      *)
+        source "$plugin_file"
+        ;;
+    esac
+  done
 fi
 
-# =============================================================================
-# Packages
-# =============================================================================
-
-source "$ZSHRC_CONFIG_DIR/functions/package_installer.zsh"
 
 
-# Load Powerlevel10k theme
-[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+

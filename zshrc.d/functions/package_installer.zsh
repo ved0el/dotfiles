@@ -1,75 +1,109 @@
 #!/usr/bin/env zsh
 
 # =============================================================================
-# Package Installation System
+# Package Installation System - Clean and Simple
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# Logging Functions
+# Logging Functions (only used when DOTFILES_VERBOSE is set)
 # -----------------------------------------------------------------------------
-log_info()    { echo -e "\033[1;34m[INFO]\033[0m $1" }
-log_warning() { echo -e "\033[1;33m[WARNING]\033[0m $1" }
-log_error()   { echo -e "\033[1;31m[ERROR]\033[0m $1" }
-log_success() { echo -e "\033[1;32m[SUCCESS]\033[0m $1" }
+log_info()    { [[ "${DOTFILES_VERBOSE:-false}" == "true" ]] && echo -e "\033[1;34m[INFO]\033[0m $1" }
+log_warning() { [[ "${DOTFILES_VERBOSE:-false}" == "true" ]] && echo -e "\033[1;33m[WARNING]\033[0m $1" }
+log_error()   { [[ "${DOTFILES_VERBOSE:-false}" == "true" ]] && echo -e "\033[1;31m[ERROR]\033[0m $1" }
+log_success() { [[ "${DOTFILES_VERBOSE:-false}" == "true" ]] && echo -e "\033[1;32m[SUCCESS]\033[0m $1" }
 
 # -----------------------------------------------------------------------------
-# Package Manager Detection
+# Platform Detection (cached)
 # -----------------------------------------------------------------------------
-get_package_manager() {
+typeset -g __ZPM_PLATFORM=""
+typeset -g __ZPM_PM=""
+
+get_platform() {
+  if [[ -n "${__ZPM_PLATFORM}" ]]; then
+    echo "${__ZPM_PLATFORM}"
+    return 0
+  fi
   case "$(uname -s)" in
-    Darwin)
-      command -v brew &>/dev/null && { echo "brew"; return 0 }
-      ;;
-    Linux)
+    Darwin)  __ZPM_PLATFORM="macos" ;;
+    Linux)   __ZPM_PLATFORM="linux" ;;
+    FreeBSD) __ZPM_PLATFORM="freebsd" ;;
+    *)       __ZPM_PLATFORM="unknown" ;;
+  esac
+  echo "${__ZPM_PLATFORM}"
+}
+
+get_package_manager() {
+  if [[ -n "${__ZPM_PM}" ]]; then
+    echo "${__ZPM_PM}"
+    return 0
+  fi
+  local platform=$(get_platform)
+  case "$platform" in
+    macos)
+      command -v brew &>/dev/null && __ZPM_PM="brew" ;;
+    linux)
       if [[ -f /etc/os-release ]]; then
         source /etc/os-release
         case "$ID" in
-          ubuntu|debian) command -v apt &>/dev/null && { echo "apt"; return 0 } ;;
-          fedora|centos|rhel)
-            command -v dnf &>/dev/null && { echo "dnf"; return 0 }
-            command -v yum &>/dev/null && { echo "yum"; return 0 }
+          ubuntu|debian) command -v apt &>/dev/null && __ZPM_PM="apt" ;;
+          fedora|centos|rhel|rocky|alma)
+            command -v dnf &>/dev/null && __ZPM_PM="dnf"
+            [[ -z "$__ZPM_PM" ]] && command -v yum &>/dev/null && __ZPM_PM="yum"
             ;;
-          arch|manjaro) command -v pacman &>/dev/null && { echo "pacman"; return 0 } ;;
+          arch|manjaro|endeavouros) command -v pacman &>/dev/null && __ZPM_PM="pacman" ;;
+          opensuse|suse) command -v zypper &>/dev/null && __ZPM_PM="zypper" ;;
         esac
       fi
       ;;
+    freebsd)
+      command -v pkg &>/dev/null && __ZPM_PM="pkg" ;;
   esac
-  echo "custom"
-  return 1
+  [[ -z "$__ZPM_PM" ]] && __ZPM_PM="custom"
+  echo "${__ZPM_PM}"
 }
 
 # -----------------------------------------------------------------------------
-# Profile Management
+# Profile Management (cached)
 # -----------------------------------------------------------------------------
+typeset -g __ZPM_PROFILE=""
 get_profile() {
-  # Try current environment first
+  if [[ -n "${__ZPM_PROFILE}" ]]; then
+    echo "${__ZPM_PROFILE}"
+    return 0
+  fi
+  
+  # First try to get profile from environment
   local profile="${DOTFILES_PROFILE:-}"
-
-  # Try loading from zshenv if not set
+  
+  # If not set, try to load from .zshenv
   if [[ -z "$profile" && -f "$HOME/.zshenv" ]]; then
     source "$HOME/.zshenv"
     profile="${DOTFILES_PROFILE:-}"
   fi
-
-  # Return profile or default
-  echo "${profile:-'minimal'}"
+  
+  # Set default if still not available
+  __ZPM_PROFILE="${profile:-minimal}"
+  
+  if [[ "${DOTFILES_VERBOSE:-false}" == "true" ]]; then
+    log_info "Using profile: $__ZPM_PROFILE"
+  fi
+  
+  echo "${__ZPM_PROFILE}"
 }
 
 should_install_package() {
-  local package_type="$1"
   local profile=$(get_profile)
+  local package_type="$1"
 
   case "$profile" in
-    full)
-      return 0
+    minimal)
+      [[ "$package_type" == "m" ]] && return 0
       ;;
     server)
-      # Server profile only installs _shell_ and _utils_ packages (excluding tmux)
-      [[ "$package_type" =~ "(_shell|_utils)" ]] && ! [[ "$package_type" =~ "tmux" ]] && return 0
+      [[ "$package_type" == "m" || "$package_type" == "s" ]] && return 0
       ;;
-    minimal)
-      # Minimal profile only installs _shell_ package (excluding tmux)
-      [[ "$package_type" =~ "_shell" ]] && ! [[ "$package_type" =~ "tmux" ]] && return 0
+    develop)
+      [[ "$package_type" == "m" || "$package_type" == "s" || "$package_type" == "d" ]] && return 0
       ;;
   esac
 
@@ -77,89 +111,125 @@ should_install_package() {
 }
 
 # -----------------------------------------------------------------------------
-# Package Management
+# Utility Functions (minimal)
 # -----------------------------------------------------------------------------
-is_package_installed() {
-  command -v "$1" &>/dev/null
-}
+is_package_installed() { command -v "$1" &>/dev/null }
 
-is_dependency_installed() {
-  local deps=($1)  # Split into array automatically in zsh
+# Simple compatibility shim – always use the fast path
+call_install_package() { install_package_simple "$1" "$2" }
 
-  # Skip if no deps
-  [[ -z "$deps" ]] && return 0
-
-  # Check each dependency
-  for dep in $deps; do
-    if ! is_package_installed "$dep"; then
-      log_warning "Missing required dependencies: $dep"
-      return 1
-    fi
-  done
-
-  return 0
-}
-
-install_package() {
+# -----------------------------------------------------------------------------
+# Simple Package Installation
+# -----------------------------------------------------------------------------
+install_package_simple() {
   local name="$1"
   local desc="$2"
-  local -A install_methods
 
-  log_info "Installing $name - $desc"
-
-  # Get package manager
-  local pm=$(get_package_manager)
-
-  # Process installation methods
-  shift 2
-  local key value
-  while (( $# > 0 )); do
-    key="$1"
-    value="$2"
-    install_methods[$key]="$value"
-    shift 2
-  done
-
-  # Get installation command
-  local cmd="${install_methods[$pm]:-${install_methods[custom]}}"
-  if [[ -z "$cmd" ]]; then
-    log_error "No installation method available for $pm"
-    return 1
+  if is_package_installed "$name"; then
+    log_info "$name already installed"
+    return 0
   fi
 
-  # Execute installation
-  eval "$cmd" || {
+  log_info "Installing $name..."
+
+  local pm=$(get_package_manager)
+  local success=false
+
+  case "$pm" in
+    brew)
+      if brew install "$name"; then
+        success=true
+      fi
+      ;;
+    apt)
+      if sudo apt update && sudo apt install -y "$name"; then
+        success=true
+      fi
+      ;;
+    dnf)
+      if sudo dnf install -y "$name"; then
+        success=true
+      fi
+      ;;
+    yum)
+      if sudo yum install -y "$name"; then
+        success=true
+      fi
+      ;;
+    pacman)
+      if sudo pacman -S --noconfirm "$name"; then
+        success=true
+      fi
+      ;;
+    zypper)
+      if sudo zypper install -y "$name"; then
+        success=true
+      fi
+      ;;
+    pkg)
+      if sudo pkg install "$name"; then
+        success=true
+      fi
+      ;;
+  esac
+
+  if [[ "$success" == "true" ]]; then
+    log_success "$name installed successfully"
+    return 0
+  else
     log_error "Failed to install $name"
     return 1
-  }
-  log_success "Installed $name successfully"
+  fi
 }
 
 # -----------------------------------------------------------------------------
-# Installation Scripts Management
+# Enhanced Package Script Processing
 # -----------------------------------------------------------------------------
-run_installation_scripts() {
-  local script_dir="$ZSHRC_CONFIG_DIR/packages"
-  local scripts=($script_dir/*.zsh)
+run_package_scripts() {
+  local script_dir="$DOTFILES_ROOT/zshrc.d/packages"
   local profile=$(get_profile)
 
-  if [[ ${#scripts} -eq 0 ]]; then
-    log_warning "No installation scripts found in $script_dir"
+  if [[ ! -d "$script_dir" ]]; then
+    log_warning "Package scripts directory not found: $script_dir"
     return 1
   fi
 
+  local scripts=($script_dir/*.zsh)
+  if [[ ${#scripts} -eq 0 ]]; then
+    log_warning "No package scripts found in $script_dir"
+    return 1
+  fi
 
   # Sort scripts to ensure correct installation order
   scripts=("${(@n)scripts}")
 
   for script in "${scripts[@]}"; do
-
     local basename=$(basename "$script")
-    local package_type="${basename%_*}"  # Get prefix (00_shell, 01_dev, 02_utils)
 
-    # Check if package should be installed for current profile
-    if should_install_package "$basename"; then
-      source "$script" && ((count++))
+    # Skip template file
+    if [[ "$basename" == *_template.zsh ]]; then
+      continue
+    fi
+
+    # Extract package type from filename (xx_m_package.zsh -> m)
+    if [[ "$basename" =~ ^[0-9]+_([msd])_.*\.zsh$ ]]; then
+      local package_type=$match[1]
+
+      if should_install_package "$package_type"; then
+        # Only show processing info if DOTFILES_VERBOSE is set
+        [[ "${DOTFILES_VERBOSE:-false}" == "true" ]] && log_info "Processing $basename..."
+        
+        # Source the script to get access to its functions
+        source "$script"
+        
+        # Always run init function if it exists (for environment setup, aliases, etc.)
+        if typeset -f init >/dev/null; then
+          if [[ "${DOTFILES_VERBOSE:-false}" == "true" ]]; then
+            log_info "Running init for $basename"
+          fi
+          init
+        fi
+      fi
     fi
   done
 
@@ -167,6 +237,130 @@ run_installation_scripts() {
 }
 
 # -----------------------------------------------------------------------------
-# Main Execution
+# Ultra-fast package initialization (skips all heavy operations)
 # -----------------------------------------------------------------------------
-run_installation_scripts
+run_package_scripts_fast() {
+  local script_dir="$DOTFILES_ROOT/zshrc.d/packages"
+  local profile=$(get_profile)
+
+  if [[ ! -d "$script_dir" ]]; then
+    return 1
+  fi
+
+  local scripts=($script_dir/*.zsh)
+  if [[ ${#scripts} -eq 0 ]]; then
+    return 1
+  fi
+
+  # Sort scripts to ensure correct installation order
+  scripts=("${(@n)scripts}")
+
+  for script in "${scripts[@]}"; do
+    local basename=$(basename "$script")
+
+    # Skip template file
+    if [[ "$basename" == *_template.zsh ]]; then
+      continue
+    fi
+
+    # Extract package type from filename (xx_m_package.zsh -> m)
+    if [[ "$basename" =~ ^[0-9]+_([msd])_.*\.zsh$ ]]; then
+      local package_type=$match[1]
+
+      if should_install_package "$package_type"; then
+        # Source silently and skip heavy operations
+        # Redirect all output to /dev/null for maximum silence
+        source "$script" &>/dev/null 2>&1
+        
+        # Always run init function for environment setup (even in fast mode)
+        if typeset -f init >/dev/null; then
+          init &>/dev/null 2>&1
+        fi
+      fi
+    fi
+  done
+
+  return 0
+}
+
+# -----------------------------------------------------------------------------
+# Quiet Package Initialization (for shell startup)
+# -----------------------------------------------------------------------------
+run_package_scripts_quiet() {
+  local script_dir="$DOTFILES_ROOT/zshrc.d/packages"
+  local profile=$(get_profile)
+  local cache_file="${XDG_CACHE_HOME:-$HOME/.cache}/dotfiles/package_cache"
+
+  if [[ ! -d "$script_dir" ]]; then
+    return 1
+  fi
+
+  local scripts=($script_dir/*.zsh)
+  if [[ ${#scripts} -eq 0 ]]; then
+    return 1
+  fi
+
+  # Sort scripts to ensure correct installation order
+  scripts=("${(@n)scripts}")
+
+  # Check if we need to update packages (only once per day)
+  local should_update=false
+  if [[ ! -f "$cache_file" ]] || [[ $(( $(date +%s) - $(stat -f %m "$cache_file" 2>/dev/null || echo 0) )) -gt 86400 ]]; then
+    should_update=true
+  fi
+
+  for script in "${scripts[@]}"; do
+    local basename=$(basename "$script")
+
+    # Skip template file
+    if [[ "$basename" == *_template.zsh ]]; then
+      continue
+    fi
+
+    # Extract package type from filename (xx_m_package.zsh -> m)
+    if [[ "$basename" =~ ^[0-9]+_([msd])_.*\.zsh$ ]]; then
+      local package_type=$match[1]
+
+      if should_install_package "$package_type"; then
+        # Source silently
+        source "$script" 2>/dev/null
+        
+        # Always run init function for environment setup
+        if typeset -f init >/dev/null; then
+          init 2>/dev/null
+        fi
+        
+        # Only run heavy operations (like sheldon updates) once per day
+        if [[ "$should_update" == "true" ]]; then
+          # Run package updates silently
+          if [[ "$basename" == *sheldon* ]]; then
+            sheldon lock --update &>/dev/null 2>&1
+          fi
+        fi
+      fi
+    fi
+  done
+
+  # Create/update cache file
+  if [[ "$should_update" == "true" ]]; then
+    mkdir -p "$(dirname "$cache_file")" 2>/dev/null
+    touch "$cache_file" 2>/dev/null
+  fi
+
+  return 0
+}
+
+# -----------------------------------------------------------------------------
+# Silent background job runner (no notifications)
+# -----------------------------------------------------------------------------
+run_silent_background() {
+  # Use a different approach: run in subshell and redirect all output
+  # This completely avoids job notifications
+  (
+    # Run the command and redirect all output
+    eval "$@" &>/dev/null
+  ) &
+  
+  # Immediately disown the job to prevent any output
+  disown $! 2>/dev/null
+}

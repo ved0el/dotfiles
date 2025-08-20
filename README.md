@@ -1,172 +1,104 @@
-# dotfiles - Simplify Your Environment
+# 🚀 Dotfiles – Fast, profile-based setup
 
-Effortlessly manage and configure your development or server environment with `dotfiles`. This repository helps you set up, customize, and manage your shell environment and essential tools.
+Clean, cross‑platform dotfiles with profile‑based installs and a simple, extensible package system.
 
----
-
-## 🚀 Features
-
-- **Easy Installation**: Minimal or full installation options are available.
-- **Profiles for Different Use Cases**:
-  - **Minimal**: Basic setup with shell configuration.
-  - **Server**: Shell + utilities for server environments.
-  - **Full**: Complete setup for a development machine.
-- **Fully Configurable**: Environment variables like `DOTFILES_PROFILE` and `DOTFILES_ROOT` allow full customization.
-- **Safe and Clean**: Includes an easy uninstallation option to revert changes at any time.
-
----
-
-## 📥 Installation
-
-### Quick Install (Minimal Setup)
-
-Run the following command to install `dotfiles` in **minimal mode**, providing a basic shell configuration:
+## Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ved0el/dotfiles/main/bin/install.sh | bash
+# Interactive (recommended)
+bash <(curl -fsSL https://tinyurl.com/get-dotfiles)
+
+# Non‑interactive examples
+curl -fsSL https://tinyurl.com/get-dotfiles | DOTFILES_PROFILE=server bash
+curl -fsSL https://tinyurl.com/get-dotfiles | DOTFILES_ROOT=~/.dotfiles bash
 ```
 
-Alternatively, you can customize the installation by using environment variables:
+## Profiles
+
+| Profile | What you get |
+|--------|---------------|
+| minimal | sheldon, tmux |
+| server | minimal + bat, fzf, eza, fd, ripgrep, tealdeer, zoxide |
+| develop | server + nvm, pyenv, goenv, curlie |
+
+Set profile anytime:
 
 ```bash
-DOTFILES_PROFILE=minimal DOTFILES_ROOT=$HOME/mydotfiles \
-  curl -fsSL https://raw.githubusercontent.com/ved0el/dotfiles/main/bin/install.sh | bash
+export DOTFILES_PROFILE=server && source ~/.zshrc
 ```
 
----
-
-### Interactive Install (Full Options)
-
-For a more customizable and interactive installation, download and execute the installer manually:
+## Project structure (core)
 
 ```bash
-# Download installer
-curl -o install.sh https://raw.githubusercontent.com/ved0el/dotfiles/main/bin/install.sh
-
-# Make it executable
-chmod +x install.sh
-
-# Run the installer
-./install.sh
+zshrc.d/
+  functions/
+    package_installer.zsh        # Entry – runs package scripts
+    lib/
+      logging.zsh               # log_info/log_error/…
+      platform.zsh              # get_platform/get_package_manager
+      profile.zsh               # get_profile/should_install_package
+      utils.zsh                 # is_package_installed/check_dependencies
+  packages/                      # One file per package (see template)
+    00_template.zsh
 ```
 
-The interactive mode will allow you to:
+## Package system (general, no hardcoding)
 
-- Choose the installation **profile** (`minimal`, `server`, `full`).
-- Set or confirm the target directory for the dotfiles.
+Each package file declares metadata and platform install methods, then calls the installer.
 
----
+Filename convention: `NNN_{m|s|d}_name.zsh` where m=minimal, s=server, d=develop.
 
-## ⚙️ Profiles
+Minimal example (see `zshrc.d/packages/00_template.zsh`):
 
-The installer supports the following setup profiles, catering to different use cases:
+```zsh
+PACKAGE_NAME="tool"
+PACKAGE_DESC="Useful tool"
+PACKAGE_DEPS=""  # space‑separated CLI deps if any
 
-| **Profile** | **Description**                                                                |
-| ----------- | ------------------------------------------------------------------------------ |
-| `minimal`   | Sets up a basic shell configuration (default).                                 |
-| `server`    | Installs shell configuration and essential utilities for server environments.  |
-| `full`      | Installs everything for a complete development machine setup, including tools. |
+typeset -A install_methods
+install_methods=(
+  [brew]="brew install tool"
+  [apt]="sudo apt update && sudo apt install -y tool"
+  [custom]="echo 'manual install here'"
+)
 
-To specify a profile, set the `DOTFILES_PROFILE` environment variable before running the installer, e.g.,:
+pre_install()  { return 0 }
+post_install() { is_package_installed "$PACKAGE_NAME" }
+init()         { return 0 }
+
+# Hand off to the general installer
+call_install_package $PACKAGE_NAME $PACKAGE_DESC $PACKAGE_DEPS "${(@kv)install_methods}"
+```
+
+## Commands
 
 ```bash
-DOTFILES_PROFILE=full curl -fsSL https://raw.githubusercontent.com/ved0el/dotfiles/main/bin/install.sh | bash
+dotfiles            # interactive
+dotfiles install    # install/update
+dotfiles uninstall  # remove links and config
+dotfiles profile develop
 ```
 
----
+## Environment
 
-## 🛠 Customization
+| Var | Default | Purpose |
+|-----|---------|---------|
+| DOTFILES_ROOT | ~/.dotfiles | install location |
+| DOTFILES_PROFILE | minimal | minimal/server/develop |
+| DOTFILES_BRANCH | main | git branch |
 
-You can customize your installation with the following options:
-
-| **Environment Variable** | **Default**       | **Description**                                      |
-| ------------------------ | ----------------- | ---------------------------------------------------- |
-| `DOTFILES_ROOT`          | `$HOME/.dotfiles` | The directory where dotfiles are cloned and managed. |
-| `DOTFILES_PROFILE`       | `minimal`         | The installation profile to use.                     |
-
-For example:
+## Uninstall
 
 ```bash
-DOTFILES_PROFILE=server DOTFILES_ROOT=$HOME/custom-dotfiles \
-  curl -fsSL https://raw.githubusercontent.com/ved0el/dotfiles/main/bin/install.sh | bash
+dotfiles uninstall
 ```
 
----
+## Troubleshooting
 
-## 🔄 Updating Dotfiles
-
-To update to the latest configuration, simply re-run the installer:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/ved0el/dotfiles/main/bin/install.sh | bash
-```
-
-Or, if cloned manually:
-
-```bash
-cd $DOTFILES_ROOT
-git pull
-./install.sh
-```
+- On Ubuntu/Debian, ensure `curl` exists for custom installers
+- Force re‑install: `DOTFILES_FORCE_INSTALL=1 zsh`
+- Clear install marker: `rm ~/.cache/.dotfiles_installed`
 
 ---
 
-## 🧹 Uninstalling
-
-If you want to remove the dotfiles and revert your environment:
-
-1. Run the uninstaller via the interactive menu:
-
-   ```bash
-   ./install.sh
-   ```
-
-2. Select the `Uninstall` option to:
-   - Remove all symlinks created by the script.
-   - Delete the dotfiles repository.
-   - Clean up relevant entries in `.zshenv`.
-
-Alternatively, for non-interactive uninstallation:
-
-```bash
-DOTFILES_ROOT=$HOME/.dotfiles bash -c 'source $DOTFILES_ROOT/bin/install.sh && do_uninstall'
-```
-
----
-
-## 📝 Notes
-
-- Ensure `git`, `curl`, and `sudo` are installed on your system before running the installer.
-- After installation, your shell configuration will automatically load the new `.zshenv` file.
-- For more details, read the [source code](https://github.com/ved0el/dotfiles).
-
----
-
-## 💡 Troubleshooting
-
-If you encounter issues:
-
-1. Verify all required dependencies are installed (`git`, `curl`, `bash`).
-2. Check if the environment variables `DOTFILES_PROFILE` and `DOTFILES_ROOT` are set correctly.
-3. Review the installation log output for error messages.
-4. Open an issue on GitHub: https://github.com/ved0el/dotfiles/issues
-
----
-
-## 📄 License
-
-This project is distributed under the MIT License. See the LICENSE file for more information.
-
----
-
-## 🙌 Contributing
-
-Contributions to `dotfiles` are welcome! If you:
-
-- Have improvements or suggestions.
-- Want to add support for new tools.
-- Discover bugs to fix.
-
-Please open an issue or submit a pull request.
-
----
+MIT Licensed. PRs welcome. See `zshrc.d/packages/00_template.zsh` to add tools.
