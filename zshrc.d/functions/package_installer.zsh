@@ -1,185 +1,81 @@
 #!/usr/bin/env zsh
 
 # =============================================================================
-# Package Installation System
+# Simple Package Management System
 # =============================================================================
 
-# -----------------------------------------------------------------------------
-# Constants
-# -----------------------------------------------------------------------------
-readonly DEFAULT_PROFILE="minimal"
-
-# -----------------------------------------------------------------------------
-# Logging Functions
-# -----------------------------------------------------------------------------
-log_info()    { echo -e "\033[1;34m[INFO]\033[0m $1" }
-log_warning() { echo -e "\033[1;33m[WARNING]\033[0m $1" }
+# Logging functions
+log_info()    { [[ "${DOTFILES_VERBOSE:-false}" == "true" ]] && echo -e "\033[1;34m[INFO]\033[0m $1" }
+log_warning() { [[ "${DOTFILES_VERBOSE:-false}" == "true" ]] && echo -e "\033[1;33m[WARNING]\033[0m $1" }
 log_error()   { echo -e "\033[1;31m[ERROR]\033[0m $1" }
-log_success() { echo -e "\033[1;32m[SUCCESS]\033[0m $1" }
+log_success() { [[ "${DOTFILES_VERBOSE:-false}" == "true" ]] && echo -e "\033[1;32m[SUCCESS]\033[0m $1" }
 
-# -----------------------------------------------------------------------------
-# Package Manager Detection
-# -----------------------------------------------------------------------------
+# Detect package manager
 get_package_manager() {
-  case "$(uname -s)" in
-    Darwin)
-      command -v brew &>/dev/null && { echo "brew"; return 0 }
-      ;;
-    Linux)
-      if [[ -f /etc/os-release ]]; then
-        source /etc/os-release
-        case "$ID" in
-          ubuntu|debian) command -v apt &>/dev/null && { echo "apt"; return 0 } ;;
-          fedora|centos|rhel)
-            command -v dnf &>/dev/null && { echo "dnf"; return 0 }
-            command -v yum &>/dev/null && { echo "yum"; return 0 }
-            ;;
-          arch|manjaro) command -v pacman &>/dev/null && { echo "pacman"; return 0 } ;;
-        esac
-      fi
-      ;;
-  esac
-  echo "custom"
-  return 1
-}
-
-# -----------------------------------------------------------------------------
-# Profile Management
-# -----------------------------------------------------------------------------
-get_profile() {
-  # Try current environment first
-  local profile="${DOTFILES_PROFILE:-}"
-
-  # Try loading from zshenv if not set
-  if [[ -z "$profile" && -f "$HOME/.zshenv" ]]; then
-    source "$HOME/.zshenv"
-    profile="${DOTFILES_PROFILE:-}"
+  if command -v brew &>/dev/null; then echo "brew"
+  elif command -v apt &>/dev/null; then echo "apt"
+  elif command -v dnf &>/dev/null; then echo "dnf"
+  elif command -v pacman &>/dev/null; then echo "pacman"
+  else echo "custom"
   fi
-
-  # Return profile or default
-  echo "${profile:-$DEFAULT_PROFILE}"
 }
 
-should_install_package() {
-  local package_type="$1"
-  local profile=$(get_profile)
+# Check if package is installed
+is_package_installed() { command -v "$1" &>/dev/null; }
 
-  case "$profile" in
-    full)
-      # Install everything in full profile
-      return 0
-      ;;
-    server)
-      # Install shell and utils, but not dev tools
-      [[ "$package_type" =~ ^(00_shell|02_utils) ]] && return 0
-      ;;
-    minimal)
-      # Install shell (except tmux) and utils
-      if [[ "$package_type" =~ ^(00_shell|02_utils) ]]; then
-        [[ "$package_type" == *"tmux"* ]] && return 1
-        return 0
-      fi
-      ;;
-  esac
-  return 1
-}
-
-# -----------------------------------------------------------------------------
-# Package Management
-# -----------------------------------------------------------------------------
-is_package_installed() {
-  command -v "$1" &>/dev/null
-}
-
-is_dependency_installed() {
-  local deps=($1)  # Split into array automatically in zsh
-
-  # Skip if no deps
-  [[ -z "$deps" ]] && return 0
-
-  # Check each dependency
-  for dep in $deps; do
-    if ! is_package_installed "$dep"; then
-      log_warning "Missing required dependencies: $dep"
-      return 1
-    fi
-  done
-
-  return 0
-}
-
+# Install package using detected package manager
 install_package() {
   local name="$1"
-  local desc="$2"
-  local -A install_methods
+  local pm="$(get_package_manager)"
 
-  log_info "Installing $name - $desc"
-
-  # Get package manager
-  local pm=$(get_package_manager)
-
-  # Process installation methods
-  shift 2
-  local key value
-  while (( $# > 0 )); do
-    key="$1"
-    value="$2"
-    install_methods[$key]="$value"
-    shift 2
-  done
-
-  # Get installation command
-  local cmd="${install_methods[$pm]:-${install_methods[custom]}}"
-  if [[ -z "$cmd" ]]; then
-    log_error "No installation method available for $pm"
+  if [[ "$pm" == "custom" ]]; then
+    log_warning "No supported package manager found for $name"
     return 1
   fi
 
-  # Execute installation
-  eval "$cmd" || {
-    log_error "Failed to install $name"
-    return 1
-  }
-  log_success "Installed $name successfully"
+  case "$pm" in
+    brew) brew install "$name" ;;
+    apt) sudo apt update && sudo apt install -y "$name" ;;
+    dnf) sudo dnf install -y "$name" ;;
+    pacman) sudo pacman -S --noconfirm "$name" ;;
+  esac
 }
 
-# -----------------------------------------------------------------------------
-# Installation Scripts Management
-# -----------------------------------------------------------------------------
-run_installation_scripts() {
-  local script_dir="$ZSHRC_CONFIG_DIR/packages"
-  local scripts=($script_dir/*.zsh)
-  local profile=$(get_profile)
+# Get current profile (with fallback)
+get_profile() { echo "${DOTFILES_PROFILE:-minimal}"; }
 
-  if [[ ${#scripts} -eq 0 ]]; then
-    log_warning "No installation scripts found in $script_dir"
+# Check if package should be installed for current profile
+should_install_package() {
+  local profile="$(get_profile)"
+  local package_type="$1"
+
+  case "$profile" in
+    minimal) [[ "$package_type" == "00_shell" ]] ;;
+    server) [[ "$package_type" == "00_shell" || "$package_type" == "02_utils" ]] ;;
+    full) true ;; # Install all packages
+  esac
+}
+
+# Load and run packages based on profile
+load_packages() {
+  local package_dir="${ZSHRC_CONFIG_DIR}/packages"
+
+  if [[ ! -d "$package_dir" ]]; then
+    log_warning "Package directory not found: $package_dir"
     return 1
   fi
 
+  # Load packages in order
+  for package in "$package_dir"/*.zsh(N); do
+    [[ ! -f "$package" ]] && continue
 
-  # Sort scripts to ensure correct installation order
-  scripts=("${(@n)scripts}")
+    # Extract package type from filename (e.g., "02_utils" from "02_utils_package.zsh")
+    local filename="$(basename "$package")"
+    local package_type="${filename%%_*}"
 
-  for script in "${scripts[@]}"; do
-    # Skip non-executable scripts
-    if [[ ! -x "$script" ]]; then
-      log_warning "Script not executable: $script"
-      continue
-    fi
-
-    local basename=$(basename "$script")
-    local package_type="${basename%_*}"  # Get prefix (00_shell, 01_dev, 02_utils)
-
-    # Check if package should be installed for current profile
-    if should_install_package "$basename"; then
-      source "$script" && ((count++))
+    if should_install_package "$package_type"; then
+      log_info "Loading package: $filename"
+      source "$package"
     fi
   done
-
-  return 0
 }
-
-# -----------------------------------------------------------------------------
-# Main Execution
-# -----------------------------------------------------------------------------
-run_installation_scripts
