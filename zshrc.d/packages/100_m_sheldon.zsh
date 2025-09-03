@@ -28,10 +28,28 @@ post_install() {
     log_info "Setting up sheldon configuration..."
   fi
 
+  # Ensure sheldon config directory exists
+  local sheldon_config_dir="${HOME}/.config/sheldon"
+  local sheldon_config_file="${sheldon_config_dir}/plugins.toml"
+
+  mkdir -p "$sheldon_config_dir" 2>/dev/null
+
+  # Copy config file if it doesn't exist
+  if [[ ! -f "$sheldon_config_file" && -f "${DOTFILES_ROOT}/config/sheldon/plugins.toml" ]]; then
+    cp "${DOTFILES_ROOT}/config/sheldon/plugins.toml" "$sheldon_config_file"
+    if [[ "${DOTFILES_VERBOSE:-false}" == "true" ]]; then
+      log_info "Copied sheldon configuration file"
+    fi
+  fi
+
   # Update sheldon plugins and lock file
   if sheldon lock --update &>/dev/null; then
     if [[ "${DOTFILES_VERBOSE:-false}" == "true" ]]; then
       log_success "Sheldon plugins updated successfully"
+    fi
+  else
+    if [[ "${DOTFILES_VERBOSE:-false}" == "true" ]]; then
+      log_warning "Failed to update sheldon plugins, but continuing..."
     fi
   fi
 
@@ -48,9 +66,20 @@ init() {
     if [[ "${DOTFILES_VERBOSE:-false}" == "true" ]]; then
       log_info "Initializing sheldon plugin manager"
     fi
-    
+
+    # Ensure sheldon config directory exists
+    local sheldon_config_dir="${HOME}/.config/sheldon"
+    local sheldon_config_file="${sheldon_config_dir}/plugins.toml"
+
+    mkdir -p "$sheldon_config_dir" 2>/dev/null
+
+    # Copy config file if it doesn't exist
+    if [[ ! -f "$sheldon_config_file" && -f "${DOTFILES_ROOT}/config/sheldon/plugins.toml" ]]; then
+      cp "${DOTFILES_ROOT}/config/sheldon/plugins.toml" "$sheldon_config_file"
+    fi
+
     # Ensure sheldon is properly sourced
-    if command -v sheldon &>/dev/null; then
+    if command -v sheldon &>/dev/null && [[ -f "$sheldon_config_file" ]]; then
       eval "$(sheldon source)" &>/dev/null
       return 0
     fi

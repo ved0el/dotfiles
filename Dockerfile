@@ -40,6 +40,10 @@ COPY . .
 RUN chmod +x bin/dotfiles && \
     find . -name "*.zsh" -type f -exec chmod +x {} \;
 
+# Pre-create sheldon config directory to prevent lock errors
+RUN mkdir -p /root/.config/sheldon && \
+    cp config/sheldon/plugins.toml /root/.config/sheldon/ 2>/dev/null || true
+
 # Set zsh as default shell
 SHELL ["/bin/zsh", "-c"]
 
