@@ -1,23 +1,19 @@
-# #!/usr/bin/env zsh
+#!/usr/bin/env zsh
 
-# # Fast completion init with verbose support
-# if [[ "${DOTFILES_VERBOSE:-false}" == "true" ]]; then
-#   echo "✅ Initializing completion system"
-# fi
+# Fast completion initialization with caching
+autoload -Uz compinit
 
-# autoload -Uz compinit
-# if [[ -n ${ZDOTDIR}/.zcompdump(#qN.mh+1) ]]; then
-#     compinit
-# else
-#     compinit -C
-# fi
+# Use cached completion if available, otherwise regenerate
+if [[ -n ${ZDOTDIR}/.zcompdump(#qN.mh+1) ]]; then
+    compinit
+else
+    compinit -C
+fi
 
-# # Minimal completion styles for fast performance
-# zstyle ':completion:*' accept-exact '*(N)'
-# zstyle ':completion:*' use-cache on
-# zstyle ':completion:*' cache-path ~/.zsh/cache
-# zstyle ':completion:*' list-colors ''
-# zstyle ':completion:*' group-name ''
+# Minimal completion styles for fast performance
+zstyle ':completion:*' accept-exact '*(N)'
+zstyle ':completion:*' use-cache on
+zstyle ':completion:*' cache-path ~/.zsh/cache
 # zstyle ':completion:*' verbose no
 # zstyle ':completion:*' show-completer no
 # zstyle ':completion:*' file-sort name

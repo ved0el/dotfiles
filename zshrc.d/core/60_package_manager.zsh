@@ -1,38 +1,26 @@
 #!/usr/bin/env zsh
 
-# Package management system
-# This script handles package installation and updates efficiently
+# Package management system - Optimized for fast shell startup
 
 # Load package installer functions
 if [[ -f "$DOTFILES_ROOT/zshrc.d/functions/package_installer.zsh" ]]; then
-    if [[ "${DOTFILES_VERBOSE:-false}" == "true" ]]; then
-        echo "✅ Sourcing package installer functions"
-    fi
+    [[ "${DOTFILES_VERBOSE:-false}" == "true" ]] && echo "✅ Loading package installer"
     source "$DOTFILES_ROOT/zshrc.d/functions/package_installer.zsh"
 
-    # Process package scripts to initialize installed packages (optimized mode)
-    # Use fast mode for immediate shell startup, then quick silent updates
-    if [[ "${DOTFILES_VERBOSE:-false}" == "true" ]]; then
-        echo "✅ Running package scripts"
-    fi
-    run_package_scripts_fast &>/dev/null 2>&1
+    # Initialize packages quickly (silent mode for fast startup)
+    [[ "${DOTFILES_VERBOSE:-false}" == "true" ]] && echo "✅ Initializing packages"
+    run_package_scripts "fast"
 
-    # Run quick updates if needed (synchronous but fast)
-    # Only run heavy operations if cache is old
+    # Run background updates if cache is stale (once per day)
     local cache_file="${XDG_CACHE_HOME:-$HOME/.cache}/dotfiles/package_cache"
     if [[ ! -f "$cache_file" ]] || [[ $(( $(date +%s) - $(stat -f %m "$cache_file" 2>/dev/null || echo 0) )) -gt 86400 ]]; then
-        if [[ "${DOTFILES_VERBOSE:-false}" == "true" ]]; then
-            echo "✅ Running background package updates..."
-        fi
-        # Run updates quickly and silently in background
-        (run_package_scripts_quiet &>/dev/null 2>&1) &
-        disown $! 2>/dev/null
-        # Update cache
+        [[ "${DOTFILES_VERBOSE:-false}" == "true" ]] && echo "✅ Starting background package updates"
+        # Run updates in background, completely silent
+        run_silent_background "run_package_scripts quiet"
+        # Update cache timestamp
         mkdir -p "$(dirname "$cache_file")" 2>/dev/null
         touch "$cache_file" 2>/dev/null
     fi
 else
-    if [[ "${DOTFILES_VERBOSE:-false}" == "true" ]]; then
-        echo "⚠️  Package installer not found: $DOTFILES_ROOT/zshrc.d/functions/package_installer.zsh"
-    fi
+    [[ "${DOTFILES_VERBOSE:-false}" == "true" ]] && echo "⚠️  Package installer not found"
 fi

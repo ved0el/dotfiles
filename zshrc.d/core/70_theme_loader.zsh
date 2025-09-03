@@ -12,19 +12,8 @@ typeset -g POWERLEVEL9K_VCS_UNTRACKED_MAX_NUM=10
 typeset -g POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(dir vcs prompt_char)
 typeset -g POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=()
 
-# Enable Powerlevel10k instant prompt (must be first)
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-    if [[ "${DOTFILES_VERBOSE:-false}" == "true" ]]; then
-        echo "✅ Loading Powerlevel10k instant prompt"
-    fi
-    source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k/p10k-instant-prompt-${(%):-%n}.zsh"
-fi
-
+# Powerlevel10k instant prompt (must load before theme)
+[[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k/p10k-instant-prompt-${(%):-%n}.zsh" ]] && source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k/p10k-instant-prompt-${(%):-%n}.zsh"
 
 # Load Powerlevel10k theme
-if [[ -f ~/.p10k.zsh ]]; then
-    if [[ "${DOTFILES_VERBOSE:-false}" == "true" ]]; then
-        echo "✅ Loading Powerlevel10k theme"
-    fi
-    source ~/.p10k.zsh
-fi
+[[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh

@@ -1,8 +1,17 @@
-# Zsh compiled scripts
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+!DEBUG_README.md
+
+# Cache and temporary files
+.cache/
 *.zwc
 *.zwc.old
 
-# OS generated files
+# OS files
 .DS_Store
 .DS_Store?
 ._*
@@ -15,18 +24,6 @@ Thumbs.db
 *.log
 logs/
 
-# Temporary files
-*.tmp
-*.temp
-*~
-
-# Vim
-*.swp
-*.swo
-
-# Emacs
-*~
-
 # IDE files
 .vscode/
 .idea/
@@ -34,4 +31,3 @@ logs/
 
 # Local configuration
 .local
-.cache

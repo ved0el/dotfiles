@@ -71,23 +71,14 @@ get_profile() {
     echo "${__ZPM_PROFILE}"
     return 0
   fi
-  
-  # First try to get profile from environment
-  local profile="${DOTFILES_PROFILE:-}"
-  
-  # If not set, try to load from .zshenv
-  if [[ -z "$profile" && -f "$HOME/.zshenv" ]]; then
-    source "$HOME/.zshenv"
-    profile="${DOTFILES_PROFILE:-}"
-  fi
-  
-  # Set default if still not available
-  __ZPM_PROFILE="${profile:-minimal}"
-  
+
+  # Use the already loaded DOTFILES_PROFILE from environment/core config
+  __ZPM_PROFILE="${DOTFILES_PROFILE:-minimal}"
+
   if [[ "${DOTFILES_VERBOSE:-false}" == "true" ]]; then
     log_info "Using profile: $__ZPM_PROFILE"
   fi
-  
+
   echo "${__ZPM_PROFILE}"
 }
 
@@ -183,20 +174,21 @@ install_package_simple() {
 }
 
 # -----------------------------------------------------------------------------
-# Enhanced Package Script Processing
+# Unified Package Script Processing
 # -----------------------------------------------------------------------------
 run_package_scripts() {
+  local mode="${1:-normal}"  # normal|fast|quiet
   local script_dir="$DOTFILES_ROOT/zshrc.d/packages"
   local profile=$(get_profile)
 
   if [[ ! -d "$script_dir" ]]; then
-    log_warning "Package scripts directory not found: $script_dir"
+    [[ "$mode" == "normal" ]] && log_warning "Package scripts directory not found: $script_dir"
     return 1
   fi
 
   local scripts=($script_dir/*.zsh)
   if [[ ${#scripts} -eq 0 ]]; then
-    log_warning "No package scripts found in $script_dir"
+    [[ "$mode" == "normal" ]] && log_warning "No package scripts found in $script_dir"
     return 1
   fi
 
@@ -216,19 +208,26 @@ run_package_scripts() {
       local package_type=$match[1]
 
       if should_install_package "$package_type"; then
-        # Only show processing info if DOTFILES_VERBOSE is set
-        [[ "${DOTFILES_VERBOSE:-false}" == "true" ]] && log_info "Processing $basename..."
-        
-        # Source the script to get access to its functions
-        source "$script"
-        
-        # Always run init function if it exists (for environment setup, aliases, etc.)
-        if typeset -f init >/dev/null; then
-          if [[ "${DOTFILES_VERBOSE:-false}" == "true" ]]; then
-            log_info "Running init for $basename"
-          fi
-          init
-        fi
+        # Process based on mode
+        case "$mode" in
+          normal)
+            [[ "${DOTFILES_VERBOSE:-false}" == "true" ]] && log_info "Processing $basename..."
+            source "$script"
+            # Run init function if it exists
+            if typeset -f init >/dev/null; then
+              [[ "${DOTFILES_VERBOSE:-false}" == "true" ]] && log_info "Running init for $basename"
+              init
+            fi
+            ;;
+          fast|quiet)
+            # Source silently
+            source "$script" &>/dev/null 2>&1
+            # Always run init function for environment setup
+            if typeset -f init >/dev/null; then
+              init &>/dev/null 2>&1
+            fi
+            ;;
+        esac
       fi
     fi
   done
@@ -237,118 +236,10 @@ run_package_scripts() {
 }
 
 # -----------------------------------------------------------------------------
-# Ultra-fast package initialization (skips all heavy operations)
+# Backward Compatibility Aliases
 # -----------------------------------------------------------------------------
-run_package_scripts_fast() {
-  local script_dir="$DOTFILES_ROOT/zshrc.d/packages"
-  local profile=$(get_profile)
-
-  if [[ ! -d "$script_dir" ]]; then
-    return 1
-  fi
-
-  local scripts=($script_dir/*.zsh)
-  if [[ ${#scripts} -eq 0 ]]; then
-    return 1
-  fi
-
-  # Sort scripts to ensure correct installation order
-  scripts=("${(@n)scripts}")
-
-  for script in "${scripts[@]}"; do
-    local basename=$(basename "$script")
-
-    # Skip template file
-    if [[ "$basename" == *_template.zsh ]]; then
-      continue
-    fi
-
-    # Extract package type from filename (xx_m_package.zsh -> m)
-    if [[ "$basename" =~ ^[0-9]+_([msd])_.*\.zsh$ ]]; then
-      local package_type=$match[1]
-
-      if should_install_package "$package_type"; then
-        # Source silently and skip heavy operations
-        # Redirect all output to /dev/null for maximum silence
-        source "$script" &>/dev/null 2>&1
-        
-        # Always run init function for environment setup (even in fast mode)
-        if typeset -f init >/dev/null; then
-          init &>/dev/null 2>&1
-        fi
-      fi
-    fi
-  done
-
-  return 0
-}
-
-# -----------------------------------------------------------------------------
-# Quiet Package Initialization (for shell startup)
-# -----------------------------------------------------------------------------
-run_package_scripts_quiet() {
-  local script_dir="$DOTFILES_ROOT/zshrc.d/packages"
-  local profile=$(get_profile)
-  local cache_file="${XDG_CACHE_HOME:-$HOME/.cache}/dotfiles/package_cache"
-
-  if [[ ! -d "$script_dir" ]]; then
-    return 1
-  fi
-
-  local scripts=($script_dir/*.zsh)
-  if [[ ${#scripts} -eq 0 ]]; then
-    return 1
-  fi
-
-  # Sort scripts to ensure correct installation order
-  scripts=("${(@n)scripts}")
-
-  # Check if we need to update packages (only once per day)
-  local should_update=false
-  if [[ ! -f "$cache_file" ]] || [[ $(( $(date +%s) - $(stat -f %m "$cache_file" 2>/dev/null || echo 0) )) -gt 86400 ]]; then
-    should_update=true
-  fi
-
-  for script in "${scripts[@]}"; do
-    local basename=$(basename "$script")
-
-    # Skip template file
-    if [[ "$basename" == *_template.zsh ]]; then
-      continue
-    fi
-
-    # Extract package type from filename (xx_m_package.zsh -> m)
-    if [[ "$basename" =~ ^[0-9]+_([msd])_.*\.zsh$ ]]; then
-      local package_type=$match[1]
-
-      if should_install_package "$package_type"; then
-        # Source silently
-        source "$script" 2>/dev/null
-        
-        # Always run init function for environment setup
-        if typeset -f init >/dev/null; then
-          init 2>/dev/null
-        fi
-        
-        # Only run heavy operations (like sheldon updates) once per day
-        if [[ "$should_update" == "true" ]]; then
-          # Run package updates silently
-          if [[ "$basename" == *sheldon* ]]; then
-            sheldon lock --update &>/dev/null 2>&1
-          fi
-        fi
-      fi
-    fi
-  done
-
-  # Create/update cache file
-  if [[ "$should_update" == "true" ]]; then
-    mkdir -p "$(dirname "$cache_file")" 2>/dev/null
-    touch "$cache_file" 2>/dev/null
-  fi
-
-  return 0
-}
+run_package_scripts_fast() { run_package_scripts "fast"; }
+run_package_scripts_quiet() { run_package_scripts "quiet"; }
 
 # -----------------------------------------------------------------------------
 # Silent background job runner (no notifications)

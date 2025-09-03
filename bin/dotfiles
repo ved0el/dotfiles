@@ -631,16 +631,17 @@ EOF
   echo
   echo -e "${BOLD}${WHITE}Available Actions:${NC}"
   echo -e "  ${BOLD}1)${NC} ${GREEN}🚀 Install/Update${NC}        - Set up or refresh your dotfiles"
-  echo -e "  ${BOLD}2)${NC} ${RED}🗑️  Uninstall${NC}             - Remove all dotfiles and configuration"
-  echo -e "  ${BOLD}3)${NC} ${YELLOW}⚙️  Change Profile${NC}        - Switch between minimal/server/develop"
+  echo -e "  ${BOLD}2)${NC} ${RED}🗑️ Uninstall${NC}             - Remove all dotfiles and configuration"
+  echo -e "  ${BOLD}3)${NC} ${YELLOW}⚙️ Change Profile${NC}        - Switch between minimal/server/develop"
   echo -e "  ${BOLD}4)${NC} ${BLUE}📁 Change Directory${NC}      - Modify installation location"
   echo -e "  ${BOLD}5)${NC} ${CYAN}📦 Install Packages${NC}      - Install tools for current profile"
   echo -e "  ${BOLD}6)${NC} ${GRAY}🔊 Toggle Verbose${NC}        - Enable/disable detailed logging"
-  echo -e "  ${BOLD}7)${NC} ${GRAY}❓ Help${NC}                  - View detailed instructions"
+  echo -e "  ${BOLD}7)${NC} ${PURPLE}🔀 Change Branch${NC}         - Switch git branch"
+  echo -e "  ${BOLD}8)${NC} ${GRAY}❓ Help${NC}                  - View detailed instructions"
   echo -e "  ${BOLD}q)${NC} ${GRAY}🚪 Quit${NC}                  - Exit the installer"
-  
+
   echo
-  echo -ne "${BOLD}${WHITE}Select an option ${GRAY}[1-7q]${WHITE}: ${NC}"
+  echo -ne "${BOLD}${WHITE}Select an option ${GRAY}[1-8q]${WHITE}: ${NC}"
 }
 
 interactive_menu() {
@@ -680,7 +681,15 @@ interactive_menu() {
           log_success "Verbose logging enabled"
         fi
         ;;
-      7) show_help; ;;
+      7)
+        echo -n "Branch name [$DOTFILES_BRANCH]: "
+        read -r new_branch
+        if [[ -n "$new_branch" ]]; then
+          export DOTFILES_BRANCH="$new_branch"
+          log_success "Branch changed to: $new_branch"
+        fi
+        ;;
+      8) show_help; ;;
       q) exit 0 ;;
       *) log_error "Invalid choice"; sleep 1 ;;
     esac
@@ -752,6 +761,7 @@ Commands:
   profile <name>    Change profile (minimal/server/develop)
   packages          Install required packages for current profile
   verify            Verify all symlinks are working correctly
+  debug             Run developer debugging tools
   help              Show this help message
 
 Examples:
@@ -762,6 +772,7 @@ Examples:
   dotfiles profile server    # Change to server profile
   dotfiles packages          # Install packages for current profile
   dotfiles verify            # Verify all symlinks
+  dotfiles debug             # Run debugging tools
   dotfiles help              # Show help
 
 For more information, visit: $DOCS_URL
@@ -809,6 +820,16 @@ main() {
       ;;
     verify)
       verify_symlinks
+      ;;
+    debug)
+      # Run debug tools
+      if [[ -f "$SCRIPT_DIR/dotfiles-debug" ]]; then
+        shift
+        exec "$SCRIPT_DIR/dotfiles-debug" "$@"
+      else
+        log_error "Debug tools not found: $SCRIPT_DIR/dotfiles-debug"
+        exit 1
+      fi
       ;;
     help|--help|-h)
       show_usage

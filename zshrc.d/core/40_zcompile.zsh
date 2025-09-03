@@ -1,32 +1,14 @@
 #!/usr/bin/env zsh
 
-# Background zcompile with verbose support (completely silent - no job notifications)
-ensure_zcompiled() {
-    local file="$1"
-    local compiled="$file.zwc"
-    if [[ ! -r "$compiled" || "$file" -nt "$compiled" ]]; then
-        # Run zcompile synchronously to avoid background jobs
-        zcompile "$file" &>/dev/null 2>&1
-    fi
-}
-
+# Zsh file compilation for faster loading (run once per session)
 if [[ -z "$ZSHRC_COMPILED" ]]; then
     export ZSHRC_COMPILED=1
-    
-    if [[ "${DOTFILES_VERBOSE:-false}" == "true" ]]; then
-        echo "✅ Compiling zsh files for faster loading"
-    fi
-    
-    # Run the entire compilation process synchronously to avoid background jobs
+
+    # Compile zsh files in background for faster subsequent loads
     (
-        # Suppress all output and job notifications
-        setopt no_notify
-        local files=(
-            "$DOTFILES_ROOT/zshrc"
-            "$DOTFILES_ROOT"/zshrc.d/**/*.zsh(N)
-        )
-        for file in "${files[@]}"; do
-            [[ -f "$file" ]] && ensure_zcompiled "$file"
+        for file in "$DOTFILES_ROOT"/zshrc.d/**/*.zsh(N); do
+            [[ -f "$file" && (! -f "$file.zwc" || "$file" -nt "$file.zwc") ]] && zcompile "$file" &>/dev/null
         done
-    ) &>/dev/null 2>&1
+    ) &>/dev/null &
+    disown 2>/dev/null
 fi

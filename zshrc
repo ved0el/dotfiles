@@ -1,38 +1,16 @@
-# =============================================================================
-# Dotfiles Configuration
-# =============================================================================
-# This file is automatically managed by the dotfiles installer
-# Core configuration is loaded from zshrc.d/core modules
+# Dotfiles Configuration - Fast, modular, and clean
+# Core configuration loaded from zshrc.d/core modules
 
-# =============================================================================
-# Core System (modular, fast)
-# =============================================================================
-# Load all core modules in lexicographic order (supports numeric prefixes)
-if [[ -d "$DOTFILES_ROOT/zshrc.d/core" ]]; then
-  for core_file in "$DOTFILES_ROOT"/zshrc.d/core/*.zsh(N); do
-    source "$core_file"
-  done
-fi
+# Load core modules in order
+for core_file in "$DOTFILES_ROOT"/zshrc.d/core/*.zsh(N); do
+  [[ -f "$core_file" ]] && source "$core_file"
+done
 
-# =============================================================================
-# Plugins
-# =============================================================================
-# Load plugins via loop. Special-case tmux to avoid VSCode/SSH.
-if [[ -d "$DOTFILES_ROOT/zshrc.d/plugins" ]]; then
-  for plugin_file in "$DOTFILES_ROOT"/zshrc.d/plugins/*.zsh(N); do
-    case "${plugin_file:t}" in
-      tmux.zsh)
-        if [[ "$TERM_PROGRAM" != "vscode" ]] && [[ -z "$SSH_CONNECTION" ]] && command -v tmux >/dev/null 2>&1; then
-          source "$plugin_file"
-        fi
-        ;;
-      *)
-        source "$plugin_file"
-        ;;
-    esac
-  done
-fi
-
-
-
-
+# Load plugins (skip tmux in VSCode/SSH)
+for plugin_file in "$DOTFILES_ROOT"/zshrc.d/plugins/*.zsh(N); do
+  if [[ "${plugin_file:t}" == "tmux.zsh" ]]; then
+    [[ "$TERM_PROGRAM" != "vscode" && -z "$SSH_CONNECTION" && -n "$(command -v tmux 2>/dev/null)" ]] && source "$plugin_file"
+  else
+    [[ -f "$plugin_file" ]] && source "$plugin_file"
+  fi
+done

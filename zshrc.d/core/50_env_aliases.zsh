@@ -1,19 +1,8 @@
 #!/usr/bin/env zsh
 
-# Essential environment and aliases with verbose support
-if [[ "${DOTFILES_VERBOSE:-false}" == "true" ]]; then
-    echo "✅ Setting up environment and aliases"
-fi
-
-# Add dotfiles bin to PATH if not already there
-if [[ ":$PATH:" != *":$DOTFILES_ROOT/bin:"* ]]; then
-    export PATH="$PATH:$DOTFILES_ROOT/bin"
-fi
-
-# Add local bin to PATH if directory exists
-if [[ -d "$HOME/.local/bin" ]]; then
-    export PATH="$PATH:$HOME/.local/bin"
-fi
+# Essential environment variables and PATH setup
+[[ ":$PATH:" != *":$DOTFILES_ROOT/bin:"* ]] && export PATH="$PATH:$DOTFILES_ROOT/bin"
+[[ -d "$HOME/.local/bin" ]] && export PATH="$PATH:$HOME/.local/bin"
 
 # Performance optimizations
 export NVM_LAZY_LOAD="true"
