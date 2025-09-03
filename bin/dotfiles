@@ -52,13 +52,46 @@ readonly DOCS_URL="https://github.com/ved0el/dotfiles"
 load_config() {
   local zshenv="$HOME/.zshenv"
   if [[ -f "$zshenv" ]]; then
-    # Source the file to get existing values
-    source "$zshenv" 2>/dev/null || true
+    # Check if .zshenv contains our required variables before sourcing
+    if grep -q "^export DOTFILES_ROOT=" "$zshenv" && \
+       grep -q "^export DOTFILES_PROFILE=" "$zshenv" && \
+       grep -q "^export DOTFILES_VERBOSE=" "$zshenv"; then
+
+      # Source the file to get existing values
+      source "$zshenv" 2>/dev/null || true
+
+      # Mark that configuration was loaded from .zshenv
+      export DOTFILES_CONFIG_LOADED_FROM_ZSHENV=true
+    else
+      export DOTFILES_CONFIG_LOADED_FROM_ZSHENV=false
+    fi
+  else
+    export DOTFILES_CONFIG_LOADED_FROM_ZSHENV=false
   fi
 }
 
 # Save configuration to .zshenv
 save_config() {
+  # Only save if configuration wasn't loaded from .zshenv (i.e., we're using defaults)
+  # Check if configuration was loaded from .zshenv (for backward compatibility)
+  if [[ "${DOTFILES_CONFIG_LOADED_FROM_ZSHENV:-false}" == "true" ]]; then
+    if [[ "$DOTFILES_VERBOSE" == "true" ]]; then
+      log_progress "Configuration already exists in ~/.zshenv, skipping save"
+    fi
+    return 0
+  fi
+
+  # Also check .zshenv directly if the variable isn't set (for safety)
+  local zshenv="$HOME/.zshenv"
+  if [[ -f "$zshenv" ]] && grep -q "^export DOTFILES_ROOT=" "$zshenv" && \
+     grep -q "^export DOTFILES_PROFILE=" "$zshenv" && \
+     grep -q "^export DOTFILES_VERBOSE=" "$zshenv"; then
+    if [[ "$DOTFILES_VERBOSE" == "true" ]]; then
+      log_progress "Configuration already exists in ~/.zshenv, skipping save"
+    fi
+    return 0
+  fi
+
   local zshenv="$HOME/.zshenv"
   touch "$zshenv"
 
