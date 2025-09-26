@@ -1,0 +1,210 @@
+# =============================================================================
+# Global Gitignore File
+# Common files and directories to ignore across all projects
+# =============================================================================
+
+# Operating System Files
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# =============================================================================
+# Editor and IDE Files
+# =============================================================================
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# Cursor
+.cursor/
+
+# Vim
+*.swp
+*.swo
+*~
+.netrwhist
+Session.vim
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# =============================================================================
+# Development Tools
+# =============================================================================
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+.pnp
+.pnp.js
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Go
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Dependency directories
+vendor/
+
+# Go workspace file
+go.work
+
+# Rust
+/target/
+**/*.rs.bk
+Cargo.lock
+
+# Java
+*.class
+*.log
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# =============================================================================
+# Database Files
+# =============================================================================
+*.sqlite
+*.sqlite3
+*.db
+
+# =============================================================================
+# Logs and Runtime Files
+# =============================================================================
+logs/
+*.log
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# =============================================================================
+# Backup and Temporary Files
+# =============================================================================
+*.bak
+*.backup
+*.tmp
+*.temp
+*.cache
+.cache/
+
+# =============================================================================
+# Environment and Configuration
+# =============================================================================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# =============================================================================
+# Archives
+# =============================================================================
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# =============================================================================
+# Package Manager Files
+# =============================================================================
+Pipfile.lock
+poetry.lock
+package-lock.json
+yarn.lock
