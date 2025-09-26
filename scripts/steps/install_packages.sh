@@ -25,7 +25,8 @@ case "$DETECTED_OS_FAMILY" in
     install_pkg git zsh
     ;;
   debian)
-    install_pkg git zsh
+    # ensure build tools for possible cargo sheldon build
+    install_pkg git zsh build-essential pkg-config libssl-dev curl ca-certificates
     ;;
   *)
     log_warn "Unsupported package family: $DETECTED_OS_FAMILY"

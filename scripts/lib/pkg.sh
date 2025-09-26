@@ -16,8 +16,13 @@ ensure_homebrew() {
 }
 
 apt_install() {
-  sudo apt-get update -y | cat
-  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "$@" | cat
+  if [ "$(id -u)" -eq 0 ]; then
+    apt-get update -y | cat
+    DEBIAN_FRONTEND=noninteractive apt-get install -y "$@" | cat
+  else
+    sudo apt-get update -y | cat
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "$@" | cat
+  fi
 }
 
 brew_install() {

@@ -23,6 +23,21 @@ The installer will:
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/<your>/<repo>/main/install.sh)"
 ```
 
+### Test locally with Docker (Ubuntu)
+
+Requires Docker installed locally.
+
+```bash
+# normal environment
+scripts/test_ubuntu.sh
+
+# simulate SSH environment (tmux skipped)
+scripts/test_ubuntu.sh -m ssh
+
+# simulate IDE terminal (tmux skipped)
+scripts/test_ubuntu.sh -m ide
+```
+
 ### Structure
 
 ```
