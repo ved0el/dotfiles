@@ -1,0 +1,17 @@
+[user]
+	name = Your Name
+	email = your@email
+[core]
+	editor = vim
+	autocrlf = input
+[init]
+	defaultBranch = main
+[pull]
+	rebase = false
+[color]
+	ui = auto
+[merge]
+	ff = only
+[push]
+	default = current
+
