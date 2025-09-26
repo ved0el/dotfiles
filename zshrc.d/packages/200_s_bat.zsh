@@ -4,22 +4,26 @@
 # Bat - A cat clone with syntax highlighting and Git integration
 # =============================================================================
 
-# Package information
+# -----------------------------------------------------------------------------
+# Package Configuration
+# -----------------------------------------------------------------------------
 PACKAGE_NAME="bat"
 PACKAGE_DESC="A cat clone with syntax highlighting and Git integration"
-PACKAGE_DEPS=""  # No dependencies
+PACKAGE_DEPS=""
+PACKAGE_TYPE="standard"
 
-# Pre-installation setup (optional)
+# -----------------------------------------------------------------------------
+# Installation Functions
+# -----------------------------------------------------------------------------
 pre_install() {
-  # Set bat as the default pager for man pages
+  log_debug "Preparing bat installation..."
   export MANPAGER="sh -c 'col -bx | bat -l man -p'"
   return 0
 }
 
-# Post-installation setup (optional)
 post_install() {
   if ! is_package_installed "$PACKAGE_NAME"; then
-    log_error "$PACKAGE_NAME is not executable after installation"
+    log_error "$PACKAGE_NAME installation verification failed"
     return 1
   fi
 
@@ -32,31 +36,30 @@ post_install() {
   return 0
 }
 
-# Package initialization (REQUIRED - always runs)
-# This function runs EVERY TIME the shell loads, regardless of installation status
+# -----------------------------------------------------------------------------
+# Package Initialization
+# -----------------------------------------------------------------------------
 init() {
-  # Only run if bat is available (either installed or already present)
   if is_package_installed "$PACKAGE_NAME"; then
+    log_debug "Initializing bat..."
+    
     # Set bat as the default pager for man pages
     export MANPAGER="sh -c 'col -bx | bat -l man -p'"
-
+    
     # Create alias for better compatibility
     alias cat="bat"
     
     return 0
   else
-    # Package not available - skip environment setup
+    log_debug "bat not available, skipping initialization"
     return 1
   fi
 }
 
-# =============================================================================
-# Main Installation Flow (DO NOT MODIFY BELOW THIS LINE)
-# =============================================================================
-
-# Install bat using simple package installation
+# -----------------------------------------------------------------------------
+# Automatic Installation Flow
+# -----------------------------------------------------------------------------
 if ! is_package_installed "$PACKAGE_NAME"; then
-  pre_install
-  install_package_simple "$PACKAGE_NAME" "$PACKAGE_DESC"
-  post_install
+  pre_install || return 1
+  install_package "$PACKAGE_NAME" "$PACKAGE_DESC" && post_install
 fi

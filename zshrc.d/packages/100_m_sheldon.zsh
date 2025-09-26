@@ -4,30 +4,30 @@
 # Sheldon - Fast and configurable shell plugin manager
 # =============================================================================
 
-# Package information
+# -----------------------------------------------------------------------------
+# Package Configuration
+# -----------------------------------------------------------------------------
 PACKAGE_NAME="sheldon"
 PACKAGE_DESC="A fast and configurable shell plugin manager"
-PACKAGE_DEPS=""  # No dependencies
+PACKAGE_DEPS=""
+PACKAGE_TYPE="custom"
 
-# Pre-installation setup (optional)
+# -----------------------------------------------------------------------------
+# Installation Functions
+# -----------------------------------------------------------------------------
 pre_install() {
-  if [[ "${DOTFILES_VERBOSE:-false}" == "true" ]]; then
-    log_info "Preparing sheldon installation..."
-  fi
+  log_debug "Preparing sheldon installation..."
   return 0
 }
 
-# Post-installation setup (optional)
 post_install() {
   if ! is_package_installed "$PACKAGE_NAME"; then
-    log_error "$PACKAGE_NAME is not executable after installation"
+    log_error "$PACKAGE_NAME installation verification failed"
     return 1
   fi
 
-  if [[ "${DOTFILES_VERBOSE:-false}" == "true" ]]; then
-    log_info "Setting up sheldon configuration..."
-  fi
-
+  log_debug "Setting up sheldon configuration..."
+  
   # Ensure sheldon config directory exists
   local sheldon_config_dir="${HOME}/.config/sheldon"
   local sheldon_config_file="${sheldon_config_dir}/plugins.toml"
@@ -37,20 +37,14 @@ post_install() {
   # Copy config file if it doesn't exist
   if [[ ! -f "$sheldon_config_file" && -f "${DOTFILES_ROOT}/config/sheldon/plugins.toml" ]]; then
     cp "${DOTFILES_ROOT}/config/sheldon/plugins.toml" "$sheldon_config_file"
-    if [[ "${DOTFILES_VERBOSE:-false}" == "true" ]]; then
-      log_info "Copied sheldon configuration file"
-    fi
+    log_debug "Copied sheldon configuration file"
   fi
 
   # Update sheldon plugins and lock file
   if sheldon lock --update &>/dev/null; then
-    if [[ "${DOTFILES_VERBOSE:-false}" == "true" ]]; then
-      log_success "Sheldon plugins updated successfully"
-    fi
+    log_success "Sheldon plugins updated successfully"
   else
-    if [[ "${DOTFILES_VERBOSE:-false}" == "true" ]]; then
-      log_warning "Failed to update sheldon plugins, but continuing..."
-    fi
+    log_warning "Failed to update sheldon plugins, but continuing..."
   fi
 
   # Initialize sheldon
@@ -58,15 +52,58 @@ post_install() {
   return 0
 }
 
-# Package initialization (REQUIRED - always runs)
-# This function runs EVERY TIME the shell loads, regardless of installation status
-init() {
-  # Only run if sheldon is available (either installed or already present)
-  if is_package_installed "$PACKAGE_NAME"; then
-    if [[ "${DOTFILES_VERBOSE:-false}" == "true" ]]; then
-      log_info "Initializing sheldon plugin manager"
-    fi
+# -----------------------------------------------------------------------------
+# Custom Installation
+# -----------------------------------------------------------------------------
+install_custom() {
+  log_info "Installing $PACKAGE_NAME using custom method..."
+  
+  local pm=$(get_package_manager)
+  local success=false
 
+  case "$pm" in
+    brew)
+      brew install sheldon &>/dev/null && success=true
+      ;;
+    apt)
+      # Ubuntu/Debian - use official installer
+      if sudo apt update &>/dev/null && sudo apt install -y curl &>/dev/null && \
+         curl --proto '=https' -fLsS https://rossmacarthur.github.io/install/crate.sh | sudo bash -s -- --repo rossmacarthur/sheldon --to "/usr/local/bin" &>/dev/null; then
+        success=true
+      fi
+      ;;
+    dnf|yum|pacman|zypper|pkg)
+      # Try standard package manager first
+      case "$pm" in
+        dnf) sudo dnf install -y sheldon &>/dev/null && success=true ;;
+        yum) sudo yum install -y sheldon &>/dev/null && success=true ;;
+        pacman) sudo pacman -S --noconfirm sheldon &>/dev/null && success=true ;;
+        zypper) sudo zypper install -y sheldon &>/dev/null && success=true ;;
+        pkg) sudo pkg install sheldon &>/dev/null && success=true ;;
+      esac
+      ;;
+    custom|*)
+      # Fallback: official installer
+      curl --proto '=https' -fLsS https://rossmacarthur.github.io/install/crate.sh | sudo bash -s -- --repo rossmacarthur/sheldon --to "/usr/local/bin" &>/dev/null && success=true
+      ;;
+  esac
+
+  if [[ "$success" == "true" ]]; then
+    log_success "Sheldon installed successfully"
+    return 0
+  else
+    log_error "Failed to install sheldon"
+    return 1
+  fi
+}
+
+# -----------------------------------------------------------------------------
+# Package Initialization
+# -----------------------------------------------------------------------------
+init() {
+  if is_package_installed "$PACKAGE_NAME"; then
+    log_debug "Initializing sheldon plugin manager"
+    
     # Ensure sheldon config directory exists
     local sheldon_config_dir="${HOME}/.config/sheldon"
     local sheldon_config_file="${sheldon_config_dir}/plugins.toml"
@@ -84,77 +121,15 @@ init() {
       return 0
     fi
   else
-    if [[ "${DOTFILES_VERBOSE:-false}" == "true" ]]; then
-      log_warning "Sheldon not available, skipping initialization"
-    fi
+    log_debug "Sheldon not available, skipping initialization"
     return 1
   fi
 }
 
-# =============================================================================
-# Main Installation Flow (DO NOT MODIFY BELOW THIS LINE)
-# =============================================================================
-
-# Install sheldon using custom logic (needs special installer)
+# -----------------------------------------------------------------------------
+# Automatic Installation Flow
+# -----------------------------------------------------------------------------
 if ! is_package_installed "$PACKAGE_NAME"; then
-  pre_install
-  
-  local pm=$(get_package_manager)
-  local success=false
-
-  case "$pm" in
-    brew)
-      if brew install sheldon &>/dev/null; then
-        success=true
-      fi
-      ;;
-    apt)
-      # Ubuntu/Debian - use official installer
-      if sudo apt update &>/dev/null && sudo apt install -y curl &>/dev/null && \
-         curl --proto '=https' -fLsS https://rossmacarthur.github.io/install/crate.sh | sudo bash -s -- --repo rossmacarthur/sheldon --to "/usr/local/bin" &>/dev/null; then
-        success=true
-      fi
-      ;;
-    dnf)
-      if sudo dnf install -y sheldon &>/dev/null; then
-        success=true
-      fi
-      ;;
-    yum)
-      if sudo yum install -y sheldon &>/dev/null; then
-        success=true
-      fi
-      ;;
-    pacman)
-      if sudo pacman -S --noconfirm sheldon &>/dev/null; then
-        success=true
-      fi
-      ;;
-    zypper)
-      if sudo zypper install -y sheldon &>/dev/null; then
-        success=true
-      fi
-      ;;
-    pkg)
-      if sudo pkg install sheldon &>/dev/null; then
-        success=true
-      fi
-      ;;
-    custom)
-      # Fallback: official installer
-      if curl --proto '=https' -fLsS https://rossmacarthur.github.io/install/crate.sh | sudo bash -s -- --repo rossmacarthur/sheldon --to "/usr/local/bin" &>/dev/null; then
-        success=true
-      fi
-      ;;
-  esac
-
-  if [[ "$success" == "true" ]]; then
-    if [[ "${DOTFILES_VERBOSE:-false}" == "true" ]]; then
-      log_success "Sheldon installed successfully"
-    fi
-    post_install
-  else
-    log_error "Failed to install sheldon"
-    return 1
-  fi
+  pre_install || return 1
+  install_custom && post_install
 fi
