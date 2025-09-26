@@ -466,8 +466,11 @@ configure_profile() {
 install_packages() {
   log_info "Installing required packages for profile: $DOTFILES_PROFILE"
 
-  # Set required environment variables
-  export ZSHRC_CONFIG_DIR="$DOTFILES_ROOT/zshrc.d"
+  # Validate environment
+  if [[ -z "$DOTFILES_ROOT" ]]; then
+    log_error "DOTFILES_ROOT not set"
+    return 1
+  fi
 
   # Check if zsh is available
   if ! command -v zsh &>/dev/null; then
@@ -475,45 +478,58 @@ install_packages() {
     return 0
   fi
 
-  # Run package installation using zsh
-  if [[ -f "$ZSHRC_CONFIG_DIR/functions/package_installer.zsh" ]]; then
-    # Create a temporary zsh script to run the package installation
-    local temp_script=$(mktemp)
-    cat > "$temp_script" << EOF
+  # Check if package installer exists
+  local package_installer="$DOTFILES_ROOT/zshrc.d/functions/package_installer.zsh"
+  if [[ ! -f "$package_installer" ]]; then
+    log_warning "Package installer not found: $package_installer"
+    return 1
+  fi
+
+  # Run package installation using zsh with optimized approach
+  local temp_script=$(mktemp)
+  cat > "$temp_script" << EOF
 #!/usr/bin/env zsh
 set -euo pipefail
 
 # Set required environment variables
-export ZSHRC_CONFIG_DIR="$DOTFILES_ROOT/zshrc.d"
 export DOTFILES_ROOT="$DOTFILES_ROOT"
 export DOTFILES_PROFILE="$DOTFILES_PROFILE"
 export DOTFILES_VERBOSE="$DOTFILES_VERBOSE"
 export DOTFILES_FORCE_INSTALL=1
 
 # Source the package installer functions
-source "$ZSHRC_CONFIG_DIR/functions/package_installer.zsh"
+source "$package_installer"
 
 # Run package installation
-run_package_scripts
-
-echo "Package installation completed successfully"
+if run_package_scripts; then
+  echo "Package installation completed successfully"
+  exit 0
+else
+  echo "Package installation failed"
+  exit 1
+fi
 EOF
 
-    # Make the script executable and run it
-    chmod +x "$temp_script"
-    if zsh "$temp_script"; then
-      log_success "Package installation completed"
-    else
-      log_error "Package installation failed"
-      rm -f "$temp_script"
-      return 1
-    fi
-
-    # Clean up
-    rm -f "$temp_script"
+  # Make the script executable and run it
+  chmod +x "$temp_script"
+  
+  if zsh "$temp_script"; then
+    log_success "Package installation completed"
+    local result=0
   else
-    log_warning "Package installer not found, skipping package installation"
+    log_error "Package installation failed"
+    local result=1
   fi
+
+  # Clean up
+  rm -f "$temp_script"
+  
+  # Cleanup package installer
+  if [[ -f "$package_installer" ]]; then
+    zsh -c "source '$package_installer' && cleanup_package_installer" 2>/dev/null || true
+  fi
+  
+  return $result
 }
 
 # =============================================================================
@@ -523,12 +539,37 @@ install_dotfiles() {
   show_banner
   log_step "Starting dotfiles installation"
 
-  setup_environment
-  setup_repository
-  install_packages
-  link_files
-  verify_symlinks
-  configure_profile
+  # Installation steps with error handling
+  local steps=(
+    "setup_environment:Setting up environment"
+    "setup_repository:Managing repository"
+    "install_packages:Installing packages"
+    "link_files:Creating symlinks"
+    "verify_symlinks:Verifying installation"
+    "configure_profile:Configuring profile"
+  )
+
+  local failed_steps=()
+  
+  for step in "${steps[@]}"; do
+    local func="${step%%:*}"
+    local desc="${step##*:}"
+    
+    log_step "$desc"
+    if ! $func; then
+      log_error "Failed: $desc"
+      failed_steps+=("$desc")
+    fi
+  done
+
+  # Check for failures
+  if (( ${#failed_steps[@]} > 0 )); then
+    log_error "Installation completed with ${#failed_steps[@]} failure(s):"
+    for step in "${failed_steps[@]}"; do
+      log_error "  - $step"
+    done
+    log_warning "Some features may not work correctly"
+  fi
 
   # Success banner
   echo
@@ -540,6 +581,16 @@ install_dotfiles() {
   log_success "Profile '$DOTFILES_PROFILE' is now active"
   
   # Show profile-specific information
+  show_profile_info
+  
+  # Show next steps
+  show_next_steps
+  
+  # Start new shell
+  start_new_shell
+}
+
+show_profile_info() {
   echo
   echo -e "${BOLD}${WHITE}What's Included:${NC}"
   case "$DOTFILES_PROFILE" in
@@ -559,8 +610,9 @@ install_dotfiles() {
       echo -e "  ${GREEN}${CHECK}${NC} Tools installed on first use"
       ;;
   esac
+}
 
-  # Next steps
+show_next_steps() {
   echo
   echo -e "${BOLD}${WHITE}Next Steps:${NC}"
   echo -e "  ${CYAN}${BULLET}${NC} Starting new zsh shell..."
@@ -568,13 +620,11 @@ install_dotfiles() {
   
   echo
   echo -e "${GRAY}${DIM}Thank you for using Dotfiles Manager!${NC}"
-  
-  # Start new zsh shell
+}
+
+start_new_shell() {
   if command -v zsh &>/dev/null; then
     log_info "Starting new zsh shell..."
-    # Use exec to replace current process with zsh
-    # This ensures a clean shell environment
-    # Clear any input buffer before exec
     exec zsh -l </dev/null
   else
     log_warning "zsh not found, please restart your terminal manually"
@@ -591,7 +641,10 @@ uninstall_dotfiles() {
   read -r response
 
   if [[ "$response" =~ ^[Yy]$ ]]; then
-    log_info "Removing symlinks..."
+    log_info "Starting uninstallation..."
+    
+    local removed_count=0
+    local errors=0
 
     # Remove root directory symlinks (all dotfiles)
     log_info "Removing root directory symlinks..."
@@ -601,8 +654,13 @@ uninstall_dotfiles() {
           local name="$(basename "$item")"
           local dst=".$name"
           if [[ -L "$HOME/$dst" ]] && [[ "$(readlink "$HOME/$dst")" == *"/.dotfiles/"* ]]; then
-            rm "$HOME/$dst"
-            log_info "Removed ~/$dst"
+            if rm "$HOME/$dst" 2>/dev/null; then
+              log_info "Removed ~/$dst"
+              ((removed_count++))
+            else
+              log_error "Failed to remove ~/$dst"
+              ((errors++))
+            fi
           fi
         fi
       done
@@ -613,8 +671,13 @@ uninstall_dotfiles() {
       for item in "$HOME/.config"/*; do
         if [[ -L "$item" ]] && [[ "$(readlink "$item")" == *"/.dotfiles/"* ]]; then
           local name=$(basename "$item")
-          rm "$item"
-          log_info "Removed ~/.config/$name"
+          if rm "$item" 2>/dev/null; then
+            log_info "Removed ~/.config/$name"
+            ((removed_count++))
+          else
+            log_error "Failed to remove ~/.config/$name"
+            ((errors++))
+          fi
         fi
       done
     fi
@@ -622,22 +685,64 @@ uninstall_dotfiles() {
     # Remove from .zshenv
     local zshenv="$HOME/.zshenv"
     if [[ -f "$zshenv" ]]; then
-      sed -i.bak '/^export DOTFILES_/d' "$zshenv" 2>/dev/null || true
-      rm -f "${zshenv}.bak"
-      log_info "Removed configuration from ~/.zshenv"
+      if sed -i.bak '/^export DOTFILES_/d' "$zshenv" 2>/dev/null; then
+        rm -f "${zshenv}.bak"
+        log_info "Removed configuration from ~/.zshenv"
+      else
+        log_error "Failed to remove configuration from ~/.zshenv"
+        ((errors++))
+      fi
     fi
+
+    # Clean up temporary files
+    cleanup_temp_files
 
     # Remove the downloaded dotfiles directory
     if [[ -d "$DOTFILES_ROOT" ]]; then
       log_info "Removing downloaded dotfiles directory: $DOTFILES_ROOT"
-      rm -rf "$DOTFILES_ROOT"
-      log_info "Removed dotfiles directory"
+      if rm -rf "$DOTFILES_ROOT" 2>/dev/null; then
+        log_info "Removed dotfiles directory"
+      else
+        log_error "Failed to remove dotfiles directory"
+        ((errors++))
+      fi
     fi
 
-    log_success "Uninstallation completed"
+    # Summary
+    if (( errors == 0 )); then
+      log_success "Uninstallation completed successfully ($removed_count items removed)"
+    else
+      log_warning "Uninstallation completed with $errors error(s) ($removed_count items removed)"
+    fi
   else
     log_info "Uninstallation cancelled"
   fi
+}
+
+# Cleanup temporary files
+cleanup_temp_files() {
+  local cleaned=0
+  
+  # Clean up temporary files
+  for pattern in "/tmp/dotfiles-*" "/tmp/package-*" "/tmp/install-*"; do
+    if ls $pattern &>/dev/null; then
+      rm -f $pattern
+      ((cleaned++))
+    fi
+  done
+  
+  # Clean up zsh cache files
+  for pattern in "*.zwc" "*.zwc.old"; do
+    if ls $pattern &>/dev/null; then
+      rm -f $pattern
+      ((cleaned++))
+    fi
+  done
+  
+  if (( cleaned > 0 )); then
+    log_info "Cleaned up $cleaned temporary files"
+  fi
+  return 0
 }
 
 # =============================================================================
