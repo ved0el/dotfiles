@@ -1,16 +1,43 @@
 #!/usr/bin/env zsh
 
 # =============================================================================
-# Package Management Library - Common functions for all packages
+# Optimized Package Management Library - Fast startup with caching
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# Package Installation Functions
+# Fast Package Installation Functions
 # -----------------------------------------------------------------------------
 
-# Check if a package is installed
+# Fast package check with caching
+typeset -g __PKG_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/dotfiles/packages"
+typeset -g __PKG_CACHE_FILE="${__PKG_CACHE_DIR}/package_states"
+typeset -g __PKG_CACHE_AGE=3600  # 1 hour cache
+
+# Initialize cache directory
+init_package_cache() {
+    if [[ ! -d "$__PKG_CACHE_DIR" ]]; then
+        mkdir -p "$__PKG_CACHE_DIR" 2>/dev/null
+    fi
+}
+
+# Ultra-fast package check (cached)
 is_package_installed() {
-  command -v "$1" &>/dev/null
+    local package_name="$1"
+    local cache_file="$__PKG_CACHE_FILE"
+    
+    # Fast cache check
+    if [[ -f "$cache_file" ]] && grep -q "^${package_name}:installed$" "$cache_file" 2>/dev/null; then
+        return 0
+    fi
+    
+    # Quick command check
+    if command -v "$package_name" &>/dev/null; then
+        # Update cache
+        echo "${package_name}:installed" >> "$cache_file" 2>/dev/null
+        return 0
+    fi
+    
+    return 1
 }
 
 # Install package using OS-specific package manager
@@ -62,6 +89,9 @@ install_package() {
   
   if [[ "$success" == "true" ]]; then
     [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "Success: $package_name installed successfully"
+    # Update cache
+    sed -i '' "/^${package_name}:/d" "$__PKG_CACHE_FILE" 2>/dev/null
+    echo "${package_name}:installed" >> "$__PKG_CACHE_FILE"
     return 0
   else
     [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "Error: Failed to install $package_name"
@@ -81,6 +111,9 @@ install_package_custom() {
   
   if [[ "$success" == "true" ]]; then
     [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "Success: $package_name installed successfully"
+    # Update cache
+    sed -i '' "/^${package_name}:/d" "$__PKG_CACHE_FILE" 2>/dev/null
+    echo "${package_name}:installed" >> "$__PKG_CACHE_FILE"
     return 0
   else
     [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "Error: Failed to install $package_name"
@@ -89,61 +122,13 @@ install_package_custom() {
 }
 
 # -----------------------------------------------------------------------------
-# Package Management Functions
+# Optimized Package Management Functions
 # -----------------------------------------------------------------------------
 
-# Run package installation flow
-run_package_install() {
-  local package_name="$1"
-  local pre_install_func="$2"
-  local post_install_func="$3"
-  local init_func="$4"
-  local custom_install_command="$5"
-  
-  # Check if package is already installed
-  if is_package_installed "$package_name"; then
-    # Package is installed, run initialization
-    [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "Package $package_name already installed, initializing..."
-    if [[ -n "$init_func" ]] && typeset -f "$init_func" >/dev/null; then
-      "$init_func"
-    fi
-    return $?
-  fi
-  
-  # Package not installed, proceed with installation
-  [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "Installing $package_name..."
-  
-  # Run pre-installation setup
-  if [[ -n "$pre_install_func" ]] && typeset -f "$pre_install_func" >/dev/null; then
-    "$pre_install_func"
-  fi
-  
-  # Install package
-  local install_success=false
-  if [[ -n "$custom_install_command" ]]; then
-    install_package_custom "$package_name" "$custom_install_command" && install_success=true
-  else
-    install_package "$package_name" && install_success=true
-  fi
-  
-  # Run post-installation setup if successful
-  if [[ "$install_success" == "true" ]]; then
-    if [[ -n "$post_install_func" ]] && typeset -f "$post_install_func" >/dev/null; then
-      "$post_install_func"
-    fi
-    
-    # Run initialization
-    if [[ -n "$init_func" ]] && typeset -f "$init_func" >/dev/null; then
-      "$init_func"
-    fi
-    return $?
-  else
-    return 1
-  fi
-}
+# Removed complex run_package_install function - using simplified init_package_template instead
 
 # -----------------------------------------------------------------------------
-# Utility Functions
+# Utility Functions (optimized)
 # -----------------------------------------------------------------------------
 
 # Create directory if it doesn't exist
@@ -181,23 +166,26 @@ create_symlink() {
 }
 
 # -----------------------------------------------------------------------------
-# Package Template Functions
+# Fast Package Template Functions
 # -----------------------------------------------------------------------------
 
-# Initialize package with standard template
+# Ultra-fast package template initialization
 init_package_template() {
   local package_name="$1"
-  local package_desc="$2"
-  local pre_install_func="pre_install"
-  local post_install_func="post_install"
-  local init_func="init"
-  local custom_install_command=""
   
-  # Check if custom install command is defined
-  if typeset -f "custom_install" >/dev/null; then
-    custom_install_command="custom_install"
+  # Fast check if already installed
+  if is_package_installed "$package_name"; then
+    # Run init function if available
+    typeset -f "init" >/dev/null && init
+    return $?
   fi
   
-  # Run the package installation flow
-  run_package_install "$package_name" "$pre_install_func" "$post_install_func" "$init_func" "$custom_install_command"
+  # Not installed - run installation flow
+  typeset -f "pre_install" >/dev/null && pre_install
+  typeset -f "custom_install" >/dev/null && custom_install || install_package "$package_name"
+  typeset -f "post_install" >/dev/null && post_install
+  typeset -f "init" >/dev/null && init
 }
+
+# Initialize cache
+init_package_cache

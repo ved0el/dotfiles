@@ -40,15 +40,17 @@ init() {
   
   [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "Initializing goenv"
   
-  # Add goenv to PATH
-  export PATH="$goenv_dir/bin:$PATH"
-  
-  # Initialize goenv
-  if command -v goenv &>/dev/null; then
-    eval "$(goenv init -)"
+  # Set up lazy loading for goenv (don't load immediately)
+  if [[ -f "$goenv_dir/bin/goenv" ]]; then
+    # Create lazy wrapper for goenv commands
+    if [[ -f "$DOTFILES_ROOT/zshrc.d/lib/lazy_loader.zsh" ]]; then
+      source "$DOTFILES_ROOT/zshrc.d/lib/lazy_loader.zsh"
+      create_lazy_wrapper "goenv" "lazy_load_goenv"
+    fi
+    return 0
   fi
   
-  return 0
+  return 1
 }
 
 # -----------------------------------------------------------------------------

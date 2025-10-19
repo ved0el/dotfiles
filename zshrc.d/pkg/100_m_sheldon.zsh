@@ -64,9 +64,13 @@ init() {
   # Copy config file if it doesn't exist
   copy_if_missing "${DOTFILES_ROOT}/config/sheldon/plugins.toml" "$sheldon_config_file"
   
-  # Initialize sheldon if config exists
+  # Set up lazy loading for sheldon (don't load immediately)
   if [[ -f "$sheldon_config_file" ]]; then
-    eval "$(sheldon source)" &>/dev/null
+    # Create lazy wrapper for sheldon commands
+    if [[ -f "$DOTFILES_ROOT/zshrc.d/lib/lazy_loader.zsh" ]]; then
+      source "$DOTFILES_ROOT/zshrc.d/lib/lazy_loader.zsh"
+      create_lazy_wrapper "sheldon" "lazy_load_sheldon"
+    fi
     return 0
   fi
   

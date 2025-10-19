@@ -40,17 +40,25 @@ init() {
   
   [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "Initializing NVM"
   
-  # Load NVM
+  # Set up lazy loading for NVM (don't load immediately)
   if [[ -f "$nvm_dir/nvm.sh" ]]; then
-    source "$nvm_dir/nvm.sh"
+    # Create lazy wrapper for nvm commands
+    if [[ -f "$DOTFILES_ROOT/zshrc.d/lib/lazy_loader.zsh" ]]; then
+      source "$DOTFILES_ROOT/zshrc.d/lib/lazy_loader.zsh"
+      create_lazy_wrapper "nvm" "lazy_load_nvm"
+    fi
+    return 0
   fi
   
-  # Load NVM bash completion
-  if [[ -f "$nvm_dir/bash_completion" ]]; then
-    source "$nvm_dir/bash_completion"
-  fi
-  
-  return 0
+  return 1
+}
+
+# -----------------------------------------------------------------------------
+# 5. Custom Package Check (override default for NVM)
+# -----------------------------------------------------------------------------
+is_package_installed() {
+  # NVM doesn't have a command, check for directory instead
+  [[ -d "${HOME}/.nvm" ]]
 }
 
 # -----------------------------------------------------------------------------

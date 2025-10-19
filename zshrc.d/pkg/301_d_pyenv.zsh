@@ -40,15 +40,17 @@ init() {
   
   [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "Initializing pyenv"
   
-  # Add pyenv to PATH
-  export PATH="$pyenv_dir/bin:$PATH"
-  
-  # Initialize pyenv
-  if command -v pyenv &>/dev/null; then
-    eval "$(pyenv init -)"
+  # Set up lazy loading for pyenv (don't load immediately)
+  if [[ -f "$pyenv_dir/bin/pyenv" ]]; then
+    # Create lazy wrapper for pyenv commands
+    if [[ -f "$DOTFILES_ROOT/zshrc.d/lib/lazy_loader.zsh" ]]; then
+      source "$DOTFILES_ROOT/zshrc.d/lib/lazy_loader.zsh"
+      create_lazy_wrapper "pyenv" "lazy_load_pyenv"
+    fi
+    return 0
   fi
   
-  return 0
+  return 1
 }
 
 # -----------------------------------------------------------------------------
