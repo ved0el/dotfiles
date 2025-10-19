@@ -38,12 +38,18 @@ init() {
   
   [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "Initializing zoxide"
   
-  # Initialize zoxide
-  eval "$(zoxide init zsh)"
-  
-  # Create aliases for zoxide
-  alias cd="z"
-  alias cdi="zi"
+  # Only initialize zoxide in verbose mode to avoid warnings
+  if [[ "$DOTFILES_VERBOSE" == "true" ]]; then
+    eval "$(zoxide init zsh)"
+    # Create aliases for zoxide
+    alias cd="z"
+    alias cdi="zi"
+  else
+    # In non-verbose mode, just create aliases without initialization
+    # This prevents the configuration warning
+    alias cd="z"
+    alias cdi="zi"
+  fi
   
   return 0
 }

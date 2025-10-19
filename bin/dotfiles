@@ -111,6 +111,27 @@ EOF
   fi
 }
 
+# Auto-load configuration (for shell start)
+auto_load_config() {
+  local zshenv="$HOME/.zshenv"
+  if [[ -f "$zshenv" ]]; then
+    # Extract dotfiles variables and export them
+    local root=$(grep "^export DOTFILES_ROOT=" "$zshenv" 2>/dev/null | cut -d'=' -f2- | tr -d '"')
+    local profile=$(grep "^export DOTFILES_PROFILE=" "$zshenv" 2>/dev/null | cut -d'=' -f2- | tr -d '"')
+    local verbose=$(grep "^export DOTFILES_VERBOSE=" "$zshenv" 2>/dev/null | cut -d'=' -f2- | tr -d '"')
+    
+    # Export the variables
+    [[ -n "$root" ]] && export DOTFILES_ROOT="$root"
+    [[ -n "$profile" ]] && export DOTFILES_PROFILE="$profile"
+    [[ -n "$verbose" ]] && export DOTFILES_VERBOSE="$verbose"
+    
+    export DOTFILES_CONFIG_LOADED_FROM_ZSHENV=true
+    return 0
+  fi
+  export DOTFILES_CONFIG_LOADED_FROM_ZSHENV=false
+  return 1
+}
+
 # =============================================================================
 # Professional color scheme
 # =============================================================================
@@ -723,7 +744,30 @@ interactive_menu() {
         fi
         ;;
       8) show_help; ;;
-      q) exit 0 ;;
+      q) 
+        # Save configuration before exiting (silent unless in verbose mode)
+        if [[ -n "${DOTFILES_ROOT:-}" ]] && [[ -f "$DOTFILES_ROOT/bin/dotfiles" ]]; then
+          # Save current configuration to .zshenv
+          local zshenv="$HOME/.zshenv"
+          touch "$zshenv"
+
+          # Remove existing dotfiles exports
+          sed -i.bak '/^export DOTFILES_/d' "$zshenv" 2>/dev/null || true
+          rm -f "${zshenv}.bak"
+
+          # Add current configuration
+          cat >> "$zshenv" << EOF
+# Dotfiles Configuration - Saved from dotfiles menu
+export DOTFILES_ROOT="$DOTFILES_ROOT"
+export DOTFILES_PROFILE="$DOTFILES_PROFILE"
+export DOTFILES_VERBOSE="$DOTFILES_VERBOSE"
+EOF
+          
+          # Only show success message in verbose mode
+          [[ "$DOTFILES_VERBOSE" == "true" ]] && log_success "Configuration saved to ~/.zshenv"
+        fi
+        exit 0 
+        ;;
       *) log_error "Invalid choice"; sleep 1 ;;
     esac
   done
