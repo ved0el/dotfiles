@@ -49,6 +49,7 @@ if [[ "$DOTFILES_VERBOSE" == "true" ]]; then
     else
         echo "✅ Dotfiles configuration initialized with defaults"
     fi
-    echo "   Profile: $DOTFILES_PROFILE"
-    echo "   Root: $DOTFILES_ROOT"
+    echo "   DOTFILES_ROOT: $DOTFILES_ROOT"
+    echo "   DOTFILES_PROFILE: $DOTFILES_PROFILE"
+    echo "   DOTFILES_VERBOSE: $DOTFILES_VERBOSE"
 fi
