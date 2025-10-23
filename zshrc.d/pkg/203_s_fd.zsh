@@ -36,9 +36,9 @@ init() {
     return 1
   fi
   
-  [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "Initializing fd"
+  [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "Setting up fd aliases"
   
-  # Create aliases for fd
+  # Create aliases for fd (lightweight)
   alias find="fd"
   
   # Set up fd configuration
@@ -47,7 +47,5 @@ init() {
   return 0
 }
 
-# -----------------------------------------------------------------------------
-# 5. Main Package Initialization
-# -----------------------------------------------------------------------------
-init_package_template "$PACKAGE_NAME" "$PACKAGE_DESC"
+# Skip template system for faster loading
+# FD is ready to use

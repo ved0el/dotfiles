@@ -25,19 +25,34 @@ is_package_installed() {
     local package_name="$1"
     local cache_file="$__PKG_CACHE_FILE"
     
-    # Fast cache check
-    if [[ -f "$cache_file" ]] && grep -q "^${package_name}:installed$" "$cache_file" 2>/dev/null; then
-        return 0
+    # Fast cache check with age validation
+    if [[ -f "$cache_file" ]]; then
+        local cache_age=$(($(date +%s) - $(stat -f %m "$cache_file" 2>/dev/null || echo 0)))
+        if [[ $cache_age -lt $__PKG_CACHE_AGE ]]; then
+            if grep -q "^${package_name}:installed$" "$cache_file" 2>/dev/null; then
+                return 0
+            elif grep -q "^${package_name}:missing$" "$cache_file" 2>/dev/null; then
+                return 1
+            fi
+        fi
     fi
     
-    # Quick command check
+    # Cache miss or expired - check actual installation
+    local is_installed=false
     if command -v "$package_name" &>/dev/null; then
-        # Update cache
-        echo "${package_name}:installed" >> "$cache_file" 2>/dev/null
-        return 0
+        is_installed=true
     fi
     
-    return 1
+    # Update cache
+    init_package_cache
+    if [[ "$is_installed" == "true" ]]; then
+        echo "${package_name}:installed" >> "$cache_file"
+    else
+        echo "${package_name}:missing" >> "$cache_file"
+    fi
+    
+    # Return result
+    [[ "$is_installed" == "true" ]] && return 0 || return 1
 }
 
 # Install package using OS-specific package manager

@@ -47,7 +47,5 @@ init() {
   return 0
 }
 
-# -----------------------------------------------------------------------------
-# 5. Main Package Initialization
-# -----------------------------------------------------------------------------
-init_package_template "$PACKAGE_NAME" "$PACKAGE_DESC"
+# Skip template system for faster loading
+# Ripgrep is ready to use

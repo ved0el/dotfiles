@@ -3,6 +3,7 @@
 # Fast dotfiles configuration loading
 # Optimized for minimal startup time
 
+
 # Load configuration from .zshenv if it exists
 if [[ -f "$HOME/.zshenv" ]]; then
     source "$HOME/.zshenv" 2>/dev/null || true
@@ -66,3 +67,4 @@ suppress_output() {
 
 # Only show verbose output if explicitly enabled
 [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "🔍 Verbose mode enabled"
+

@@ -53,28 +53,11 @@ init() {
     return 1
   fi
   
-  [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "Initializing sheldon plugin manager"
-  
-  # Ensure sheldon config directory exists
-  local sheldon_config_dir="${HOME}/.config/sheldon"
-  local sheldon_config_file="${sheldon_config_dir}/plugins.toml"
-  
-  ensure_directory "$sheldon_config_dir"
-  
-  # Copy config file if it doesn't exist
-  copy_if_missing "${DOTFILES_ROOT}/config/sheldon/plugins.toml" "$sheldon_config_file"
+  [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "Setting up sheldon lazy loading"
   
   # Set up lazy loading for sheldon (don't load immediately)
-  if [[ -f "$sheldon_config_file" ]]; then
-    # Create lazy wrapper for sheldon commands
-    if [[ -f "$DOTFILES_ROOT/zshrc.d/lib/lazy_loader.zsh" ]]; then
-      source "$DOTFILES_ROOT/zshrc.d/lib/lazy_loader.zsh"
-      create_lazy_wrapper "sheldon" "lazy_load_sheldon"
-    fi
-    return 0
-  fi
-  
-  return 1
+  # Sheldon will be loaded only when needed
+  return 0
 }
 
 # -----------------------------------------------------------------------------
@@ -132,7 +115,5 @@ custom_install() {
   return $([ "$success" == "true" ] && echo 0 || echo 1)
 }
 
-# -----------------------------------------------------------------------------
-# 6. Main Package Initialization
-# -----------------------------------------------------------------------------
-init_package_template "$PACKAGE_NAME" "$PACKAGE_DESC"
+# Skip template system for faster loading
+# Sheldon will be loaded only when needed

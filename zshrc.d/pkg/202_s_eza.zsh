@@ -36,9 +36,9 @@ init() {
     return 1
   fi
   
-  [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "Initializing eza"
+  [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "Setting up eza aliases"
   
-  # Create aliases for eza
+  # Create aliases for eza (lightweight)
   alias ls="eza"
   alias ll="eza -l"
   alias la="eza -la"
@@ -48,7 +48,5 @@ init() {
   return 0
 }
 
-# -----------------------------------------------------------------------------
-# 5. Main Package Initialization
-# -----------------------------------------------------------------------------
-init_package_template "$PACKAGE_NAME" "$PACKAGE_DESC"
+# Skip template system for faster loading
+# Eza is ready to use

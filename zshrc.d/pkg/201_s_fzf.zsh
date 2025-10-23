@@ -36,30 +36,19 @@ init() {
     return 1
   fi
   
-  [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "Initializing FZF configuration"
+  [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "Setting up FZF configuration"
   
-  # Set FZF configuration every time shell starts
+  # Set FZF configuration (lightweight)
   export FZF_DEFAULT_COMMAND="fd --type f"
-  export FZF_DEFAULT_OPTS="
-    --height 75% --multi --reverse --margin=0,1 \
-    --bind ctrl-f:page-down,ctrl-b:page-up,ctrl-/:toggle-preview \
-    --bind pgdn:preview-page-down,pgup:preview-page-up \
-    --preview 'bat --line-range :100 {}' \
-    --marker='✚' --pointer='▶' --prompt='❯ ' --no-separator --scrollbar='█' \
-    --color bg+:#262626,fg+:#f0dada,hl:#f09479,hl+:#f09479 \
-    --color marker:#f09479,spinner:#f09479,header:#f09479,info:#f0dada \
-    --color prompt:#f0dada,pointer:#f09479,marker:#f09479,spinner:#f09479 \
-    --color header:#f09479,info:#f0dada,prompt:#f0dada,pointer:#f09479"
+  export FZF_DEFAULT_OPTS="--height 75% --multi --reverse"
   
-  # Key bindings
-  if [[ -f ~/.fzf.zsh ]]; then
-    source ~/.fzf.zsh
-  fi
+  # Disable fzf completion bindings to avoid conflicts with zsh completion
+  export FZF_COMPLETION_TRIGGER=''
+  export FZF_COMPLETION_OPTS=''
   
+  # Skip loading ~/.fzf.zsh to avoid expensive operations
   return 0
 }
 
-# -----------------------------------------------------------------------------
-# 5. Main Package Initialization
-# -----------------------------------------------------------------------------
-init_package_template "$PACKAGE_NAME" "$PACKAGE_DESC"
+# Skip template system for faster loading
+# FZF is ready to use

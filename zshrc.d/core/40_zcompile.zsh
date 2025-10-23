@@ -4,11 +4,8 @@
 if [[ -z "$ZSHRC_COMPILED" ]]; then
     export ZSHRC_COMPILED=1
 
-    # Compile zsh files in background for faster subsequent loads
-    (
-        for file in "$DOTFILES_ROOT"/zshrc.d/**/*.zsh(N); do
-            [[ -f "$file" && (! -f "$file.zwc" || "$file" -nt "$file.zwc") ]] && zcompile "$file" &>/dev/null
-        done
-    ) &>/dev/null &
-    disown 2>/dev/null
+    # Compile zsh files synchronously to avoid background job notifications
+    for file in "$DOTFILES_ROOT"/zshrc.d/**/*.zsh(N); do
+        [[ -f "$file" && (! -f "$file.zwc" || "$file" -nt "$file.zwc") ]] && zcompile "$file" &>/dev/null
+    done
 fi

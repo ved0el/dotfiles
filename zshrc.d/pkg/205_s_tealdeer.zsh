@@ -25,11 +25,8 @@ pre_install() {
 post_install() {
   [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "Setting up tealdeer configuration..."
   
-  # Update tldr cache
-  if command -v tldr &>/dev/null; then
-    tldr --update &>/dev/null
-  fi
-  
+  # Skip expensive cache update during installation
+  # Cache will be updated on first use
   return 0
 }
 
@@ -42,7 +39,16 @@ init() {
     return 1
   fi
   
-  [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "Initializing tealdeer"
+  [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "Setting up tealdeer lazy loading"
+  
+  # Create lazy loading wrapper for tldr
+  tldr() {
+    # Update cache only on first use (not every startup)
+    if [[ ! -f ~/.cache/tealdeer ]]; then
+      command tldr --update &>/dev/null
+    fi
+    command tldr "$@"
+  }
   
   # Create aliases for tealdeer
   alias help="tldr"
@@ -50,7 +56,5 @@ init() {
   return 0
 }
 
-# -----------------------------------------------------------------------------
-# 5. Main Package Initialization
-# -----------------------------------------------------------------------------
-init_package_template "$PACKAGE_NAME" "$PACKAGE_DESC"
+# Skip template system for faster loading
+# Tealdeer is ready to use

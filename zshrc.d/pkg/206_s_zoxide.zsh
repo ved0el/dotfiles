@@ -38,23 +38,13 @@ init() {
   
   [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "Initializing zoxide"
   
-  # Only initialize zoxide in verbose mode to avoid warnings
-  if [[ "$DOTFILES_VERBOSE" == "true" ]]; then
-    eval "$(zoxide init zsh)"
-    # Create aliases for zoxide
-    alias cd="z"
-    alias cdi="zi"
-  else
-    # In non-verbose mode, just create aliases without initialization
-    # This prevents the configuration warning
-    alias cd="z"
-    alias cdi="zi"
-  fi
+  eval "$(zoxide init zsh)"
+  # Create aliases for zoxide
+  alias cd="z"
+  alias cdi="zi"
   
   return 0
 }
 
-# -----------------------------------------------------------------------------
-# 5. Main Package Initialization
-# -----------------------------------------------------------------------------
-init_package_template "$PACKAGE_NAME" "$PACKAGE_DESC"
+# Skip template system for faster loading
+# Zoxide is ready to use

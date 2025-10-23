@@ -42,9 +42,9 @@ init() {
     return 1
   fi
   
-  [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "Initializing bat"
+  [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "Setting up bat configuration"
   
-  # Set bat as the default pager for man pages
+  # Set bat as the default pager for man pages (lightweight)
   export MANPAGER="sh -c 'col -bx | bat -l man -p'"
   
   # Create alias for better compatibility
@@ -53,7 +53,5 @@ init() {
   return 0
 }
 
-# -----------------------------------------------------------------------------
-# 5. Main Package Initialization
-# -----------------------------------------------------------------------------
-init_package_template "$PACKAGE_NAME" "$PACKAGE_DESC"
+# Skip template system for faster loading
+# Bat is ready to use
