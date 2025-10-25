@@ -1,0 +1,275 @@
+# Dotfiles Project Rules and Guidelines
+
+## Project Overview
+This is a fast, profile-based dotfiles system with a modular package management approach. The system is designed for developers who want a clean, customizable, and performant shell environment.
+
+## Core Architecture
+
+### Profile System
+- **minimal**: Shell essentials (sheldon, tmux)
+- **server**: Minimal + server utilities (bat, fzf, eza, fd, ripgrep, tealdeer, zoxide)
+- **develop**: Server + development tools (nvm, pyenv, goenv, curlie)
+
+### Package System
+- Packages are organized by profile type with numbered prefixes
+- `100-199_m_*.zsh`: Minimal profile packages
+- `200-299_s_*.zsh`: Server profile packages
+- `300-399_d_*.zsh`: Develop profile packages
+- Each package follows a consistent structure with `pre_install()`, `post_install()`, and `init()` functions
+
+## File Structure Rules
+
+### Directory Organization
+```
+dotfiles/
+├── bin/                    # Executable scripts
+├── config/                 # Configuration files for tools
+├── zshrc.d/
+│   ├── core/              # Core shell configuration (loads first)
+│   ├── functions/         # Shared functions and utilities
+│   ├── packages/          # Package definitions
+│   └── plugins/           # Additional shell plugins
+├── zshrc                  # Main zsh configuration entry point
+└── [dotfiles]            # Individual dotfile configurations
+```
+
+### Naming Conventions
+- Package files: `XXX_p_name.zsh` where XXX is 100-199 (minimal), 200-299 (server), 300-399 (develop)
+- Core files: `XX_description.zsh` with leading zeros for ordering
+- Configuration files: Use descriptive names, avoid abbreviations
+
+## Code Style Guidelines
+
+### Zsh Scripting
+- Use `#!/usr/bin/env zsh` shebang
+- Follow POSIX-compliant patterns where possible
+- Use `set -euo pipefail` for error handling
+- Prefer `typeset` over `declare` for variable declarations
+- Use `local` for function-scoped variables
+
+### Function Structure
+```zsh
+function_name() {
+  local var_name="$1"
+  # Function body
+  return 0  # or return 1 for errors
+}
+```
+
+### Package Template Structure
+```zsh
+#!/usr/bin/env zsh
+
+# Package information
+PACKAGE_NAME="tool_name"
+PACKAGE_DESC="Description of the tool"
+PACKAGE_DEPS=""  # Space-separated dependencies
+
+# Pre-installation setup (optional)
+pre_install() {
+  # Setup before installation
+  return 0
+}
+
+# Post-installation setup (optional)
+post_install() {
+  # Setup after installation
+  return 0
+}
+
+# Package initialization (always runs)
+init() {
+  # Environment setup (aliases, PATH, etc.)
+  if is_package_installed "$PACKAGE_NAME"; then
+    # Set up environment
+    return 0
+  fi
+  return 1
+}
+
+# Installation logic
+if ! is_package_installed "$PACKAGE_NAME"; then
+  pre_install
+  install_package_simple "$PACKAGE_NAME" "$PACKAGE_DESC"
+  post_install
+fi
+```
+
+## Development Rules
+
+### Adding New Packages
+1. Copy `zshrc.d/packages/00_template.zsh`
+2. Choose appropriate number range (100-199, 200-299, 300-399)
+3. Update package information (name, description, dependencies)
+4. Implement required functions
+5. Test with `make validate` and `make test`
+
+### Modifying Core Configuration
+- Core files in `zshrc.d/core/` load in numerical order
+- Keep core files focused on shell configuration
+- Avoid package installation logic in core files
+- Use descriptive filenames with leading zeros
+
+### Configuration Management
+- Store tool configurations in `config/` directory
+- Use symlinks to `~/.config/` for tool-specific configs
+- Avoid hardcoding paths - use environment variables
+- Support both user and system-wide installations
+
+## Performance Guidelines
+
+### Shell Startup Optimization
+- Use `zsh-defer` for non-critical plugins
+- Minimize synchronous loading
+- Cache expensive operations
+- Compile zsh files when possible
+
+### Package Loading
+- Packages should load quickly
+- Avoid blocking operations in `init()` functions
+- Use background processes for non-critical setup
+- Cache package installation status
+
+## Testing and Validation
+
+### Required Tests
+- Configuration validation: `make validate`
+- Performance testing: `make perf`
+- Docker testing: `make docker-build && make docker-run`
+- Full test suite: `make test`
+
+### Testing Rules
+- All changes must pass validation
+- Performance regressions are not allowed
+- Docker tests must pass for all profiles
+- New packages must include tests
+
+## Error Handling
+
+### Error Messages
+- Use consistent error message format
+- Include helpful context and suggestions
+- Log errors to appropriate level (info, warning, error)
+- Provide clear next steps for users
+
+### Failure Modes
+- Graceful degradation when tools are unavailable
+- Clear error messages for missing dependencies
+- Fallback options for failed installations
+- Non-blocking errors for non-critical components
+
+## Security Guidelines
+
+### Installation Security
+- Verify package sources when possible
+- Use official package managers when available
+- Avoid running arbitrary scripts from the internet
+- Validate checksums for downloaded files
+
+### Configuration Security
+- Avoid storing sensitive information in config files
+- Use environment variables for secrets
+- Follow principle of least privilege
+- Document security considerations
+
+## Documentation Rules
+
+### Code Documentation
+- Document complex functions and logic
+- Include usage examples for new features
+- Update README.md for significant changes
+- Maintain inline comments for non-obvious code
+
+### User Documentation
+- Keep README.md up to date
+- Document new features and changes
+- Provide clear installation instructions
+- Include troubleshooting information
+
+## Git Workflow
+
+### Commit Messages
+- Use descriptive commit messages
+- Reference issues when applicable
+- Follow conventional commit format when possible
+- Include breaking change notes
+
+### Branch Strategy
+- Use feature branches for new development
+- Test all changes before merging
+- Keep main branch stable and deployable
+- Use tags for releases
+
+## Environment Variables
+
+### Standard Variables
+- `DOTFILES_ROOT`: Installation directory
+- `DOTFILES_PROFILE`: Active profile (minimal/server/develop)
+- `DOTFILES_VERBOSE`: Enable verbose logging
+- `DOTFILES_BRANCH`: Git branch to install
+- `DOTFILES_REPO`: Repository URL
+
+### Package Variables
+- `ZSHRC_CONFIG_DIR`: Path to zshrc.d directory
+- `PACKAGE_NAME`: Name of the package
+- `PACKAGE_DESC`: Description of the package
+- `PACKAGE_DEPS`: Dependencies for the package
+
+## Platform Support
+
+### Supported Platforms
+- macOS (with Homebrew)
+- Linux (Ubuntu/Debian, Fedora/CentOS, Arch, openSUSE)
+- FreeBSD (with pkg)
+
+### Platform Detection
+- Use `get_platform()` function for platform detection
+- Use `get_package_manager()` for package manager detection
+- Provide fallbacks for unsupported platforms
+- Document platform-specific requirements
+
+## Maintenance Rules
+
+### Regular Maintenance
+- Update package versions regularly
+- Test with latest OS versions
+- Monitor for security updates
+- Clean up deprecated features
+
+### Backward Compatibility
+- Maintain compatibility with existing configurations
+- Provide migration paths for breaking changes
+- Document deprecation timelines
+- Support multiple versions when necessary
+
+## Quality Assurance
+
+### Code Quality
+- Follow shell scripting best practices
+- Use consistent formatting and style
+- Avoid code duplication
+- Write maintainable and readable code
+
+### User Experience
+- Provide clear feedback during operations
+- Handle edge cases gracefully
+- Offer helpful error messages
+- Maintain consistent behavior across platforms
+
+## Release Management
+
+### Versioning
+- Use semantic versioning for releases
+- Tag releases in git
+- Maintain changelog
+- Document breaking changes
+
+### Distribution
+- Provide multiple installation methods
+- Support both interactive and non-interactive modes
+- Include verification and validation
+- Offer rollback capabilities
+
+---
+
+These rules ensure consistency, maintainability, and user experience across the dotfiles project. All contributors should follow these guidelines to maintain the quality and reliability of the system.
