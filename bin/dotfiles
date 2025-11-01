@@ -1,1060 +1,661 @@
 #!/usr/bin/env bash
 
+# =============================================================================
+# Dotfiles Manager - Clean, Cross-Platform Installation Script
+# =============================================================================
+# Features: Interactive/Non-interactive, Profile-based, Cross-platform
+# Supports: macOS (Darwin), Linux (Ubuntu, Fedora, Arch, etc.)
+# =============================================================================
+
 set -euo pipefail
 
 # =============================================================================
-# Dotfiles Manager - Install, Update, and Manage Your Dotfiles
+# Configuration & Constants
 # =============================================================================
-#
-# Usage:
-#   dotfiles                   # Interactive menu
-#   dotfiles install           # Install/update dotfiles
-#   dotfiles update            # Update dotfiles
-#   dotfiles uninstall         # Uninstall dotfiles
-#   dotfiles profile <name>    # Change profile
-#   dotfiles help              # Show help
-#
-# Installation:
-#   curl -fsSL $INSTALL_COMMAND_URL | bash
-#   bash <(curl -fsSL $INSTALL_COMMAND_URL)
-#
-# Environment variables:
-#   DOTFILES_ROOT    - Installation directory (default: ~/.dotfiles)
-#   DOTFILES_PROFILE - Profile: minimal, server, develop (default: minimal)
-#   DOTFILES_VERBOSE - Verbose logging: true/false (default: false)
-#   DOTFILES_REPO    - Repository URL (default: auto-detected)
-#   DOTFILES_BRANCH  - Branch to install (default: main)
-#
-# 💡 Easy URL Updates: All URLs are now global variables at the top of the script!
-#    Just update REPO_URL, INSTALL_COMMAND_URL, or DOCS_URL to change them.
-# =============================================================================
-
-# =============================================================================
-# Configuration
-# =============================================================================
-readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly SCRIPT_NAME="dotfiles"
 readonly DEFAULT_ROOT="$HOME/.dotfiles"
 readonly DEFAULT_PROFILE="minimal"
 readonly DEFAULT_VERBOSE="false"
 readonly DEFAULT_BRANCH="main"
 
 # URLs - Easy to update
-# To change any URL, just update these variables:
 readonly REPO_URL="https://github.com/ved0el/dotfiles.git"
 readonly INSTALL_COMMAND_URL="https://tinyurl.com/get-dotfiles"
 readonly DOCS_URL="https://github.com/ved0el/dotfiles"
 
 # =============================================================================
-# Configuration Management
+# Cross-Platform Detection & Utilities
 # =============================================================================
+get_os_type() { uname -s; }
 
-# Load configuration from .zshenv
-load_config() {
-  local zshenv="$HOME/.zshenv"
-  if [[ -f "$zshenv" ]]; then
-    # Check if .zshenv contains our required variables before sourcing
-    if grep -q "^export DOTFILES_ROOT=" "$zshenv" && \
-       grep -q "^export DOTFILES_PROFILE=" "$zshenv" && \
-       grep -q "^export DOTFILES_VERBOSE=" "$zshenv"; then
-
-      # Source the file to get existing values
-      source "$zshenv" 2>/dev/null || true
-
-      # Mark that configuration was loaded from .zshenv
-      export DOTFILES_CONFIG_LOADED_FROM_ZSHENV=true
-    else
-      export DOTFILES_CONFIG_LOADED_FROM_ZSHENV=false
-    fi
-  else
-    export DOTFILES_CONFIG_LOADED_FROM_ZSHENV=false
-  fi
+get_linux_distro() {
+    [[ -f /etc/os-release ]] && source /etc/os-release 2>/dev/null && echo "${ID:-unknown}" || echo "unknown"
 }
 
-# Save configuration to .zshenv
+# Cross-platform stat command
+stat_modification_time() {
+    local file="$1"
+    if command -v stat &>/dev/null; then
+        # Try GNU stat first (Linux), fallback to macOS/BSD
+        stat --version 2>/dev/null | grep -q "GNU" && stat -c %Y "$file" 2>/dev/null || stat -f %m "$file" 2>/dev/null || echo "0"
+    else
+        echo "0"
+    fi
+}
+
+# Cross-platform sed in-place editing
+sed_inplace() {
+    local file="$1"; shift
+    [[ "$(get_os_type)" == "Darwin" ]] && sed -i '' "$@" "$file" || sed -i "$@" "$file"
+}
+
+# =============================================================================
+# Color & UI Constants
+# =============================================================================
+# ANSI color codes - compatible with most terminals
+readonly RED='\033[0;31m'
+readonly GREEN='\033[0;32m'
+readonly YELLOW='\033[0;33m'
+readonly BLUE='\033[0;34m'
+readonly PURPLE='\033[0;35m'
+readonly CYAN='\033[0;36m'
+readonly WHITE='\033[1;37m'
+readonly GRAY='\033[0;90m'
+readonly BOLD='\033[1m'
+readonly DIM='\033[2m'
+readonly NC='\033[0m'  # No Color (reset)
+
+# UI symbols - fallback to ASCII if Unicode not supported
+readonly CHECK="✓"
+readonly CROSS="✗"
+readonly ARROW="→"
+readonly BULLET="•"
+
+# =============================================================================
+# Logging Functions
+# =============================================================================
+log_info() { echo -e "${CYAN}${BULLET}${NC} ${WHITE}$1${NC}"; }
+log_success() { echo -e "${GREEN}${CHECK}${NC} ${BOLD}$1${NC}"; }
+log_warning() { echo -e "${YELLOW}⚠${NC}  ${YELLOW}$1${NC}"; }
+log_error() { echo -e "${RED}${CROSS}${NC} ${RED}${BOLD}$1${NC}"; }
+log_step() { echo -e "${PURPLE}${ARROW}${NC} ${BOLD}$1${NC}"; }
+log_progress() { [[ "${DOTFILES_VERBOSE:-$DEFAULT_VERBOSE}" == "true" ]] && echo -e "${GRAY}${DIM}  $1${NC}"; }
+log_verbose() { [[ "${DOTFILES_VERBOSE:-$DEFAULT_VERBOSE}" == "true" ]] && echo -e "${GRAY}${DIM}[VERBOSE] $1${NC}"; }
+
+# =============================================================================
+# Validation Functions
+# =============================================================================
+validate_profile() {
+    local profile="$1"
+    [[ "$profile" =~ ^(minimal|server|develop)$ ]] || die "Invalid profile '$profile'. Use: minimal, server, or develop"
+}
+
+validate_verbose() {
+    local verbose="$1"
+    [[ "$verbose" =~ ^(true|false)$ ]] || export DOTFILES_VERBOSE="false"
+}
+
+is_interactive() { [[ -t 0 && -t 1 ]]; }
+
+die() { log_error "$1"; exit 1; }
+
+# =============================================================================
+# Banner & UI Functions
+# =============================================================================
+show_banner() {
+    echo -e "${BOLD}${BLUE}╭────────────────────────────────────────────────────────────────╮${NC}"
+    echo -e "${BOLD}${BLUE}│${NC}                    ${BOLD}${WHITE}🚀 Dotfiles Manager${NC}                         ${BOLD}${BLUE}│${NC}"
+    echo -e "${BOLD}${BLUE}│${NC}              ${GRAY}Clean, Cross-Platform Setup${NC}              ${BOLD}${BLUE}│${NC}"
+    echo -e "${BOLD}${BLUE}╰────────────────────────────────────────────────────────────────╯${NC}"
+    echo
+}
+
+show_section() {
+    echo; echo -e "${BOLD}${PURPLE}◆ $1${NC}"
+    echo -e "${GRAY}${DIM}────────────────────────────────────────────────────────────────${NC}"
+}
+
+show_subsection() { echo -e "${CYAN}${BULLET} ${BOLD}$1${NC}"; }
+
+# =============================================================================
+# Configuration Management
+# =============================================================================
+load_config() {
+    local zshenv="$HOME/.zshenv"
+    [[ ! -f "$zshenv" ]] && { export DOTFILES_CONFIG_LOADED_FROM_ZSHENV=false; log_verbose "No existing configuration found"; return; }
+
+    # Extract dotfiles variables
+    local root profile verbose
+    root=$(grep "^export DOTFILES_ROOT=" "$zshenv" 2>/dev/null | cut -d'=' -f2- | tr -d '"')
+    profile=$(grep "^export DOTFILES_PROFILE=" "$zshenv" 2>/dev/null | cut -d'=' -f2- | tr -d '"')
+    verbose=$(grep "^export DOTFILES_VERBOSE=" "$zshenv" 2>/dev/null | cut -d'=' -f2- | tr -d '"')
+
+    [[ -n "$root" ]] && export DOTFILES_ROOT="$root"
+    [[ -n "$profile" ]] && export DOTFILES_PROFILE="$profile"
+    [[ -n "$verbose" ]] && export DOTFILES_VERBOSE="$verbose"
+
+    export DOTFILES_CONFIG_LOADED_FROM_ZSHENV=true
+    log_verbose "Configuration loaded from ~/.zshenv"
+}
+
 save_config() {
-  # Only save if configuration wasn't loaded from .zshenv (i.e., we're using defaults)
-  # Check if configuration was loaded from .zshenv (for backward compatibility)
-  if [[ "${DOTFILES_CONFIG_LOADED_FROM_ZSHENV:-false}" == "true" ]]; then
-    if [[ "$DOTFILES_VERBOSE" == "true" ]]; then
-      log_progress "Configuration already exists in ~/.zshenv, skipping save"
-    fi
-    return 0
-  fi
+    [[ "${DOTFILES_CONFIG_LOADED_FROM_ZSHENV:-false}" == "true" ]] && return 0
 
-  # Also check .zshenv directly if the variable isn't set (for safety)
-  local zshenv="$HOME/.zshenv"
-  if [[ -f "$zshenv" ]] && grep -q "^export DOTFILES_ROOT=" "$zshenv" && \
-     grep -q "^export DOTFILES_PROFILE=" "$zshenv" && \
-     grep -q "^export DOTFILES_VERBOSE=" "$zshenv"; then
-    if [[ "$DOTFILES_VERBOSE" == "true" ]]; then
-      log_progress "Configuration already exists in ~/.zshenv, skipping save"
-    fi
-    return 0
-  fi
+    local zshenv="$HOME/.zshenv"
+    touch "$zshenv"
 
-  local zshenv="$HOME/.zshenv"
-  touch "$zshenv"
+    # Remove existing dotfiles exports
+    sed_inplace "$zshenv" '/^export DOTFILES_/d'
 
-  # Remove existing dotfiles exports
-  sed -i.bak '/^export DOTFILES_/d' "$zshenv" 2>/dev/null || true
-  rm -f "${zshenv}.bak"
+    # Add new configuration
+    cat >> "$zshenv" << EOF
 
-  # Add new exports
-  cat >> "$zshenv" << EOF
+# Dotfiles Configuration - Auto-generated
 export DOTFILES_ROOT="$DOTFILES_ROOT"
 export DOTFILES_PROFILE="$DOTFILES_PROFILE"
 export DOTFILES_VERBOSE="$DOTFILES_VERBOSE"
 EOF
 
-  if [[ "$DOTFILES_VERBOSE" == "true" ]]; then
-    log_progress "Configuration saved to ~/.zshenv"
-  fi
-}
-
-# Auto-load configuration (for shell start)
-auto_load_config() {
-  local zshenv="$HOME/.zshenv"
-  if [[ -f "$zshenv" ]]; then
-    # Extract dotfiles variables and export them
-    local root=$(grep "^export DOTFILES_ROOT=" "$zshenv" 2>/dev/null | cut -d'=' -f2- | tr -d '"')
-    local profile=$(grep "^export DOTFILES_PROFILE=" "$zshenv" 2>/dev/null | cut -d'=' -f2- | tr -d '"')
-    local verbose=$(grep "^export DOTFILES_VERBOSE=" "$zshenv" 2>/dev/null | cut -d'=' -f2- | tr -d '"')
-    
-    # Export the variables
-    [[ -n "$root" ]] && export DOTFILES_ROOT="$root"
-    [[ -n "$profile" ]] && export DOTFILES_PROFILE="$profile"
-    [[ -n "$verbose" ]] && export DOTFILES_VERBOSE="$verbose"
-    
-    export DOTFILES_CONFIG_LOADED_FROM_ZSHENV=true
-    return 0
-  fi
-  export DOTFILES_CONFIG_LOADED_FROM_ZSHENV=false
-  return 1
-}
-
-# =============================================================================
-# Professional color scheme
-# =============================================================================
-readonly RED='\033[0;31m'
-readonly GREEN='\033[0;32m'
-readonly YELLOW='\033[1;33m'
-readonly BLUE='\033[0;34m'
-readonly PURPLE='\033[0;35m'
-readonly CYAN='\033[0;36m'
-readonly ORANGE='\033[0;33m'
-readonly WHITE='\033[1;37m'
-readonly GRAY='\033[0;90m'
-readonly BOLD='\033[1m'
-readonly DIM='\033[2m'
-readonly NC='\033[0m' # No Color
-
-# UI Characters
-readonly CHECK="✓"
-readonly CROSS="✗"
-readonly ARROW="→"
-readonly BULLET="•"
-readonly SPINNER=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
-
-# =============================================================================
-# Utility Functions
-# =============================================================================
-
-# Professional logging with enhanced UX
-log_info() {
-  echo -e "${CYAN}${BULLET}${NC} ${WHITE}$1${NC}"
-}
-
-log_success() {
-  echo -e "${GREEN}${CHECK}${NC} ${BOLD}$1${NC}"
-}
-
-log_warning() {
-  echo -e "${YELLOW}⚠${NC}  ${YELLOW}$1${NC}"
-}
-
-log_error() {
-  echo -e "${RED}${CROSS}${NC} ${RED}${BOLD}$1${NC}"
-}
-
-log_step() {
-  echo -e "${PURPLE}${ARROW}${NC} ${BOLD}$1${NC}"
-}
-
-log_progress() {
-  if [[ "$DOTFILES_VERBOSE" == "true" ]]; then
-    echo -e "${GRAY}${DIM}  $1${NC}"
-  fi
-}
-
-log_verbose() {
-  if [[ "$DOTFILES_VERBOSE" == "true" ]]; then
-    echo -e "${GRAY}${DIM}[VERBOSE] $1${NC}"
-  fi
-}
-
-# Professional banners and separators
-show_banner() {
-  echo
-  echo -e "${BOLD}${BLUE}╭────────────────────────────────────────────────────────────────╮${NC}"
-  echo -e "${BOLD}${BLUE}│${NC}                    ${BOLD}${WHITE}🚀 Dotfiles Manager${NC}                         ${BOLD}${BLUE}│${NC}"
-  echo -e "${BOLD}${BLUE}│${NC}              ${GRAY}Professional Development Environment${NC}              ${BOLD}${BLUE}│${NC}"
-  echo -e "${BOLD}${BLUE}╰────────────────────────────────────────────────────────────────╯${NC}"
-  echo
-}
-
-show_section() {
-  echo
-  echo -e "${BOLD}${PURPLE}◆ $1${NC}"
-  echo -e "${GRAY}${DIM}────────────────────────────────────────────────────────────────${NC}"
-}
-
-show_subsection() {
-  echo -e "${CYAN}${BULLET} ${BOLD}$1${NC}"
-}
-
-die() {
-  log_error "$1"
-  exit 1
-}
-
-is_interactive() {
-  [[ -t 0 && -t 1 ]]
+    log_verbose "Configuration saved to ~/.zshenv"
 }
 
 # =============================================================================
 # Environment Setup
 # =============================================================================
 setup_environment() {
-  show_section "Configuration Setup"
-  
-  # Load existing configuration
-  load_config
-  
-  # Set default values if not provided
-  export DOTFILES_ROOT="${DOTFILES_ROOT:-$DEFAULT_ROOT}"
-  export DOTFILES_PROFILE="${DOTFILES_PROFILE:-$DEFAULT_PROFILE}"
-  export DOTFILES_VERBOSE="${DOTFILES_VERBOSE:-$DEFAULT_VERBOSE}"
-  export DOTFILES_BRANCH="${DOTFILES_BRANCH:-$DEFAULT_BRANCH}"
+    show_section "Configuration Setup"
 
-  # Auto-detect repository if not set
-  if [[ -z "${DOTFILES_REPO:-}" ]]; then
-    if [[ -d "$SCRIPT_DIR/.git" ]]; then
-      # We're in a git repo, get the remote
-      DOTFILES_REPO=$(cd "$SCRIPT_DIR" && git remote get-url origin 2>/dev/null || echo "")
-      log_verbose "Detected repository from local git remote"
-    else
-      # First-time install (running via curl); fall back to official repo
-      DOTFILES_REPO="$REPO_URL"
-      log_verbose "Using default repository URL"
+    # Load existing configuration
+    load_config
+
+    # Set defaults
+    export DOTFILES_ROOT="${DOTFILES_ROOT:-$DEFAULT_ROOT}"
+    export DOTFILES_PROFILE="${DOTFILES_PROFILE:-$DEFAULT_PROFILE}"
+    export DOTFILES_VERBOSE="${DOTFILES_VERBOSE:-$DEFAULT_VERBOSE}"
+    export DOTFILES_BRANCH="${DOTFILES_BRANCH:-$DEFAULT_BRANCH}"
+
+    # Auto-detect repository
+    if [[ -z "${DOTFILES_REPO:-}" ]]; then
+        if [[ -d "$SCRIPT_DIR/.git" ]]; then
+            DOTFILES_REPO=$(cd "$SCRIPT_DIR" && git remote get-url origin 2>/dev/null || echo "")
+            log_verbose "Auto-detected repository from local git"
+        else
+            DOTFILES_REPO="$REPO_URL"
+            log_verbose "Using default repository"
+        fi
     fi
-  fi
-  # Ensure the variable is exported for downstream commands
-  export DOTFILES_REPO
+    export DOTFILES_REPO
 
-  # Validate profile
-  case "$DOTFILES_PROFILE" in
-    minimal|server|develop) 
-      log_verbose "Profile '$DOTFILES_PROFILE' validated"
-      ;;
-    *)
-      log_warning "Invalid profile '$DOTFILES_PROFILE', using 'minimal'"
-      export DOTFILES_PROFILE="minimal"
-      ;;
-  esac
+    # Validate settings
+    validate_profile "$DOTFILES_PROFILE"
+    validate_verbose "$DOTFILES_VERBOSE"
 
-  # Validate verbose setting
-  case "$DOTFILES_VERBOSE" in
-    true|false) 
-      log_verbose "Verbose setting '$DOTFILES_VERBOSE' validated"
-      ;;
-    *)
-      log_warning "Invalid verbose setting '$DOTFILES_VERBOSE', using 'false'"
-      export DOTFILES_VERBOSE="false"
-      ;;
-  esac
-
-  # Display configuration in a professional format
-  echo
-  echo -e "${BOLD}${WHITE}Current Configuration:${NC}"
-  echo -e "  ${GRAY}Installation Directory:${NC}  ${CYAN}$DOTFILES_ROOT${NC}"
-  echo -e "  ${GRAY}Profile:${NC}                ${YELLOW}$DOTFILES_PROFILE${NC}"
-  echo -e "  ${GRAY}Verbose Logging:${NC}        ${GREEN}$DOTFILES_VERBOSE${NC}"
-  echo -e "  ${GRAY}Branch:${NC}                 ${BLUE}$DOTFILES_BRANCH${NC}"
-  echo -e "  ${GRAY}Repository:${NC}             ${PURPLE}${DOTFILES_REPO:-unset}${NC}"
 }
 
 # =============================================================================
 # Repository Management
 # =============================================================================
 setup_repository() {
-  show_section "Repository Management"
-  
-  if [[ -d "$DOTFILES_ROOT/.git" ]]; then
-    log_step "Updating existing repository"
-    log_progress "Fetching latest changes..."
-    cd "$DOTFILES_ROOT"
-    git fetch origin >/dev/null 2>&1
-    log_progress "Switching to branch '$DOTFILES_BRANCH'..."
-    git checkout "$DOTFILES_BRANCH" >/dev/null 2>&1
-    log_progress "Pulling latest changes..."
-    git pull origin "$DOTFILES_BRANCH" >/dev/null 2>&1
-  else
-    log_step "Cloning repository"
-    if [[ -n "${DOTFILES_REPO:-}" ]]; then
-      log_progress "Downloading from $DOTFILES_REPO..."
-      git clone -b "$DOTFILES_BRANCH" "$DOTFILES_REPO" "$DOTFILES_ROOT" >/dev/null 2>&1
-    else
-      die "Repository URL not specified. Set DOTFILES_REPO or run from git repository."
-    fi
-  fi
+    show_section "Repository Management"
 
-  cd "$DOTFILES_ROOT"
-  log_success "Repository ready"
+    if [[ -d "$DOTFILES_ROOT/.git" ]]; then
+        log_step "Updating existing repository"
+        cd "$DOTFILES_ROOT"
+        log_progress "Fetching latest changes..."
+        git fetch origin >/dev/null 2>&1
+        log_progress "Switching to branch '$DOTFILES_BRANCH'..."
+        git checkout "$DOTFILES_BRANCH" >/dev/null 2>&1
+        log_progress "Pulling latest changes..."
+        git pull origin "$DOTFILES_BRANCH" >/dev/null 2>&1
+    else
+        log_step "Cloning repository"
+        [[ -n "$DOTFILES_REPO" ]] || die "Repository URL not specified"
+        log_progress "Downloading from $DOTFILES_REPO..."
+        git clone -b "$DOTFILES_BRANCH" "$DOTFILES_REPO" "$DOTFILES_ROOT" >/dev/null 2>&1
+    fi
+
+    cd "$DOTFILES_ROOT"
+    log_success "Repository ready at $DOTFILES_ROOT"
 }
 
 # =============================================================================
-# File Linking
+# Symlink Management
 # =============================================================================
-
-# Files and directories to exclude from linking
-exclude_patterns=(
-  "README.md"
-  ".gitignore"
-  "install"
-  "bin"
-  "config"
-  "zshrc.d"
-  ".vscode"
-  ".git"
-  "*.zwc"
-  "*.zwc.old"
+readonly EXCLUDE_PATTERNS=(
+    "README.md" ".gitignore" "install" "bin" "config" "zshrc.d"
+    ".vscode" ".git" "*.zwc" "*.zwc.old"
 )
 
-# Function to check if item should be excluded
 should_exclude() {
-  local item="$1"
-  for pattern in "${exclude_patterns[@]}"; do
-    if [[ "$item" == $pattern ]]; then
-      return 0  # Should exclude
-    fi
-  done
-  return 1  # Should not exclude
-}
-
-link_files() {
-  show_section "Creating Symlinks"
-
-  # Create config directory
-  mkdir -p "$HOME/.config"
-
-  local link_count=0
-
-  # Link all relevant items in root directory to ~/. as dotfiles
-  show_subsection "Linking dotfiles to home directory"
-  for item in *; do
-    if [[ -e "$item" ]] && ! should_exclude "$item"; then
-      local dst=".$item"
-      local target="$HOME/$dst"
-      
-      # Remove existing symlink, file, or directory
-      if [[ -e "$target" ]]; then
-        if [[ -L "$target" ]]; then
-          rm "$target"
-        else
-          rm -rf "$target"
-        fi
-      fi
-      
-      # Create new symlink
-      ln -sf "$(pwd)/$item" "$target"
-      log_progress "$item ${ARROW} ~/$dst"
-      ((link_count++))
-    fi
-  done
-
-  # Link config items (both files and directories) to ~/.config
-  if [[ -d "config" ]]; then
-    show_subsection "Linking configuration files"
-    for item in config/*; do
-      if [[ -e "$item" ]]; then
-        local name=$(basename "$item")
-        local target="$HOME/.config/$name"
-        
-        # Create target directory if it doesn't exist
-        local target_dir=$(dirname "$target")
-        if [[ ! -d "$target_dir" ]]; then
-          mkdir -p "$target_dir"
-          log_progress "Created directory: $target_dir"
-        fi
-        
-        # Remove existing symlink, file, or directory
-        if [[ -e "$target" ]]; then
-          if [[ -L "$target" ]]; then
-            rm "$target"
-          else
-            rm -rf "$target"
-          fi
-        fi
-        
-        # Create new symlink
-        ln -sf "$(pwd)/$item" "$target"
-        log_progress "config/$name ${ARROW} ~/.config/$name"
-        ((link_count++))
-      fi
+    local item="$1"
+    for pattern in "${EXCLUDE_PATTERNS[@]}"; do
+        [[ "$item" == $pattern ]] && return 0
     done
-  fi
-
-  log_success "Created $link_count symlinks successfully"
+    return 1
 }
 
-# =============================================================================
-# Symlink Verification
-# =============================================================================
-verify_symlinks() {
-  show_section "Verifying Symlinks"
-  
-  local broken_links=0
-  local total_links=0
-  
-  # Check root directory symlinks
-  show_subsection "Checking dotfiles"
-  for item in *; do
-    if [[ -e "$item" ]] && ! should_exclude "$item"; then
-      local dst=".$item"
-      local target="$HOME/$dst"
-      ((total_links++))
-      
-      if [[ -L "$target" ]]; then
-        if [[ -e "$target" ]]; then
-          local link_target=$(readlink "$target")
-          local file_size=""
-          if [[ -f "$target" ]]; then
-            file_size=" ($(du -h "$target" | cut -f1))"
-          fi
-          log_info "${GREEN}${CHECK}${NC} ~/$dst ${ARROW} $link_target$file_size"
-        else
-          log_info "${RED}${CROSS}${NC} ~/$dst (broken symlink)"
-          ((broken_links++))
+create_symlinks() {
+    show_section "Creating Symlinks"
+
+    mkdir -p "$HOME/.config"
+    local link_count=0
+
+    # Link root directory files
+    show_subsection "Linking root files to home directory"
+    for item in *; do
+        if [[ -e "$item" ]] && ! should_exclude "$item"; then
+            local target="$HOME/.$item"
+
+            # Remove existing symlink or file
+            [[ -L "$target" || -e "$target" ]] && rm -rf "$target"
+
+            # Create symlink
+            ln -sf "$(pwd)/$item" "$target"
+            log_progress "$item ${ARROW} ~/$item"
+            ((link_count++))
         fi
-      else
-        log_info "${RED}${CROSS}${NC} ~/$dst (missing)"
-        ((broken_links++))
-      fi
-    fi
-  done
-  
-  # Check config directory symlinks
-  if [[ -d "config" ]]; then
-    show_subsection "Checking configuration files"
-    for item in config/*; do
-      if [[ -e "$item" ]]; then
-        local name=$(basename "$item")
-        local target="$HOME/.config/$name"
-        ((total_links++))
-        
-        if [[ -L "$target" ]]; then
-          if [[ -e "$target" ]]; then
-            local link_target=$(readlink "$target")
-            local file_info=""
-            if [[ -d "$target" ]]; then
-              local file_count=$(find "$target" -type f 2>/dev/null | wc -l | tr -d ' ')
-              file_info=" (directory with $file_count files)"
-            elif [[ -f "$target" ]]; then
-              file_info=" ($(du -h "$target" | cut -f1))"
+    done
+
+    # Link config directory
+    if [[ -d "config" ]]; then
+        show_subsection "Linking config files"
+        for item in config/*; do
+            if [[ -e "$item" ]]; then
+                local name=$(basename "$item")
+                local target="$HOME/.config/$name"
+
+                # Ensure target directory exists
+                mkdir -p "$(dirname "$target")"
+
+                # Remove existing
+                [[ -L "$target" || -e "$target" ]] && rm -rf "$target"
+
+                # Create symlink
+                ln -sf "$(pwd)/$item" "$target"
+                log_progress "config/$name ${ARROW} ~/.config/$name"
+                ((link_count++))
             fi
-            log_info "${GREEN}${CHECK}${NC} ~/.config/$name ${ARROW} $link_target$file_info"
-          else
-            log_info "${RED}${CROSS}${NC} ~/.config/$name (broken symlink)"
-            ((broken_links++))
-          fi
-        else
-          log_info "${RED}${CROSS}${NC} ~/.config/$name (missing)"
-          ((broken_links++))
-        fi
-      fi
-    done
-  fi
-  
-  echo
-  if (( broken_links == 0 )); then
-    log_success "All $total_links symlinks verified successfully"
-  else
-    log_warning "Found $broken_links broken/missing out of $total_links total symlinks"
-  fi
+        done
+    fi
+
+    log_success "Created $link_count symlinks"
 }
 
-# =============================================================================
-# Profile Configuration
-# =============================================================================
-configure_profile() {
-  log_info "Configuring profile: $DOTFILES_PROFILE"
+verify_symlinks() {
+    show_section "Verifying Symlinks"
 
-  # Save configuration to .zshenv
-  save_config
+    local total_links=0 broken_links=0
 
-  log_success "Profile configured"
+    # Check root symlinks
+    show_subsection "Checking root symlinks"
+    for item in *; do
+        if [[ -e "$item" ]] && ! should_exclude "$item"; then
+            local target="$HOME/.$item"
+            ((total_links++))
+            if [[ ! -L "$target" ]] || [[ ! -e "$target" ]]; then
+                log_error "Broken symlink: ~/$item"
+                ((broken_links++))
+            fi
+        fi
+    done
+
+    # Check config symlinks
+    if [[ -d "config" ]]; then
+        show_subsection "Checking config symlinks"
+        for item in config/*; do
+            if [[ -e "$item" ]]; then
+                local name=$(basename "$item")
+                local target="$HOME/.config/$name"
+                ((total_links++))
+                if [[ ! -L "$target" ]] || [[ ! -e "$target" ]]; then
+                    log_error "Broken symlink: ~/.config/$name"
+                    ((broken_links++))
+                fi
+            fi
+        done
+    fi
+
+    if [[ $broken_links -eq 0 ]]; then
+        log_success "All $total_links symlinks are working"
+    else
+        log_warning "Found $broken_links broken symlinks out of $total_links total"
+        return 1
+    fi
 }
 
 # =============================================================================
 # Package Installation
 # =============================================================================
 install_packages() {
-  log_info "Installing required packages for profile: $DOTFILES_PROFILE"
+    show_section "Package Installation"
 
-  # Set required environment variables
-  export ZSHRC_CONFIG_DIR="$DOTFILES_ROOT/zshrc.d"
+    # Check if zsh is available
+    command -v zsh &>/dev/null || {
+        log_warning "zsh not found, skipping package installation"
+        return 0
+    }
 
-  # Check if zsh is available
-  if ! command -v zsh &>/dev/null; then
-    log_warning "zsh not found, skipping package installation"
-    return 0
-  fi
+    log_info "Installing packages for profile: $DOTFILES_PROFILE"
 
-  # Run package installation using zsh
-  if [[ -f "$ZSHRC_CONFIG_DIR/functions/package_installer.zsh" ]]; then
-    # Create a temporary zsh script to run the package installation
-    local temp_script=$(mktemp)
-    cat > "$temp_script" << EOF
-#!/usr/bin/env zsh
-set -euo pipefail
+    # Determine which packages to install based on profile
+    local pkg_patterns=()
+    case "$DOTFILES_PROFILE" in
+        minimal) pkg_patterns=('*_m_*.zsh') ;;
+        server)  pkg_patterns=('*_m_*.zsh' '*_s_*.zsh') ;;
+        develop) pkg_patterns=('*_m_*.zsh' '*_s_*.zsh' '*_d_*.zsh') ;;
+    esac
 
-# Set required environment variables
-export ZSHRC_CONFIG_DIR="$DOTFILES_ROOT/zshrc.d"
-export DOTFILES_ROOT="$DOTFILES_ROOT"
-export DOTFILES_PROFILE="$DOTFILES_PROFILE"
-export DOTFILES_VERBOSE="$DOTFILES_VERBOSE"
-export DOTFILES_FORCE_INSTALL=1
+    # Source each matching package file to trigger installation
+    (   # Subshell to contain shopt changes
+        shopt -s nullglob  # Allow empty globs
+        for pattern in "${pkg_patterns[@]}"; do
+            for pkg_file in "$DOTFILES_ROOT/zshrc.d/pkg/$pattern"; do
+                if [[ -f "$pkg_file" ]]; then
+                    log_progress "Loading package: $(basename "$pkg_file")"
+                    source "$pkg_file"
+                fi
+            done
+        done
+    )
 
-# Source the package installer functions
-source "$ZSHRC_CONFIG_DIR/functions/package_installer.zsh"
-
-# Run package installation
-run_package_scripts
-
-echo "Package installation completed successfully"
-EOF
-
-    # Make the script executable and run it
-    chmod +x "$temp_script"
-    if zsh "$temp_script"; then
-      log_success "Package installation completed"
-    else
-      log_error "Package installation failed"
-      rm -f "$temp_script"
-      return 1
-    fi
-
-    # Clean up
-    rm -f "$temp_script"
-  else
-    log_warning "Package installer not found, skipping package installation"
-  fi
+    log_success "Package installation completed"
 }
 
 # =============================================================================
-# Link/Unlink Functions
+# Profile Management
 # =============================================================================
-
-link_dotfiles() {
-  show_banner
-  log_step "Linking dotfiles symlinks"
-  
-  # Check if dotfiles directory exists
-  if [[ ! -d "$DOTFILES_ROOT" ]]; then
-    log_error "Dotfiles directory not found: $DOTFILES_ROOT"
-    log_info "Please run 'Install/Update' first to set up the dotfiles"
-    return 1
-  fi
-  
-  # Change to dotfiles directory
-  cd "$DOTFILES_ROOT" || {
-    log_error "Cannot access dotfiles directory: $DOTFILES_ROOT"
-    return 1
-  }
-  
-  # Create symlinks
-  link_files
-  verify_symlinks
-  
-  log_success "Symlinks created successfully"
-  echo
-  echo -e "${BOLD}${GREEN}╭────────────────────────────────────────────────────────────────╮${NC}"
-  echo -e "${BOLD}${GREEN}│${NC}${BOLD}${WHITE}                    🔗 Links Created!                           ${NC}${BOLD}${GREEN}│${NC}"
-  echo -e "${BOLD}${GREEN}╰────────────────────────────────────────────────────────────────╯${NC}"
-  echo
-  log_info "All dotfiles are now linked to your home directory"
-}
-
-unlink_dotfiles() {
-  show_banner
-  log_step "Removing dotfiles symlinks"
-  
-  # Check if dotfiles directory exists
-  if [[ ! -d "$DOTFILES_ROOT" ]]; then
-    log_error "Dotfiles directory not found: $DOTFILES_ROOT"
-    log_info "Nothing to unlink"
-    return 1
-  fi
-  
-  local unlink_count=0
-  
-  # Remove root directory symlinks (all dotfiles)
-  log_info "Removing root directory symlinks..."
-  if [[ -d "$DOTFILES_ROOT" ]]; then
-    for item in "$DOTFILES_ROOT"/*; do
-      if [[ -f "$item" ]]; then
-        local name="$(basename "$item")"
-        local dst=".$name"
-        if [[ -L "$HOME/$dst" ]] && [[ "$(readlink "$HOME/$dst")" == *"/.dotfiles/"* ]]; then
-          rm "$HOME/$dst"
-          log_progress "Removed ~/$dst"
-          ((unlink_count++))
-        fi
-      fi
-    done
-  fi
-  
-  # Remove config symlinks
-  if [[ -d "$HOME/.config" ]]; then
-    log_info "Removing config directory symlinks..."
-    for item in "$HOME/.config"/*; do
-      if [[ -L "$item" ]] && [[ "$(readlink "$item")" == *"/.dotfiles/"* ]]; then
-        local name=$(basename "$item")
-        rm "$item"
-        log_progress "Removed ~/.config/$name"
-        ((unlink_count++))
-      fi
-    done
-  fi
-  
-  if [[ $unlink_count -eq 0 ]]; then
-    log_info "No symlinks found to remove"
-  else
-    log_success "Removed $unlink_count symlinks"
-  fi
-  
-  echo
-  echo -e "${BOLD}${ORANGE}╭────────────────────────────────────────────────────────────────╮${NC}"
-  echo -e "${BOLD}${ORANGE}│${NC}${BOLD}${WHITE}                    🔓 Links Removed!                           ${NC}${BOLD}${ORANGE}│${NC}"
-  echo -e "${BOLD}${ORANGE}╰────────────────────────────────────────────────────────────────╯${NC}"
-  echo
-  log_info "Dotfiles directory is preserved at: $DOTFILES_ROOT"
-  log_info "You can re-link anytime using 'Link/Relink' option"
+configure_profile() {
+    log_info "Configuring profile: $DOTFILES_PROFILE"
+    save_config
+    log_success "Profile configured successfully"
 }
 
 # =============================================================================
-# Installation
+# Main Installation Flow
 # =============================================================================
 install_dotfiles() {
-  show_banner
-  log_step "Starting dotfiles installation"
+    show_banner
+    log_step "Starting dotfiles installation"
 
-  setup_environment
-  setup_repository
-  install_packages
-  link_files
-  verify_symlinks
-  configure_profile
+    setup_environment
+    setup_repository
+    install_packages
+    create_symlinks
+    verify_symlinks
+    configure_profile
 
-  # Success banner
-  echo
-  echo -e "${BOLD}${GREEN}╭────────────────────────────────────────────────────────────────╮${NC}"
-  echo -e "${BOLD}${GREEN}│${NC}${BOLD}${WHITE}                    🎉 Installation Complete!                   ${NC}${BOLD}${GREEN}│${NC}"
-  echo -e "${BOLD}${GREEN}╰────────────────────────────────────────────────────────────────╯${NC}"
-  echo
-  
-  log_success "Profile '$DOTFILES_PROFILE' is now active"
-  
-  # Show profile-specific information
-  echo
-  echo -e "${BOLD}${WHITE}What's Included:${NC}"
-  case "$DOTFILES_PROFILE" in
-    minimal)
-      echo -e "  ${GREEN}${CHECK}${NC} Shell essentials (zsh, sheldon, tmux)"
-      echo -e "  ${GREEN}${CHECK}${NC} Basic command-line tools"
-      ;;
-    server)
-      echo -e "  ${GREEN}${CHECK}${NC} Shell essentials (zsh, sheldon, tmux)"
-      echo -e "  ${GREEN}${CHECK}${NC} Server utilities (bat, fzf, eza, fd, ripgrep, etc.)"
-      echo -e "  ${GREEN}${CHECK}${NC} Enhanced productivity tools"
-      ;;
-    develop)
-      echo -e "  ${GREEN}${CHECK}${NC} Full development environment"
-      echo -e "  ${GREEN}${CHECK}${NC} Shell + server utilities"
-      echo -e "  ${GREEN}${CHECK}${NC} Development tools (nvm, pyenv, goenv, etc.)"
-      echo -e "  ${GREEN}${CHECK}${NC} Tools installed on first use"
-      ;;
-  esac
+    # Success message
+    echo
+    echo -e "${BOLD}${GREEN}╭────────────────────────────────────────────────────────────────╮${NC}"
+    echo -e "${BOLD}${GREEN}│${NC}${BOLD}${WHITE}                    🎉 Installation Complete!                   ${NC}${BOLD}${GREEN}│${NC}"
+    echo -e "${BOLD}${GREEN}╰────────────────────────────────────────────────────────────────╯${NC}"
+    echo
 
-  # Next steps
-  echo
-  echo -e "${BOLD}${WHITE}Next Steps:${NC}"
-  echo -e "  ${CYAN}${BULLET}${NC} Starting new zsh shell..."
-  echo -e "  ${CYAN}${BULLET}${NC} Tools will auto-install when first used"
-  
-  echo
-  echo -e "${GRAY}${DIM}Thank you for using Dotfiles Manager!${NC}"
-  
-  # Start new zsh shell
-  if command -v zsh &>/dev/null; then
-    log_info "Starting new zsh shell..."
-    # Use exec to replace current process with zsh
-    # This ensures a clean shell environment
-    # Clear any input buffer before exec
-    exec zsh -l </dev/null
-  else
-    log_warning "zsh not found, please restart your terminal manually"
-    log_info "You can also run: source ~/.zshrc"
-  fi
+    log_success "Profile '$DOTFILES_PROFILE' is now active"
+
+    # Show what's included
+    echo
+    echo -e "${BOLD}${WHITE}What's Included:${NC}"
+    case "$DOTFILES_PROFILE" in
+        minimal)
+            echo -e "  ${GREEN}${CHECK}${NC} Shell essentials (zsh, sheldon, tmux)"
+            ;;
+        server)
+            echo -e "  ${GREEN}${CHECK}${NC} Shell + utilities (bat, fzf, eza, fd, ripgrep, tealdeer, zoxide)"
+            ;;
+        develop)
+            echo -e "  ${GREEN}${CHECK}${NC} Full development environment"
+            echo -e "  ${GREEN}${CHECK}${NC} All server tools + dev tools (nvm, pyenv, goenv, curlie)"
+            ;;
+    esac
+
+    # Start new shell
+    if command -v zsh &>/dev/null; then
+        log_info "Starting new zsh shell..."
+        exec zsh -l </dev/null
+    else
+        log_warning "zsh not found, please restart your terminal manually"
+    fi
 }
 
 # =============================================================================
 # Uninstallation
 # =============================================================================
 uninstall_dotfiles() {
-  log_warning "This will remove all dotfiles symlinks and configuration"
-  echo -n "Are you sure? [y/N]: "
-  read -r response
+    log_warning "This will remove all dotfiles symlinks and configuration"
 
-  if [[ "$response" =~ ^[Yy]$ ]]; then
-    log_info "Removing symlinks..."
+    if is_interactive; then
+        echo -n "Are you sure? [y/N]: "
+        read -r response
+        [[ ! "$response" =~ ^[Yy]$ ]] && { log_info "Uninstallation cancelled"; return 0; }
+    fi
 
-    # Remove root directory symlinks (all dotfiles)
-    log_info "Removing root directory symlinks..."
+    local unlink_count=0
+
+    # Remove root symlinks
     if [[ -d "$DOTFILES_ROOT" ]]; then
-      for item in "$DOTFILES_ROOT"/*; do
-        if [[ -f "$item" ]]; then
-          local name="$(basename "$item")"
-          local dst=".$name"
-          if [[ -L "$HOME/$dst" ]] && [[ "$(readlink "$HOME/$dst")" == *"/.dotfiles/"* ]]; then
-            rm "$HOME/$dst"
-            log_info "Removed ~/$dst"
-          fi
-        fi
-      done
+        for item in "$DOTFILES_ROOT"/*; do
+            [[ -f "$item" ]] || continue
+            local name="$(basename "$item")"
+            local target="$HOME/.$name"
+            if [[ -L "$target" ]] && [[ "$(readlink "$target")" == *"/.dotfiles/"* ]]; then
+                rm "$target"
+                ((unlink_count++))
+            fi
+        done
     fi
 
     # Remove config symlinks
     if [[ -d "$HOME/.config" ]]; then
-      for item in "$HOME/.config"/*; do
-        if [[ -L "$item" ]] && [[ "$(readlink "$item")" == *"/.dotfiles/"* ]]; then
-          local name=$(basename "$item")
-          rm "$item"
-          log_info "Removed ~/.config/$name"
-        fi
-      done
+        for item in "$HOME/.config"/*; do
+            if [[ -L "$item" ]] && [[ "$(readlink "$item")" == *"/.dotfiles/"* ]]; then
+                rm "$item"
+                ((unlink_count++))
+            fi
+        done
     fi
 
     # Remove from .zshenv
     local zshenv="$HOME/.zshenv"
     if [[ -f "$zshenv" ]]; then
-      sed -i.bak '/^export DOTFILES_/d' "$zshenv" 2>/dev/null || true
-      rm -f "${zshenv}.bak"
-      log_info "Removed configuration from ~/.zshenv"
+        sed_inplace "$zshenv" '/^export DOTFILES_/d'
+        sed_inplace "$zshenv" '/^# Dotfiles Configuration/d'
     fi
 
-    # Remove the downloaded dotfiles directory
-    if [[ -d "$DOTFILES_ROOT" ]]; then
-      log_info "Removing downloaded dotfiles directory: $DOTFILES_ROOT"
-      rm -rf "$DOTFILES_ROOT"
-      log_info "Removed dotfiles directory"
-    fi
+    # Remove dotfiles directory
+    [[ -d "$DOTFILES_ROOT" ]] && rm -rf "$DOTFILES_ROOT"
 
-    log_success "Uninstallation completed"
-  else
-    log_info "Uninstallation cancelled"
-  fi
+    log_success "Removed $unlink_count symlinks and dotfiles directory"
 }
 
 # =============================================================================
 # Interactive Menu
 # =============================================================================
 show_menu() {
-  clear
-  echo -e "${BOLD}${BLUE}"
-  cat << 'EOF'
-╭────────────────────────────────────────────────────────────────╮
-│                    🚀 Dotfiles Manager                         │
-│              Professional Development Environment              │
-╰────────────────────────────────────────────────────────────────╯
-EOF
-  echo -e "${NC}"
-  
-  echo
-  echo -e "${BOLD}${WHITE}Current Configuration:${NC}"
-  echo -e "  ${GRAY}Installation Directory:${NC} ${CYAN}${DOTFILES_ROOT:-$DEFAULT_ROOT}${NC}"
-  echo -e "  ${GRAY}Profile:${NC}                ${YELLOW}${DOTFILES_PROFILE:-$DEFAULT_PROFILE}${NC}"
-  echo -e "  ${GRAY}Verbose Logging:${NC}        ${GREEN}${DOTFILES_VERBOSE:-$DEFAULT_VERBOSE}${NC}"
-  echo -e "  ${GRAY}Branch:${NC}                 ${BLUE}${DOTFILES_BRANCH:-$DEFAULT_BRANCH}${NC}"
-  
-  echo
-  echo -e "${BOLD}${WHITE}Available Actions:${NC}"
-  echo -e "  ${BOLD}1)${NC} ${GREEN}🚀 Install/Update${NC}        - Set up or refresh your dotfiles"
-  echo -e "  ${BOLD}2)${NC} ${RED}🗑️ Uninstall${NC}             - Remove all dotfiles and configuration"
-  echo -e "  ${BOLD}3)${NC} ${BLUE}🔗 Link/Relink${NC}           - Create or refresh symlinks only"
-  echo -e "  ${BOLD}4)${NC} ${ORANGE}🔓 Unlink${NC}               - Remove symlinks only (keep dotfiles)"
-  echo -e "  ${BOLD}5)${NC} ${YELLOW}⚙️ Change Profile${NC}        - Switch between minimal/server/develop"
-  echo -e "  ${BOLD}6)${NC} ${BLUE}📁 Change Directory${NC}      - Modify installation location"
-  echo -e "  ${BOLD}7)${NC} ${CYAN}📦 Install Packages${NC}      - Install tools for current profile"
-  echo -e "  ${BOLD}8)${NC} ${GRAY}🔊 Toggle Verbose${NC}        - Enable/disable detailed logging"
-  echo -e "  ${BOLD}9)${NC} ${PURPLE}🔀 Change Branch${NC}         - Switch git branch"
-  echo -e "  ${BOLD}0)${NC} ${GRAY}❓ Help${NC}                  - View detailed instructions"
-  echo -e "  ${BOLD}q)${NC} ${GRAY}🚪 Quit${NC}                  - Exit the installer"
+    clear
+    show_banner
 
-  echo
-  echo -ne "${BOLD}${WHITE}Select an option ${GRAY}[1-90q]${WHITE}: ${NC}"
+    echo -e "${BOLD}${WHITE}Current Configuration:${NC}"
+    echo -e "  ${GRAY}OS:${NC}                  ${PURPLE}$(get_os_type)${NC}"
+    echo -e "  ${GRAY}Path:${NC}                ${CYAN}${DOTFILES_ROOT:-$DEFAULT_ROOT}${NC}"
+    echo -e "  ${GRAY}Profile:${NC}             ${YELLOW}${DOTFILES_PROFILE:-$DEFAULT_PROFILE}${NC}"
+    echo -e "  ${GRAY}Verbose:${NC}             ${GREEN}${DOTFILES_VERBOSE:-$DEFAULT_VERBOSE}${NC}"
+
+    echo
+    echo -e "${BOLD}${WHITE}Available Actions:${NC}"
+    echo -e "  ${CYAN}1)${NC} Install/Update dotfiles"
+    echo -e "  ${CYAN}2)${NC} Change profile (minimal/server/develop)"
+    echo -e "  ${CYAN}3)${NC} Create/refresh symlinks only"
+    echo -e "  ${CYAN}4)${NC} Install required packages"
+    echo -e "  ${CYAN}5)${NC} Verify symlinks"
+    echo -e "  ${CYAN}6)${NC} Uninstall everything"
+    echo -e "  ${CYAN}7)${NC} Show help"
+    echo -e "  ${CYAN}q)${NC} Quit"
+
+    echo
+    echo -n "Choose an option [1-7,q]: "
 }
 
 interactive_menu() {
-  while true; do
-    show_menu
-    read -r choice
+    while true; do
+        show_menu
+        read -r choice
 
-    case $choice in
-      1) install_dotfiles; break ;;
-      2) uninstall_dotfiles; break ;;
-      3) link_dotfiles; break ;;
-      4) unlink_dotfiles; break ;;
-      5)
-        echo -n "Profile [minimal/server/develop]: "
-        read -r profile
-        case $profile in
-          minimal|server|develop)
-            export DOTFILES_PROFILE="$profile"
-            log_success "Profile changed to: $profile"
-            ;;
-          *) log_error "Invalid profile"; sleep 1 ;;
+        case "$choice" in
+            1)
+                install_dotfiles
+                ;;
+            2)
+                echo -n "Enter new profile (minimal/server/develop): "
+                read -r new_profile
+                case "$new_profile" in
+                    minimal|server|develop)
+                        export DOTFILES_PROFILE="$new_profile"
+                        log_success "Profile changed to: $new_profile"
+                        ;;
+                    *) log_error "Invalid profile. Use: minimal, server, or develop" ;;
+                esac
+                sleep 2
+                ;;
+            3)
+                cd "$DOTFILES_ROOT"
+                create_symlinks
+                verify_symlinks
+                echo -e "\n${GRAY}${DIM}Press Enter to continue...${NC}"
+                read -r
+                ;;
+            4)
+                install_packages
+                echo -e "\n${GRAY}${DIM}Press Enter to continue...${NC}"
+                read -r
+                ;;
+            5)
+                cd "$DOTFILES_ROOT"
+                verify_symlinks
+                echo -e "\n${GRAY}${DIM}Press Enter to continue...${NC}"
+                read -r
+                ;;
+            6)
+                uninstall_dotfiles
+                [[ $? -eq 0 ]] && exit 0
+                echo -e "\n${GRAY}${DIM}Press Enter to continue...${NC}"
+                read -r
+                ;;
+            7)
+                echo
+                echo -e "${BOLD}${PURPLE}Help - Dotfiles Manager${NC}"
+                echo
+                echo -e "${BOLD}${WHITE}Installation:${NC}"
+                echo -e "  ${CYAN}${BULLET}${NC} Interactive: bash <(curl -fsSL $INSTALL_COMMAND_URL)"
+                echo -e "  ${CYAN}${BULLET}${NC} One-liner:   curl -fsSL $INSTALL_COMMAND_URL | bash"
+                echo
+                echo -e "${BOLD}${WHITE}Profiles:${NC}"
+                echo -e "  ${YELLOW}minimal${NC}  - Shell essentials (sheldon, tmux)"
+                echo -e "  ${YELLOW}server${NC}   - Shell + utilities (bat, fzf, eza, etc.)"
+                echo -e "  ${YELLOW}develop${NC}  - Full development environment"
+                echo
+                echo -e "${BOLD}${WHITE}Environment Variables:${NC}"
+                echo -e "  ${CYAN}DOTFILES_ROOT${NC}     - Installation directory"
+                echo -e "  ${CYAN}DOTFILES_PROFILE${NC}  - Profile selection"
+                echo -e "  ${CYAN}DOTFILES_VERBOSE${NC}  - Enable verbose logging"
+                echo
+                echo -e "${GRAY}${DIM}Press Enter to continue...${NC}"
+                read -r
+                ;;
+            q)
+                save_config
+                log_success "Goodbye!"
+                exit 0
+                ;;
+            *) log_error "Invalid choice"; sleep 1 ;;
         esac
-        ;;
-      6)
-        echo -n "Installation directory [$DOTFILES_ROOT]: "
-        read -r new_root
-        if [[ -n "$new_root" ]]; then
-          export DOTFILES_ROOT="$new_root"
-          log_success "Installation directory changed to: $new_root"
-        fi
-        ;;
-      7) install_packages; break ;;
-      8)
-        if [[ "$DOTFILES_VERBOSE" == "true" ]]; then
-          export DOTFILES_VERBOSE="false"
-          log_success "Verbose logging disabled"
-        else
-          export DOTFILES_VERBOSE="true"
-          log_success "Verbose logging enabled"
-        fi
-        ;;
-      9)
-        echo -n "Branch name [$DOTFILES_BRANCH]: "
-        read -r new_branch
-        if [[ -n "$new_branch" ]]; then
-          export DOTFILES_BRANCH="$new_branch"
-          log_success "Branch changed to: $new_branch"
-        fi
-        ;;
-      0) show_help; ;;
-      q) 
-        # Save configuration before exiting (silent unless in verbose mode)
-        if [[ -n "${DOTFILES_ROOT:-}" ]] && [[ -f "$DOTFILES_ROOT/bin/dotfiles" ]]; then
-          # Save current configuration to .zshenv
-          local zshenv="$HOME/.zshenv"
-          touch "$zshenv"
-
-          # Remove existing dotfiles exports
-          sed -i.bak '/^export DOTFILES_/d' "$zshenv" 2>/dev/null || true
-          rm -f "${zshenv}.bak"
-
-          # Add current configuration
-          cat >> "$zshenv" << EOF
-# Dotfiles Configuration - Saved from dotfiles menu
-export DOTFILES_ROOT="$DOTFILES_ROOT"
-export DOTFILES_PROFILE="$DOTFILES_PROFILE"
-export DOTFILES_VERBOSE="$DOTFILES_VERBOSE"
-EOF
-          
-          # Only show success message in verbose mode
-          [[ "$DOTFILES_VERBOSE" == "true" ]] && log_success "Configuration saved to ~/.zshenv"
-        fi
-        exit 0 
-        ;;
-      *) log_error "Invalid choice"; sleep 1 ;;
-    esac
-  done
-}
-
-show_help() {
-  clear
-  cat << EOF
-╭─────────────────────────────────────────────────────────────────────────────╮
-│                              ❓ Help                                        │
-╰─────────────────────────────────────────────────────────────────────────────╯
-
-Installation Methods:
-
-1. 🚀 Interactive Installation (recommended):
-   bash <(curl -fsSL $INSTALL_COMMAND_URL)
-
-2. 📥 One-liner (non-interactive):
-   curl -fsSL $INSTALL_COMMAND_URL | bash
-
-3. 🔧 Manual installation:
-   git clone $REPO_URL
-   cd dotfiles
-   ./bin/dotfiles
-
-Environment Variables:
-  DOTFILES_ROOT     - Installation directory (default: ~/.dotfiles)
-  DOTFILES_PROFILE  - Profile: minimal, server, develop (default: minimal)
-  DOTFILES_VERBOSE  - Verbose logging: true/false (default: false)
-  DOTFILES_REPO     - Repository URL (auto-detected if in git repo)
-  DOTFILES_BRANCH   - Branch to install (default: main)
-
-Profiles:
-  minimal   - Shell essentials (sheldon, tmux)
-  server    - Shell + utilities (bat, fzf, eza, etc.)
-  develop   - Full development environment (all tools)
-
-Examples:
-  DOTFILES_PROFILE=server    ./bin/dotfiles
-  DOTFILES_ROOT=~/my-dotfiles ./bin/dotfiles
-  DOTFILES_VERBOSE=true      ./bin/dotfiles
-
-💡 Tip: Use the interactive menu to configure everything before installation!
-
-Press 'q' to return to the main menu...
-EOF
-
-  # Wait for user to press 'q' key
-  while true; do
-    read -rsn1 key
-    if [[ "$key" == "q" ]]; then
-      break
-    fi
-  done
+    done
 }
 
 # =============================================================================
 # Command Line Interface
 # =============================================================================
 show_usage() {
-  cat << EOF
-Usage: dotfiles [COMMAND] [OPTIONS]
+    cat << EOF
+Usage: dotfiles [COMMAND]
 
 Commands:
-  install           Install or update dotfiles
-  update            Update dotfiles (same as install)
-  uninstall         Remove all dotfiles
-  link              Create or refresh symlinks only
-  unlink            Remove symlinks only (keep dotfiles)
-  profile <name>    Change profile (minimal/server/develop)
-  packages          Install required packages for current profile
-  verify            Verify all symlinks are working correctly
-  debug             Run developer debugging tools
-  help              Show this help message
+  install     Install or update dotfiles (default)
+  uninstall   Remove all dotfiles and configuration
+  link        Create or refresh symlinks only
+  profile     Change profile (minimal/server/develop)
+  packages    Install required packages for current profile
+  verify      Verify all symlinks are working
+  help        Show this help message
 
 Examples:
-  dotfiles                   # Interactive menu
-  dotfiles install           # Install/update dotfiles
-  dotfiles update            # Update dotfiles
-  dotfiles uninstall         # Uninstall dotfiles
-  dotfiles link              # Create/refresh symlinks only
-  dotfiles unlink            # Remove symlinks only
-  dotfiles profile server    # Change to server profile
-  dotfiles packages          # Install packages for current profile
-  dotfiles verify            # Verify all symlinks
-  dotfiles debug             # Run debugging tools
-  dotfiles help              # Show help
+  dotfiles                    # Interactive installation
+  dotfiles install            # Install/update dotfiles
+  dotfiles profile server     # Change to server profile
+  DOTFILES_PROFILE=server dotfiles install
 
 For more information, visit: $DOCS_URL
 EOF
 }
 
 # =============================================================================
-# Main Execution
+# Main Function
 # =============================================================================
 main() {
-  # Load configuration first
-  load_config
-  
-  # Handle command line arguments
-  case "${1:-}" in
-    install|update)
-      log_info "Installing/updating dotfiles..."
-      install_dotfiles
-      ;;
-    uninstall)
-      uninstall_dotfiles
-      ;;
-    link)
-      link_dotfiles
-      ;;
-    unlink)
-      unlink_dotfiles
-      ;;
-    profile)
-      if [[ -n "${2:-}" ]]; then
-        case "$2" in
-          minimal|server|develop)
-            export DOTFILES_PROFILE="$2"
-            # Save configuration to .zshenv
-            save_config
-            log_success "Profile changed to: $2"
-            log_info "Configuration saved to ~/.zshenv"
+    # Initialize
+    readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+    # Load existing configuration
+    load_config
+
+    # Parse command line arguments
+    case "${1:-}" in
+        install|"")
+            if is_interactive && [[ -z "${1:-}" ]]; then
+                interactive_menu
+            else
+                install_dotfiles
+            fi
             ;;
-          *)
-            log_error "Invalid profile '$2'. Use: minimal, server, or develop"
+        uninstall)
+            uninstall_dotfiles
+            ;;
+        link)
+            cd "$DOTFILES_ROOT"
+            create_symlinks
+            verify_symlinks
+            ;;
+        profile)
+            if [[ -n "${2:-}" ]]; then
+                case "$2" in
+                    minimal|server|develop)
+                        export DOTFILES_PROFILE="$2"
+                        save_config
+                        log_success "Profile changed to: $2"
+                        ;;
+                    *) die "Invalid profile '$2'. Use: minimal, server, or develop" ;;
+                esac
+            else
+                die "Profile name required. Usage: dotfiles profile <minimal|server|develop>"
+            fi
+            ;;
+        packages)
+            install_packages
+            ;;
+        verify)
+            cd "$DOTFILES_ROOT"
+            verify_symlinks
+            ;;
+        help|--help|-h)
+            show_usage
+            ;;
+        *)
+            log_error "Unknown command: $1"
+            echo
+            show_usage
             exit 1
             ;;
-        esac
-      else
-        log_error "Profile name required. Use: dotfiles profile <minimal|server|develop>"
-        exit 1
-      fi
-      ;;
-    packages)
-      install_packages
-      ;;
-    verify)
-      verify_symlinks
-      ;;
-    debug)
-      # Run debug tools
-      if [[ -f "$SCRIPT_DIR/dotfiles-debug" ]]; then
-        shift
-        exec "$SCRIPT_DIR/dotfiles-debug" "$@"
-      else
-        log_error "Debug tools not found: $SCRIPT_DIR/dotfiles-debug"
-        exit 1
-      fi
-      ;;
-    help|--help|-h)
-      show_usage
-      ;;
-    "")
-      # No arguments - show interactive menu if possible
-      if is_interactive; then
-        interactive_menu
-      else
-        # Try to detect if we can make it interactive
-        if [[ -t 0 ]] && [[ -t 1 ]]; then
-          # We can make it interactive
-          interactive_menu
-        else
-          # Non-interactive mode (e.g., curl | bash)
-          log_info "Running in non-interactive mode"
-          log_info "To use interactive menu, run: bash <(curl -fsSL $INSTALL_COMMAND_URL)"
-          echo
-          install_dotfiles
-        fi
-      fi
-      ;;
-    *)
-      log_error "Unknown command: $1"
-      echo
-      show_usage
-      exit 1
-      ;;
-  esac
+    esac
 }
 
 # Run main function
