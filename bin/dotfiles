@@ -229,92 +229,107 @@ readonly EXCLUDE_PATTERNS=(
 should_exclude() {
     local item="$1"
     for pattern in "${EXCLUDE_PATTERNS[@]}"; do
-        [[ "$item" == $pattern ]] && return 0
+        # Use glob matching for patterns with wildcards, exact match otherwise
+        if [[ "$pattern" == *"*"* ]]; then
+            [[ "$item" == $pattern ]] && return 0
+        else
+            [[ "$item" == "$pattern" ]] && return 0
+        fi
     done
     return 1
 }
 
 create_symlinks() {
-    show_section "Creating Symlinks"
-
-    mkdir -p "$HOME/.config"
-    local link_count=0
+    show_section "Creating symlinks..."
 
     # Link root directory files
-    show_subsection "Linking root files to home directory"
-    for item in *; do
-        if [[ -e "$item" ]] && ! should_exclude "$item"; then
-            local target="$HOME/.$item"
+    show_subsection "Linking root files..."
+    for item in "${DOTFILES_ROOT}"/*; do
+        local name=$(basename "$item")
+
+        if ! should_exclude "$name"; then
+            # Item should be linked
+            local target="$HOME/.$name"
 
             # Remove existing symlink or file
             [[ -L "$target" || -e "$target" ]] && rm -rf "$target"
 
             # Create symlink
-            ln -sf "$(pwd)/$item" "$target"
-            log_progress "$item ${ARROW} ~/$item"
-            ((link_count++))
+            ln -sf "$item" "$target"
         fi
     done
 
     # Link config directory
-    if [[ -d "config" ]]; then
-        show_subsection "Linking config files"
-        for item in config/*; do
-            if [[ -e "$item" ]]; then
-                local name=$(basename "$item")
-                local target="$HOME/.config/$name"
+    mkdir -p "$HOME/.config"
+    show_subsection "Linking config files..."
+    if [[ -d "$DOTFILES_ROOT/config" ]]; then
+        for item in "$DOTFILES_ROOT/config"/*; do
+            local name=$(basename "$item")
+            local target="$HOME/.config/$name"
 
-                # Ensure target directory exists
-                mkdir -p "$(dirname "$target")"
+            # Ensure target directory exists
+            mkdir -p "$(dirname "$target")"
 
-                # Remove existing
+            if ! should_exclude "$name"; then
+            # Remove existing
                 [[ -L "$target" || -e "$target" ]] && rm -rf "$target"
 
                 # Create symlink
-                ln -sf "$(pwd)/$item" "$target"
-                log_progress "config/$name ${ARROW} ~/.config/$name"
-                ((link_count++))
+                ln -sf "$item" "$target"
             fi
         done
+    else
+        log_info "${GRAY}No config directory found${NC}"
     fi
-
-    log_success "Created $link_count symlinks"
 }
 
 verify_symlinks() {
     show_section "Verifying Symlinks"
 
+    [[ -n "$DOTFILES_ROOT" ]] || { log_error "DOTFILES_ROOT is not set"; return 1; }
+    [[ -d "$DOTFILES_ROOT" ]] || { log_error "Dotfiles directory not found: $DOTFILES_ROOT"; return 1; }
+
     local total_links=0 broken_links=0
 
     # Check root symlinks
-    show_subsection "Checking root symlinks"
-    for item in *; do
-        if [[ -e "$item" ]] && ! should_exclude "$item"; then
-            local target="$HOME/.$item"
-            ((total_links++))
-            if [[ ! -L "$target" ]] || [[ ! -e "$target" ]]; then
-                log_error "Broken symlink: ~/$item"
-                ((broken_links++))
-            fi
-        fi
-    done
+    show_subsection "Root symlinks"
 
-    # Check config symlinks
-    if [[ -d "config" ]]; then
-        show_subsection "Checking config symlinks"
-        for item in config/*; do
-            if [[ -e "$item" ]]; then
-                local name=$(basename "$item")
-                local target="$HOME/.config/$name"
+    # Use ls to list files in a cross-platform way
+    if [[ -d "$DOTFILES_ROOT" ]]; then
+        while IFS= read -r item; do
+            [[ -z "$item" ]] && continue
+            local name=$(basename "$item")
+            if ! should_exclude "$name" && [[ -f "$item" || -L "$item" ]]; then
+                local target="$HOME/.$name"
                 ((total_links++))
-                if [[ ! -L "$target" ]] || [[ ! -e "$target" ]]; then
-                    log_error "Broken symlink: ~/.config/$name"
+                if [[ -L "$target" ]] && [[ -e "$target" ]]; then
+                    log_progress "$name ${ARROW} ~/.$name"
+                else
+                    log_error "Broken or missing: ~/.$name"
                     ((broken_links++))
                 fi
             fi
-        done
+        done < <(ls -1 "$DOTFILES_ROOT" 2>/dev/null || echo "")
     fi
 
+    # Check config symlinks
+    if [[ -d "$DOTFILES_ROOT/config" ]]; then
+        show_subsection "Config symlinks"
+        while IFS= read -r item; do
+            [[ -z "$item" ]] && continue
+            local name=$(basename "$item")
+            local target="$HOME/.config/$name"
+            ((total_links++))
+            if [[ -L "$target" ]] && [[ -e "$target" ]]; then
+                log_progress "config/$name ${ARROW} ~/.config/$name"
+            else
+                log_error "Broken or missing: ~/.config/$name"
+                ((broken_links++))
+            fi
+        done < <(ls -1 "$DOTFILES_ROOT/config" 2>/dev/null || echo "")
+    fi
+
+    echo
     if [[ $broken_links -eq 0 ]]; then
         log_success "All $total_links symlinks are working"
     else
@@ -376,7 +391,6 @@ configure_profile() {
 install_dotfiles() {
     show_banner
     log_step "Starting dotfiles installation"
-
     setup_environment
     setup_repository
     install_packages
@@ -518,7 +532,8 @@ interactive_menu() {
                 sleep 2
                 ;;
             3)
-                cd "$DOTFILES_ROOT"
+                setup_environment
+                [[ -d "$DOTFILES_ROOT" ]] || { log_error "Dotfiles directory not found: $DOTFILES_ROOT. Please run 'Install/Update dotfiles' first."; sleep 2; continue; }
                 create_symlinks
                 verify_symlinks
                 echo -e "\n${GRAY}${DIM}Press Enter to continue...${NC}"
@@ -530,7 +545,8 @@ interactive_menu() {
                 read -r
                 ;;
             5)
-                cd "$DOTFILES_ROOT"
+                setup_environment
+                [[ -d "$DOTFILES_ROOT" ]] || { log_error "Dotfiles directory not found: $DOTFILES_ROOT. Please run 'Install/Update dotfiles' first."; sleep 2; continue; }
                 verify_symlinks
                 echo -e "\n${GRAY}${DIM}Press Enter to continue...${NC}"
                 read -r
@@ -621,7 +637,8 @@ main() {
             uninstall_dotfiles
             ;;
         link)
-            cd "$DOTFILES_ROOT"
+            setup_environment
+            [[ -d "$DOTFILES_ROOT" ]] || die "Dotfiles directory not found: $DOTFILES_ROOT. Please run 'dotfiles install' first."
             create_symlinks
             verify_symlinks
             ;;
@@ -643,7 +660,8 @@ main() {
             install_packages
             ;;
         verify)
-            cd "$DOTFILES_ROOT"
+            setup_environment
+            [[ -d "$DOTFILES_ROOT" ]] || die "Dotfiles directory not found: $DOTFILES_ROOT. Please run 'dotfiles install' first."
             verify_symlinks
             ;;
         help|--help|-h)
