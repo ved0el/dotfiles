@@ -1,51 +1,12 @@
 #!/usr/bin/env zsh
 
-# =============================================================================
-# Ripgrep - A line-oriented search tool that recursively searches directories
-# =============================================================================
+PKG_NAME="ripgrep"
+PKG_DESC="A line-oriented search tool that recursively searches directories"
+PKG_CMD="rg"
 
-# -----------------------------------------------------------------------------
-# 1. Package Basic Info
-# -----------------------------------------------------------------------------
-PACKAGE_NAME="rg"
-PACKAGE_DESC="A line-oriented search tool that recursively searches directories"
-PACKAGE_DEPS=""  # No dependencies
-
-# -----------------------------------------------------------------------------
-# 2. Pre-installation Configuration
-# -----------------------------------------------------------------------------
-pre_install() {
-  [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "Preparing ripgrep installation..."
-  return 0
+pkg_init() {
+    alias grep="rg"
+    export RIPGREP_CONFIG_PATH="${XDG_CONFIG_HOME:-$HOME/.config}/ripgrep/ripgreprc"
 }
 
-# -----------------------------------------------------------------------------
-# 3. Post-installation Configuration
-# -----------------------------------------------------------------------------
-post_install() {
-  [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "Setting up ripgrep configuration..."
-  return 0
-}
-
-# -----------------------------------------------------------------------------
-# 4. Initialization Configuration (runs every shell startup)
-# -----------------------------------------------------------------------------
-init() {
-  # Only run if ripgrep is available
-  if ! is_package_installed "$PACKAGE_NAME"; then
-    return 1
-  fi
-  
-  [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "Initializing ripgrep"
-  
-  # Create aliases for ripgrep
-  alias grep="rg"
-  
-  # Set up ripgrep configuration
-  export RIPGREP_CONFIG_PATH="${HOME}/.config/ripgrep/ripgreprc"
-  
-  return 0
-}
-
-# Skip template system for faster loading
-# Ripgrep is ready to use
+init_package_template "$PKG_NAME"

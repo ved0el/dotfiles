@@ -1,206 +1,168 @@
 #!/usr/bin/env zsh
 
 # =============================================================================
-# Optimized Package Management Library - Fast startup with caching
+# Package Installation Helper - Optimized for fast startup
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# Fast Package Installation Functions
+# Colored Logging Functions
 # -----------------------------------------------------------------------------
-
-# Fast package check with caching
-typeset -g __PKG_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/dotfiles/packages"
-typeset -g __PKG_CACHE_FILE="${__PKG_CACHE_DIR}/package_states"
-typeset -g __PKG_CACHE_AGE=3600  # 1 hour cache
-
-# Initialize cache directory
-init_package_cache() {
-    if [[ ! -d "$__PKG_CACHE_DIR" ]]; then
-        mkdir -p "$__PKG_CACHE_DIR" 2>/dev/null
-    fi
+_dotfiles_log_debug() {
+    [[ "${DOTFILES_VERBOSE:-false}" == "true" ]] && echo "\033[0;35m[ DEBUG ]\033[0m $*"
 }
 
-# Ultra-fast package check (cached)
+_dotfiles_log_warning() {
+    [[ "${DOTFILES_VERBOSE:-false}" == "true" ]] && echo "\033[0;33m[WARNING]\033[0m $*"
+}
+
+_dotfiles_log_error() {
+    [[ "${DOTFILES_VERBOSE:-false}" == "true" ]] && echo "\033[0;31m[ ERROR ]\033[0m $*"
+}
+
+_dotfiles_log_success() {
+    [[ "${DOTFILES_VERBOSE:-false}" == "true" ]] && echo "\033[0;32m[SUCCESS]\033[0m $*"
+}
+
+# -----------------------------------------------------------------------------
+# Package Check Function
+# -----------------------------------------------------------------------------
 is_package_installed() {
+    local cmd_path
+    cmd_path=$(command -v "$1" 2>/dev/null)
+    [[ -n "$cmd_path" && -x "$cmd_path" ]]
+}
+
+# -----------------------------------------------------------------------------
+# Installation Functions (OS-specific)
+# -----------------------------------------------------------------------------
+_dotfiles_install_package() {
     local package_name="$1"
-    local cache_file="$__PKG_CACHE_FILE"
-    
-    # Fast cache check with age validation
-    if [[ -f "$cache_file" ]]; then
-        local cache_age=$(($(date +%s) - $(stat -f %m "$cache_file" 2>/dev/null || echo 0)))
-        if [[ $cache_age -lt $__PKG_CACHE_AGE ]]; then
-            if grep -q "^${package_name}:installed$" "$cache_file" 2>/dev/null; then
-                return 0
-            elif grep -q "^${package_name}:missing$" "$cache_file" 2>/dev/null; then
-                return 1
-            fi
-        fi
-    fi
-    
-    # Cache miss or expired - check actual installation
-    local is_installed=false
-    if command -v "$package_name" &>/dev/null; then
-        is_installed=true
-    fi
-    
-    # Update cache
-    init_package_cache
-    if [[ "$is_installed" == "true" ]]; then
-        echo "${package_name}:installed" >> "$cache_file"
-    else
-        echo "${package_name}:missing" >> "$cache_file"
-    fi
-    
-    # Return result
-    [[ "$is_installed" == "true" ]] && return 0 || return 1
-}
+    local package_desc="${2:-}"
+    local success=false
 
-# Install package using OS-specific package manager
-install_package() {
-  local package_name="$1"
-  local success=false
-  
-  case "$(uname -s)" in
-    Darwin)
-      if command -v brew &>/dev/null; then
-        brew install "$package_name" && success=true
-      fi
-      ;;
-    Linux)
-      if [[ -f /etc/os-release ]]; then
-        source /etc/os-release
-        case "$ID" in
-          ubuntu|debian)
-            if command -v apt &>/dev/null; then
-              sudo apt update && sudo apt install -y "$package_name" && success=true
+    case "$(uname -s)" in
+        Darwin)
+            if command -v brew &>/dev/null; then
+                brew install "$package_name" &>/dev/null && success=true
             fi
             ;;
-          fedora|centos|rhel|rocky|alma)
-            if command -v dnf &>/dev/null; then
-              sudo dnf install -y "$package_name" && success=true
-            elif command -v yum &>/dev/null; then
-              sudo yum install -y "$package_name" && success=true
+        Linux)
+            if [[ -f /etc/os-release ]]; then
+                source /etc/os-release 2>/dev/null
+                case "$ID" in
+                    ubuntu|debian)
+                        if command -v apt &>/dev/null; then
+                            sudo apt update &>/dev/null && \
+                            sudo apt install -y "$package_name" &>/dev/null && success=true
+                        fi
+                        ;;
+                    fedora|centos|rhel|rocky|alma)
+                        if command -v dnf &>/dev/null; then
+                            sudo dnf install -y "$package_name" &>/dev/null && success=true
+                        elif command -v yum &>/dev/null; then
+                            sudo yum install -y "$package_name" &>/dev/null && success=true
+                        fi
+                        ;;
+                    arch|manjaro|endeavouros)
+                        if command -v pacman &>/dev/null; then
+                            sudo pacman -S --noconfirm "$package_name" &>/dev/null && success=true
+                        fi
+                        ;;
+                    opensuse|suse)
+                        if command -v zypper &>/dev/null; then
+                            sudo zypper install -y "$package_name" &>/dev/null && success=true
+                        fi
+                        ;;
+                esac
             fi
             ;;
-          arch|manjaro|endeavouros)
-            if command -v pacman &>/dev/null; then
-              sudo pacman -S --noconfirm "$package_name" && success=true
+        FreeBSD)
+            if command -v pkg &>/dev/null; then
+                sudo pkg install -y "$package_name" &>/dev/null && success=true
             fi
             ;;
-          opensuse|suse)
-            if command -v zypper &>/dev/null; then
-              sudo zypper install -y "$package_name" && success=true
-            fi
-            ;;
-        esac
-      fi
-      ;;
-    FreeBSD)
-      if command -v pkg &>/dev/null; then
-        sudo pkg install "$package_name" && success=true
-      fi
-      ;;
-  esac
-  
-  if [[ "$success" == "true" ]]; then
-    [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "Success: $package_name installed successfully"
-    # Update cache
-    sed -i '' "/^${package_name}:/d" "$__PKG_CACHE_FILE" 2>/dev/null
-    echo "${package_name}:installed" >> "$__PKG_CACHE_FILE"
-    return 0
-  else
-    [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "Error: Failed to install $package_name"
+    esac
+
+    [[ "$success" == "true" ]] && _dotfiles_log_success "$package_name is installed." && return 0
+    _dotfiles_log_error "$package_name is not installed."
     return 1
-  fi
-}
-
-# Install package using custom installer (for special cases)
-install_package_custom() {
-  local package_name="$1"
-  local install_command="$2"
-  local success=false
-  
-  if eval "$install_command"; then
-    success=true
-  fi
-  
-  if [[ "$success" == "true" ]]; then
-    [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "Success: $package_name installed successfully"
-    # Update cache
-    sed -i '' "/^${package_name}:/d" "$__PKG_CACHE_FILE" 2>/dev/null
-    echo "${package_name}:installed" >> "$__PKG_CACHE_FILE"
-    return 0
-  else
-    [[ "$DOTFILES_VERBOSE" == "true" ]] && echo "Error: Failed to install $package_name"
-    return 1
-  fi
 }
 
 # -----------------------------------------------------------------------------
-# Optimized Package Management Functions
+# Main Package Lifecycle Function
 # -----------------------------------------------------------------------------
-
-# Removed complex run_package_install function - using simplified init_package_template instead
-
-# -----------------------------------------------------------------------------
-# Utility Functions (optimized)
-# -----------------------------------------------------------------------------
-
-# Create directory if it doesn't exist
-ensure_directory() {
-  local dir="$1"
-  if [[ ! -d "$dir" ]]; then
-    mkdir -p "$dir" 2>/dev/null
-    return $?
-  fi
-  return 0
-}
-
-# Copy file if source exists and destination doesn't
-copy_if_missing() {
-  local source="$1"
-  local destination="$2"
-  
-  if [[ -f "$source" && ! -f "$destination" ]]; then
-    cp "$source" "$destination" 2>/dev/null
-    return $?
-  fi
-  return 0
-}
-
-# Create symlink if target doesn't exist
-create_symlink() {
-  local target="$1"
-  local link="$2"
-  
-  if [[ ! -e "$link" ]]; then
-    ln -sf "$target" "$link" 2>/dev/null
-    return $?
-  fi
-  return 0
-}
-
-# -----------------------------------------------------------------------------
-# Fast Package Template Functions
-# -----------------------------------------------------------------------------
-
-# Ultra-fast package template initialization
 init_package_template() {
-  local package_name="$1"
-  
-  # Fast check if already installed
-  if is_package_installed "$package_name"; then
-    # Run init function if available
-    typeset -f "init" >/dev/null && init
-    return $?
-  fi
-  
-  # Not installed - run installation flow
-  typeset -f "pre_install" >/dev/null && pre_install
-  typeset -f "custom_install" >/dev/null && custom_install || install_package "$package_name"
-  typeset -f "post_install" >/dev/null && post_install
-  typeset -f "init" >/dev/null && init
+    local package_name="${1:-${PKG_NAME}}"
+    local package_desc="${2:-${PKG_DESC}}"
+    local package_command="${3:-${PKG_CMD:-$package_name}}"
+
+    [[ -z "$package_name" ]] && _dotfiles_log_error "Package name not provided." && return 1
+
+    _dotfiles_log_debug "Checking $package_command..."
+
+    # If installed, run init only
+    if is_package_installed "$package_command"; then
+        _dotfiles_log_debug "$package_name is installed."
+        _dotfiles_log_debug "Initializing $package_name..."
+        typeset -f pkg_init >/dev/null && pkg_init || { _dotfiles_log_error "Initialization failed for $package_name." && return 1; }
+        return $?
+    fi
+
+    # Not installed - run installation flow
+    _dotfiles_log_warning "$package_name not found."
+
+    # Pre-install
+    if typeset -f pkg_pre_install >/dev/null; then
+            _dotfiles_log_debug "Running pre-install for $package_name..."
+            pkg_pre_install || { _dotfiles_log_error "Pre-install failed for $package_name." && return 1; }
+    fi
+
+    # Install
+    if typeset -f pkg_install >/dev/null; then
+        _dotfiles_log_debug "$package_name - $package_desc"
+        pkg_install || _dotfiles_log_error "Installation failed for $package_name."
+    else
+        _dotfiles_install_package "$package_name" "$package_desc" || return 1
+    fi
+
+    # Post-install
+    if typeset -f pkg_post_install >/dev/null; then
+        _dotfiles_log_debug "Running post-install for $package_name..."
+        pkg_post_install || _dotfiles_log_warning "Post-install failed for $package_name."
+    fi
+
+    # Initialize
+    _dotfiles_log_debug "Initializing $package_name..."
+    typeset -f pkg_init >/dev/null && pkg_init || { _dotfiles_log_error "Initialization failed for $package_name." && return 1; }
 }
 
-# Initialize cache
-init_package_cache
+# -----------------------------------------------------------------------------
+# Utility Functions
+# -----------------------------------------------------------------------------
+ensure_directory() {
+    local dir="$1"
+    [[ -d "$dir" ]] || mkdir -p "$dir" 2>/dev/null
+    return $?
+}
+
+copy_if_missing() {
+    local source="$1"
+    local destination="$2"
+
+    if [[ -f "$source" && ! -f "$destination" ]]; then
+        cp "$source" "$destination" 2>/dev/null
+        return $?
+    fi
+    return 0
+}
+
+create_symlink() {
+    local target="$1"
+    local link="$2"
+
+    if [[ ! -e "$link" && -e "$target" ]]; then
+        ln -sf "$target" "$link" 2>/dev/null
+        return $?
+    fi
+    return 0
+}
