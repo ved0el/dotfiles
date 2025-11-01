@@ -38,50 +38,50 @@ is_package_installed() {
 _dotfiles_install_package() {
     local package_name="$1"
     local package_desc="${2:-}"
-    local success=false
+  local success=false
 
-    case "$(uname -s)" in
-        Darwin)
-            if command -v brew &>/dev/null; then
+  case "$(uname -s)" in
+    Darwin)
+      if command -v brew &>/dev/null; then
                 brew install "$package_name" &>/dev/null && success=true
-            fi
-            ;;
-        Linux)
-            if [[ -f /etc/os-release ]]; then
+      fi
+      ;;
+    Linux)
+      if [[ -f /etc/os-release ]]; then
                 source /etc/os-release 2>/dev/null
-                case "$ID" in
-                    ubuntu|debian)
-                        if command -v apt &>/dev/null; then
+        case "$ID" in
+          ubuntu|debian)
+            if command -v apt &>/dev/null; then
                             sudo apt update &>/dev/null && \
                             sudo apt install -y "$package_name" &>/dev/null && success=true
-                        fi
-                        ;;
-                    fedora|centos|rhel|rocky|alma)
-                        if command -v dnf &>/dev/null; then
+            fi
+            ;;
+          fedora|centos|rhel|rocky|alma)
+            if command -v dnf &>/dev/null; then
                             sudo dnf install -y "$package_name" &>/dev/null && success=true
-                        elif command -v yum &>/dev/null; then
+            elif command -v yum &>/dev/null; then
                             sudo yum install -y "$package_name" &>/dev/null && success=true
-                        fi
-                        ;;
-                    arch|manjaro|endeavouros)
-                        if command -v pacman &>/dev/null; then
+            fi
+            ;;
+          arch|manjaro|endeavouros)
+            if command -v pacman &>/dev/null; then
                             sudo pacman -S --noconfirm "$package_name" &>/dev/null && success=true
-                        fi
-                        ;;
-                    opensuse|suse)
-                        if command -v zypper &>/dev/null; then
+            fi
+            ;;
+          opensuse|suse)
+            if command -v zypper &>/dev/null; then
                             sudo zypper install -y "$package_name" &>/dev/null && success=true
-                        fi
-                        ;;
-                esac
             fi
             ;;
-        FreeBSD)
-            if command -v pkg &>/dev/null; then
+        esac
+      fi
+      ;;
+    FreeBSD)
+      if command -v pkg &>/dev/null; then
                 sudo pkg install -y "$package_name" &>/dev/null && success=true
-            fi
-            ;;
-    esac
+      fi
+      ;;
+  esac
 
     [[ "$success" == "true" ]] && _dotfiles_log_success "$package_name is installed." && return 0
     _dotfiles_log_error "$package_name is not installed."
@@ -140,29 +140,29 @@ init_package_template() {
 # Utility Functions
 # -----------------------------------------------------------------------------
 ensure_directory() {
-    local dir="$1"
+  local dir="$1"
     [[ -d "$dir" ]] || mkdir -p "$dir" 2>/dev/null
     return $?
 }
 
 copy_if_missing() {
-    local source="$1"
-    local destination="$2"
+  local source="$1"
+  local destination="$2"
 
-    if [[ -f "$source" && ! -f "$destination" ]]; then
-        cp "$source" "$destination" 2>/dev/null
-        return $?
-    fi
-    return 0
+  if [[ -f "$source" && ! -f "$destination" ]]; then
+    cp "$source" "$destination" 2>/dev/null
+    return $?
+  fi
+  return 0
 }
 
 create_symlink() {
-    local target="$1"
-    local link="$2"
+  local target="$1"
+  local link="$2"
 
     if [[ ! -e "$link" && -e "$target" ]]; then
-        ln -sf "$target" "$link" 2>/dev/null
-        return $?
-    fi
-    return 0
+    ln -sf "$target" "$link" 2>/dev/null
+    return $?
+  fi
+  return 0
 }

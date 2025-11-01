@@ -4,7 +4,7 @@ PKG_NAME="nvm"
 PKG_DESC="Node Version Manager"
 
 is_package_installed() {
-    [[ -d "${HOME}/.nvm" ]]
+  [[ -d "${HOME}/.nvm" ]]
 }
 
 pkg_install() {
