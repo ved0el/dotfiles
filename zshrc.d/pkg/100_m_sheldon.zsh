@@ -24,7 +24,7 @@ pkg_post_install() {
 }
 
 pkg_init() {
-    _dotfiles_load_sheldon_cache
+    eval "$(sheldon source)"
 }
 
 init_package_template "$PKG_NAME"
