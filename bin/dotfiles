@@ -80,6 +80,7 @@ log_warning() { echo -e "${YELLOW}⚠${NC}  ${YELLOW}$1${NC}"; }
 log_error() { echo -e "${RED}${CROSS}${NC} ${RED}${BOLD}$1${NC}"; }
 log_step() { echo -e "${PURPLE}${ARROW}${NC} ${BOLD}$1${NC}"; }
 log_dim() { echo -e "${GRAY}${DIM}  $1${NC}"; }
+log_verbose() { [[ "${DOTFILES_VERBOSE:-$DEFAULT_VERBOSE}" == "true" ]] && echo -e "${GRAY}${DIM}[VERBOSE] $1${NC}"; }
 
 # =============================================================================
 # Validation Functions
@@ -534,10 +535,8 @@ interactive_menu() {
                 sleep 2
                 ;;
             3)
-                # setup_environment
-                # [[ -d "$DOTFILES_ROOT" ]] || { log_error "Dotfiles directory not found: $DOTFILES_ROOT. Please run 'Install/Update dotfiles' first."; sleep 2; continue; }
                 create_symlinks
-                verify_symlinks
+                verify_syml
                 echo -e "\n${GRAY}${DIM}Press Enter to continue...${NC}"
                 read -r
                 ;;
@@ -547,8 +546,6 @@ interactive_menu() {
                 read -r
                 ;;
             5)
-                # setup_environment
-                # [[ -d "$DOTFILES_ROOT" ]] || { log_error "Dotfiles directory not found: $DOTFILES_ROOT. Please run 'Install/Update dotfiles' first."; sleep 2; continue; }
                 verify_symlinks
                 echo -e "\n${GRAY}${DIM}Press Enter to continue...${NC}"
                 read -r
@@ -594,7 +591,7 @@ interactive_menu() {
                 ;;
             q)
                 save_config
-                log_ "Goodbye!"
+                log_success "Goodbye!"
                 exit 0
                 ;;
             *) log_error "Invalid choice"; sleep 1 ;;
@@ -671,8 +668,6 @@ main() {
             install_packages
             ;;
         verify)
-            # setup_environment
-            # [[ -d "$DOTFILES_ROOT" ]] || die "Dotfiles directory not found: $DOTFILES_ROOT. Please run 'dotfiles install' first."
             verify_symlinks
             ;;
         help|--help|-h)
