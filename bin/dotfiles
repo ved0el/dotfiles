@@ -7,7 +7,7 @@
 # Supports: macOS (Darwin), Linux (Ubuntu, Fedora, Arch, etc.)
 # =============================================================================
 
-set -euo pipefail
+# set -euo pipefail
 
 # =============================================================================
 # Configuration & Constants
@@ -79,8 +79,7 @@ log_success() { echo -e "${GREEN}${CHECK}${NC} ${BOLD}$1${NC}"; }
 log_warning() { echo -e "${YELLOW}⚠${NC}  ${YELLOW}$1${NC}"; }
 log_error() { echo -e "${RED}${CROSS}${NC} ${RED}${BOLD}$1${NC}"; }
 log_step() { echo -e "${PURPLE}${ARROW}${NC} ${BOLD}$1${NC}"; }
-log_progress() { [[ "${DOTFILES_VERBOSE:-$DEFAULT_VERBOSE}" == "true" ]] && echo -e "${GRAY}${DIM}  $1${NC}"; }
-log_verbose() { [[ "${DOTFILES_VERBOSE:-$DEFAULT_VERBOSE}" == "true" ]] && echo -e "${GRAY}${DIM}[VERBOSE] $1${NC}"; }
+log_dim() { echo -e "${GRAY}${DIM}  $1${NC}"; }
 
 # =============================================================================
 # Validation Functions
@@ -105,7 +104,7 @@ die() { log_error "$1"; exit 1; }
 show_banner() {
     echo -e "${BOLD}${BLUE}╭────────────────────────────────────────────────────────────────╮${NC}"
     echo -e "${BOLD}${BLUE}│${NC}                    ${BOLD}${WHITE}🚀 Dotfiles Manager${NC}                         ${BOLD}${BLUE}│${NC}"
-    echo -e "${BOLD}${BLUE}│${NC}              ${GRAY}Clean, Cross-Platform Setup${NC}              ${BOLD}${BLUE}│${NC}"
+    echo -e "${BOLD}${BLUE}│${NC}              ${GRAY}Clean, Cross-Platform Setup${NC}                       ${BOLD}${BLUE}│${NC}"
     echo -e "${BOLD}${BLUE}╰────────────────────────────────────────────────────────────────╯${NC}"
     echo
 }
@@ -139,8 +138,6 @@ load_config() {
 }
 
 save_config() {
-    [[ "${DOTFILES_CONFIG_LOADED_FROM_ZSHENV:-false}" == "true" ]] && return 0
-
     local zshenv="$HOME/.zshenv"
     touch "$zshenv"
 
@@ -149,8 +146,6 @@ save_config() {
 
     # Add new configuration
     cat >> "$zshenv" << EOF
-
-# Dotfiles Configuration - Auto-generated
 export DOTFILES_ROOT="$DOTFILES_ROOT"
 export DOTFILES_PROFILE="$DOTFILES_PROFILE"
 export DOTFILES_VERBOSE="$DOTFILES_VERBOSE"
@@ -201,16 +196,16 @@ setup_repository() {
     if [[ -d "$DOTFILES_ROOT/.git" ]]; then
         log_step "Updating existing repository"
         cd "$DOTFILES_ROOT"
-        log_progress "Fetching latest changes..."
+        log_dim "Fetching latest changes..."
         git fetch origin >/dev/null 2>&1
-        log_progress "Switching to branch '$DOTFILES_BRANCH'..."
+        log_dim "Switching to branch '$DOTFILES_BRANCH'..."
         git checkout "$DOTFILES_BRANCH" >/dev/null 2>&1
-        log_progress "Pulling latest changes..."
+        log_dim "Pulling latest changes..."
         git pull origin "$DOTFILES_BRANCH" >/dev/null 2>&1
     else
         log_step "Cloning repository"
         [[ -n "$DOTFILES_REPO" ]] || die "Repository URL not specified"
-        log_progress "Downloading from $DOTFILES_REPO..."
+        log_dim "Downloading from $DOTFILES_REPO..."
         git clone -b "$DOTFILES_BRANCH" "$DOTFILES_REPO" "$DOTFILES_ROOT" >/dev/null 2>&1
     fi
 
@@ -242,24 +237,21 @@ should_exclude() {
 create_symlinks() {
     show_section "Creating symlinks..."
 
-    # Link root directory files
-    show_subsection "Linking root files..."
+    # Link dotfiles
+    show_subsection "Linking dotfiles..."
     for item in "${DOTFILES_ROOT}"/*; do
         local name=$(basename "$item")
-
+        local target="$HOME/.$name"
         if ! should_exclude "$name"; then
-            # Item should be linked
-            local target="$HOME/.$name"
-
             # Remove existing symlink or file
             [[ -L "$target" || -e "$target" ]] && rm -rf "$target"
-
             # Create symlink
             ln -sf "$item" "$target"
+            log_dim "${GREEN}${CHECK}${NC} $name ${ARROW} $target"
         fi
     done
 
-    # Link config directory
+    # Link config files
     mkdir -p "$HOME/.config"
     show_subsection "Linking config files..."
     if [[ -d "$DOTFILES_ROOT/config" ]]; then
@@ -276,6 +268,7 @@ create_symlinks() {
 
                 # Create symlink
                 ln -sf "$item" "$target"
+                log_dim "${GREEN}${CHECK}${NC} $name ${ARROW} $target"
             fi
         done
     else
@@ -284,44 +277,44 @@ create_symlinks() {
 }
 
 verify_symlinks() {
-    show_section "Verifying Symlinks"
+    show_section "Verifying symlinks..."
 
     [[ -n "$DOTFILES_ROOT" ]] || { log_error "DOTFILES_ROOT is not set"; return 1; }
     [[ -d "$DOTFILES_ROOT" ]] || { log_error "Dotfiles directory not found: $DOTFILES_ROOT"; return 1; }
 
     local total_links=0 broken_links=0
 
-    # Check root symlinks
-    show_subsection "Root symlinks"
+    # Check dotfiles symlinks
+    show_subsection "Checking dotfiles symlinks..."
 
     # Use ls to list files in a cross-platform way
     if [[ -d "$DOTFILES_ROOT" ]]; then
         while IFS= read -r item; do
             [[ -z "$item" ]] && continue
             local name=$(basename "$item")
+            local target="$HOME/.$name"
             if ! should_exclude "$name" && [[ -f "$item" || -L "$item" ]]; then
-                local target="$HOME/.$name"
-                ((total_links++))
                 if [[ -L "$target" ]] && [[ -e "$target" ]]; then
-                    log_progress "$name ${ARROW} ~/.$name"
+                    log_dim "${GREEN}${CHECK}${NC} $name ${ARROW} ~/.$name"
+                    ((total_links++))
                 else
-                    log_error "Broken or missing: ~/.$name"
+                    log_error "${RED}${CROSS}${NC} Broken or missing: ~/.$name"
                     ((broken_links++))
                 fi
             fi
         done < <(ls -1 "$DOTFILES_ROOT" 2>/dev/null || echo "")
     fi
 
-    # Check config symlinks
+    # Check config files symlinks
     if [[ -d "$DOTFILES_ROOT/config" ]]; then
-        show_subsection "Config symlinks"
+        show_subsection "Checking config files symlinks..."
         while IFS= read -r item; do
             [[ -z "$item" ]] && continue
             local name=$(basename "$item")
             local target="$HOME/.config/$name"
-            ((total_links++))
             if [[ -L "$target" ]] && [[ -e "$target" ]]; then
-                log_progress "config/$name ${ARROW} ~/.config/$name"
+                ((total_links++))
+                log_dim "${GREEN}${CHECK}${NC} $name ${ARROW} $target"
             else
                 log_error "Broken or missing: ~/.config/$name"
                 ((broken_links++))
@@ -366,7 +359,7 @@ install_packages() {
         for pattern in "${pkg_patterns[@]}"; do
             for pkg_file in "$DOTFILES_ROOT/zshrc.d/pkg/$pattern"; do
                 if [[ -f "$pkg_file" ]]; then
-                    log_progress "Loading package: $(basename "$pkg_file")"
+                    log_dim "Loading package: $(basename "$pkg_file")"
                     source "$pkg_file"
                 fi
             done
@@ -489,11 +482,16 @@ show_menu() {
     clear
     show_banner
 
+    # Ensure variables are set with defaults
+    DOTFILES_ROOT="${DOTFILES_ROOT:-$DEFAULT_ROOT}"
+    DOTFILES_PROFILE="${DOTFILES_PROFILE:-$DEFAULT_PROFILE}"
+    DOTFILES_VERBOSE="${DOTFILES_VERBOSE:-$DEFAULT_VERBOSE}"
+
     echo -e "${BOLD}${WHITE}Current Configuration:${NC}"
     echo -e "  ${GRAY}OS:${NC}                  ${PURPLE}$(get_os_type)${NC}"
-    echo -e "  ${GRAY}Path:${NC}                ${CYAN}${DOTFILES_ROOT:-$DEFAULT_ROOT}${NC}"
-    echo -e "  ${GRAY}Profile:${NC}             ${YELLOW}${DOTFILES_PROFILE:-$DEFAULT_PROFILE}${NC}"
-    echo -e "  ${GRAY}Verbose:${NC}             ${GREEN}${DOTFILES_VERBOSE:-$DEFAULT_VERBOSE}${NC}"
+    echo -e "  ${GRAY}Path:${NC}                ${CYAN}${DOTFILES_ROOT}${NC}"
+    echo -e "  ${GRAY}Profile:${NC}             ${YELLOW}${DOTFILES_PROFILE}${NC}"
+    echo -e "  ${GRAY}Verbose:${NC}             ${GREEN}${DOTFILES_VERBOSE}${NC}"
 
     echo
     echo -e "${BOLD}${WHITE}Available Actions:${NC}"
@@ -503,14 +501,18 @@ show_menu() {
     echo -e "  ${CYAN}4)${NC} Install required packages"
     echo -e "  ${CYAN}5)${NC} Verify symlinks"
     echo -e "  ${CYAN}6)${NC} Uninstall everything"
-    echo -e "  ${CYAN}7)${NC} Show help"
+    echo -e "  ${CYAN}7)${NC} Toggle verbose mode"
+    echo -e "  ${CYAN}8)${NC} Show help"
     echo -e "  ${CYAN}q)${NC} Quit"
 
     echo
-    echo -n "Choose an option [1-7,q]: "
+    echo -n "Choose an option [1-8,q]: "
 }
 
 interactive_menu() {
+    # Load existing configuration for interactive session
+    load_config
+
     while true; do
         show_menu
         read -r choice
@@ -532,8 +534,8 @@ interactive_menu() {
                 sleep 2
                 ;;
             3)
-                setup_environment
-                [[ -d "$DOTFILES_ROOT" ]] || { log_error "Dotfiles directory not found: $DOTFILES_ROOT. Please run 'Install/Update dotfiles' first."; sleep 2; continue; }
+                # setup_environment
+                # [[ -d "$DOTFILES_ROOT" ]] || { log_error "Dotfiles directory not found: $DOTFILES_ROOT. Please run 'Install/Update dotfiles' first."; sleep 2; continue; }
                 create_symlinks
                 verify_symlinks
                 echo -e "\n${GRAY}${DIM}Press Enter to continue...${NC}"
@@ -545,8 +547,8 @@ interactive_menu() {
                 read -r
                 ;;
             5)
-                setup_environment
-                [[ -d "$DOTFILES_ROOT" ]] || { log_error "Dotfiles directory not found: $DOTFILES_ROOT. Please run 'Install/Update dotfiles' first."; sleep 2; continue; }
+                # setup_environment
+                # [[ -d "$DOTFILES_ROOT" ]] || { log_error "Dotfiles directory not found: $DOTFILES_ROOT. Please run 'Install/Update dotfiles' first."; sleep 2; continue; }
                 verify_symlinks
                 echo -e "\n${GRAY}${DIM}Press Enter to continue...${NC}"
                 read -r
@@ -558,6 +560,18 @@ interactive_menu() {
                 read -r
                 ;;
             7)
+                # Toggle verbose mode
+                if [[ "${DOTFILES_VERBOSE:-$DEFAULT_VERBOSE}" == "true" ]]; then
+                    export DOTFILES_VERBOSE="false"
+                    log_success "Verbose mode disabled"
+                else
+                    export DOTFILES_VERBOSE="true"
+                    log_success "Verbose mode enabled"
+                fi
+                save_config
+                sleep 2
+                ;;
+            8)
                 echo
                 echo -e "${BOLD}${PURPLE}Help - Dotfiles Manager${NC}"
                 echo
@@ -580,7 +594,7 @@ interactive_menu() {
                 ;;
             q)
                 save_config
-                log_success "Goodbye!"
+                log_ "Goodbye!"
                 exit 0
                 ;;
             *) log_error "Invalid choice"; sleep 1 ;;
@@ -637,10 +651,7 @@ main() {
             uninstall_dotfiles
             ;;
         link)
-            setup_environment
-            [[ -d "$DOTFILES_ROOT" ]] || die "Dotfiles directory not found: $DOTFILES_ROOT. Please run 'dotfiles install' first."
             create_symlinks
-            verify_symlinks
             ;;
         profile)
             if [[ -n "${2:-}" ]]; then
@@ -660,8 +671,8 @@ main() {
             install_packages
             ;;
         verify)
-            setup_environment
-            [[ -d "$DOTFILES_ROOT" ]] || die "Dotfiles directory not found: $DOTFILES_ROOT. Please run 'dotfiles install' first."
+            # setup_environment
+            # [[ -d "$DOTFILES_ROOT" ]] || die "Dotfiles directory not found: $DOTFILES_ROOT. Please run 'dotfiles install' first."
             verify_symlinks
             ;;
         help|--help|-h)
