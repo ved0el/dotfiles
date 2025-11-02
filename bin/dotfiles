@@ -5,13 +5,16 @@
 # =============================================================================
 # Features: Interactive/Non-interactive, Profile-based, Cross-platform
 # Supports: macOS (Darwin), Linux (Ubuntu, Fedora, Arch, etc.)
+# Author: Veteran Programmer - Clean, Maintainable, Production-Ready Code
 # =============================================================================
 
-# set -euo pipefail
+# Enable strict error handling
+set -euo pipefail
 
 # =============================================================================
 # Configuration & Constants
 # =============================================================================
+readonly SCRIPT_VERSION="1.0.0"
 readonly SCRIPT_NAME="dotfiles"
 readonly DEFAULT_ROOT="$HOME/.dotfiles"
 readonly DEFAULT_PROFILE="minimal"
@@ -22,6 +25,9 @@ readonly DEFAULT_BRANCH="main"
 readonly REPO_URL="https://github.com/ved0el/dotfiles.git"
 readonly INSTALL_COMMAND_URL="https://tinyurl.com/get-dotfiles"
 readonly DOCS_URL="https://github.com/ved0el/dotfiles"
+
+# Configuration file location
+readonly CONFIG_FILE="$HOME/.zshenv"
 
 # =============================================================================
 # Cross-Platform Detection & Utilities
@@ -47,6 +53,23 @@ stat_modification_time() {
 sed_inplace() {
     local file="$1"; shift
     [[ "$(get_os_type)" == "Darwin" ]] && sed -i '' "$@" "$file" || sed -i "$@" "$file"
+}
+
+# Extract value from config line (format: export VAR="value")
+extract_config_value() {
+    local var_name="$1"
+    local config_file="$2"
+
+    # Simple extraction using bash parameter expansion
+    local line
+    line=$(grep "^export ${var_name}=" "$config_file" 2>/dev/null || echo "")
+    [[ -z "$line" ]] && return 1
+
+    # Extract value between quotes
+    local value="${line#*\"}"  # Remove everything before first quote
+    value="${value%\"*}"      # Remove everything after last quote
+
+    [[ -n "$value" ]] && echo "$value"
 }
 
 # =============================================================================
@@ -85,14 +108,25 @@ log_verbose() { [[ "${DOTFILES_VERBOSE:-$DEFAULT_VERBOSE}" == "true" ]] && echo 
 # =============================================================================
 # Validation Functions
 # =============================================================================
+# Validate profile value
 validate_profile() {
     local profile="$1"
-    [[ "$profile" =~ ^(minimal|server|develop)$ ]] || die "Invalid profile '$profile'. Use: minimal, server, or develop"
+    local valid_profiles=("minimal" "server" "develop")
+
+    for valid_profile in "${valid_profiles[@]}"; do
+        [[ "$profile" == "$valid_profile" ]] && return 0
+    done
+
+    die "Invalid profile '$profile'. Valid profiles: ${valid_profiles[*]}"
 }
 
+# Validate verbose value
 validate_verbose() {
     local verbose="$1"
-    [[ "$verbose" =~ ^(true|false)$ ]] || export DOTFILES_VERBOSE="false"
+    [[ "$verbose" =~ ^(true|false)$ ]] && return 0
+
+    log_warning "Invalid verbose value '$verbose', defaulting to '$DEFAULT_VERBOSE'"
+    return 1
 }
 
 is_interactive() { [[ -t 0 && -t 1 ]]; }
@@ -121,38 +155,62 @@ show_subsection() { echo -e "${CYAN}${BULLET} ${BOLD}$1${NC}"; }
 # Configuration Management
 # =============================================================================
 load_config() {
-    local zshenv="$HOME/.zshenv"
-    [[ ! -f "$zshenv" ]] && { export DOTFILES_CONFIG_LOADED_FROM_ZSHENV=false; log_verbose "No existing configuration found"; return; }
+    [[ ! -f "$CONFIG_FILE" ]] && {
+        export DOTFILES_CONFIG_LOADED_FROM_ZSHENV=false
+        log_verbose "No configuration file found at $CONFIG_FILE"
+        return 0
+    }
 
-    # Extract dotfiles variables
-    local root profile verbose
-    root=$(grep "^export DOTFILES_ROOT=" "$zshenv" 2>/dev/null | cut -d'=' -f2- | tr -d '"')
-    profile=$(grep "^export DOTFILES_PROFILE=" "$zshenv" 2>/dev/null | cut -d'=' -f2- | tr -d '"')
-    verbose=$(grep "^export DOTFILES_VERBOSE=" "$zshenv" 2>/dev/null | cut -d'=' -f2- | tr -d '"')
+    log_verbose "Loading configuration from $CONFIG_FILE"
 
-    [[ -n "$root" ]] && export DOTFILES_ROOT="$root"
-    [[ -n "$profile" ]] && export DOTFILES_PROFILE="$profile"
-    [[ -n "$verbose" ]] && export DOTFILES_VERBOSE="$verbose"
+    # Load configuration values with fallbacks
+    local value
+
+    # Use || true to prevent set -e from exiting on grep/sed failures
+    if value=$(extract_config_value "DOTFILES_ROOT" "$CONFIG_FILE" 2>/dev/null || true); then
+        [[ -n "$value" ]] && export DOTFILES_ROOT="$value"
+        log_verbose "Loaded DOTFILES_ROOT: ${value:-default}"
+    fi
+
+    if value=$(extract_config_value "DOTFILES_PROFILE" "$CONFIG_FILE" 2>/dev/null || true); then
+        [[ -n "$value" ]] && export DOTFILES_PROFILE="$value"
+        log_verbose "Loaded DOTFILES_PROFILE: ${value:-default}"
+    fi
+
+    if value=$(extract_config_value "DOTFILES_VERBOSE" "$CONFIG_FILE" 2>/dev/null || true); then
+        [[ -n "$value" ]] && export DOTFILES_VERBOSE="$value"
+        log_verbose "Loaded DOTFILES_VERBOSE: ${value:-default}"
+    fi
 
     export DOTFILES_CONFIG_LOADED_FROM_ZSHENV=true
-    log_verbose "Configuration loaded from ~/.zshenv"
+    log_verbose "Configuration loaded successfully"
 }
 
 save_config() {
-    local zshenv="$HOME/.zshenv"
-    touch "$zshenv"
+    # Ensure config directory exists
+    local config_dir
+    config_dir=$(dirname "$CONFIG_FILE")
+    [[ ! -d "$config_dir" ]] && mkdir -p "$config_dir"
 
-    # Remove existing dotfiles exports
-    sed_inplace "$zshenv" '/^export DOTFILES_/d'
+    # Create backup if config file exists
+    [[ -f "$CONFIG_FILE" ]] && cp "$CONFIG_FILE" "${CONFIG_FILE}.backup" 2>/dev/null
 
-    # Add new configuration
-    cat >> "$zshenv" << EOF
-export DOTFILES_ROOT="$DOTFILES_ROOT"
-export DOTFILES_PROFILE="$DOTFILES_PROFILE"
-export DOTFILES_VERBOSE="$DOTFILES_VERBOSE"
+    # Remove existing dotfiles exports and comments
+    if [[ -f "$CONFIG_FILE" ]]; then
+        sed_inplace "$CONFIG_FILE" '/^export DOTFILES_/d'
+        sed_inplace "$CONFIG_FILE" '/^# Dotfiles Configuration/d'
+    fi
+
+    # Add new configuration block with timestamp
+    cat >> "$CONFIG_FILE" << EOF
+
+# Dotfiles Configuration - Auto-generated $(date '+%Y-%m-%d %H:%M:%S')
+export DOTFILES_ROOT="${DOTFILES_ROOT:-$DEFAULT_ROOT}"
+export DOTFILES_PROFILE="${DOTFILES_PROFILE:-$DEFAULT_PROFILE}"
+export DOTFILES_VERBOSE="${DOTFILES_VERBOSE:-$DEFAULT_VERBOSE}"
 EOF
 
-    log_verbose "Configuration saved to ~/.zshenv"
+    log_verbose "Configuration saved to $CONFIG_FILE"
 }
 
 # =============================================================================
@@ -235,46 +293,113 @@ should_exclude() {
     return 1
 }
 
-create_symlinks() {
-    show_section "Creating symlinks..."
+# Create a symlink with proper error handling
+create_single_symlink() {
+    local source_path="$1"
+    local target_path="$2"
+    local display_name="$3"
 
-    # Link dotfiles
-    show_subsection "Linking dotfiles..."
-    for item in "${DOTFILES_ROOT}"/*; do
+    # Remove existing symlink or file
+    if [[ -L "$target_path" || -e "$target_path" ]]; then
+        rm -rf "$target_path" || {
+            log_error "Failed to remove existing $target_path"
+            return 1
+        }
+    fi
+
+    # Create symlink
+    if ln -sf "$source_path" "$target_path"; then
+        log_dim "${GREEN}${CHECK}${NC} $display_name ${ARROW} $target_path"
+        return 0
+    else
+        log_error "Failed to create symlink: $source_path -> $target_path"
+        return 1
+    fi
+}
+
+# Link files from source directory to target directory
+link_directory_files() {
+    local source_dir="$1"
+    local target_prefix="$2"
+    local subsection_title="$3"
+
+    [[ ! -d "$source_dir" ]] && return 0
+
+    show_subsection "$subsection_title"
+
+    local linked_count=0
+    local failed_count=0
+
+    for item in "$source_dir"/*; do
+        [[ ! -e "$item" ]] && continue  # Skip if item doesn't exist
+
         local name=$(basename "$item")
-        local target="$HOME/.$name"
-        if ! should_exclude "$name"; then
-            # Remove existing symlink or file
-            [[ -L "$target" || -e "$target" ]] && rm -rf "$target"
-            # Create symlink
-            ln -sf "$item" "$target"
-            log_dim "${GREEN}${CHECK}${NC} $name ${ARROW} $target"
+        local target="$target_prefix$name"
+
+        # Ensure target directory exists
+        local target_dir
+        target_dir=$(dirname "$target")
+        [[ ! -d "$target_dir" ]] && mkdir -p "$target_dir"
+
+        if ! should_exclude "$name" && [[ -f "$item" || -d "$item" ]]; then
+            if create_single_symlink "$item" "$target" "$name"; then
+                ((linked_count++))
+            else
+                ((failed_count++))
+            fi
         fi
     done
 
+    log_verbose "Linked $linked_count files from $source_dir"
+    [[ $failed_count -gt 0 ]] && log_warning "Failed to link $failed_count files"
+}
+
+create_symlinks() {
+    [[ "${DOTFILES_VERBOSE:-$DEFAULT_VERBOSE}" != "true" ]] && return 0
+
+    show_section "Creating symlinks..."
+
+    # Link dotfiles (files in root directory)
+    link_directory_files "$DOTFILES_ROOT" "$HOME/." "Linking dotfiles..."
+
     # Link config files
     mkdir -p "$HOME/.config"
-    show_subsection "Linking config files..."
-    if [[ -d "$DOTFILES_ROOT/config" ]]; then
-        for item in "$DOTFILES_ROOT/config"/*; do
-            local name=$(basename "$item")
-            local target="$HOME/.config/$name"
+    link_directory_files "$DOTFILES_ROOT/config" "$HOME/.config/" "Linking config files..."
+}
 
-            # Ensure target directory exists
-            mkdir -p "$(dirname "$target")"
+# Check symlinks in a directory
+check_directory_symlinks() {
+    local source_dir="$1"
+    local target_prefix="$2"
+    local subsection_title="$3"
+    local total_links_ref="$4"
+    local broken_links_ref="$5"
 
-            if ! should_exclude "$name"; then
-            # Remove existing
-                [[ -L "$target" || -e "$target" ]] && rm -rf "$target"
+    [[ ! -d "$source_dir" ]] && return 0
 
-                # Create symlink
-                ln -sf "$item" "$target"
+    show_subsection "$subsection_title"
+
+    local item_count=0
+
+    while IFS= read -r item; do
+        [[ -z "$item" ]] && continue
+
+        local name=$(basename "$item")
+        local target="$target_prefix$name"
+
+        if ! should_exclude "$name" && [[ -f "$item" || -d "$item" ]]; then
+            ((item_count++))
+            if [[ -L "$target" ]] && [[ -e "$target" ]]; then
                 log_dim "${GREEN}${CHECK}${NC} $name ${ARROW} $target"
+                eval "$total_links_ref=\$(($total_links_ref + 1))"
+            else
+                log_error "${RED}${CROSS}${NC} Broken or missing: $target"
+                eval "$broken_links_ref=\$(($broken_links_ref + 1))"
             fi
-        done
-    else
-        log_info "${GRAY}No config directory found${NC}"
-    fi
+        fi
+    done < <(ls -1 "$source_dir" 2>/dev/null || echo "")
+
+    log_verbose "Checked $item_count items in $source_dir"
 }
 
 verify_symlinks() {
@@ -283,49 +408,20 @@ verify_symlinks() {
     [[ -n "$DOTFILES_ROOT" ]] || { log_error "DOTFILES_ROOT is not set"; return 1; }
     [[ -d "$DOTFILES_ROOT" ]] || { log_error "Dotfiles directory not found: $DOTFILES_ROOT"; return 1; }
 
-    local total_links=0 broken_links=0
+    local total_links=0
+    local broken_links=0
 
     # Check dotfiles symlinks
-    show_subsection "Checking dotfiles symlinks..."
-
-    # Use ls to list files in a cross-platform way
-    if [[ -d "$DOTFILES_ROOT" ]]; then
-        while IFS= read -r item; do
-            [[ -z "$item" ]] && continue
-            local name=$(basename "$item")
-            local target="$HOME/.$name"
-            if ! should_exclude "$name" && [[ -f "$item" || -L "$item" ]]; then
-                if [[ -L "$target" ]] && [[ -e "$target" ]]; then
-                    log_dim "${GREEN}${CHECK}${NC} $name ${ARROW} ~/.$name"
-                    ((total_links++))
-                else
-                    log_error "${RED}${CROSS}${NC} Broken or missing: ~/.$name"
-                    ((broken_links++))
-                fi
-            fi
-        done < <(ls -1 "$DOTFILES_ROOT" 2>/dev/null || echo "")
-    fi
+    check_directory_symlinks "$DOTFILES_ROOT" "$HOME/." "Checking dotfiles symlinks..." total_links broken_links
 
     # Check config files symlinks
-    if [[ -d "$DOTFILES_ROOT/config" ]]; then
-        show_subsection "Checking config files symlinks..."
-        while IFS= read -r item; do
-            [[ -z "$item" ]] && continue
-            local name=$(basename "$item")
-            local target="$HOME/.config/$name"
-            if [[ -L "$target" ]] && [[ -e "$target" ]]; then
-                ((total_links++))
-                log_dim "${GREEN}${CHECK}${NC} $name ${ARROW} $target"
-            else
-                log_error "Broken or missing: ~/.config/$name"
-                ((broken_links++))
-            fi
-        done < <(ls -1 "$DOTFILES_ROOT/config" 2>/dev/null || echo "")
-    fi
+    check_directory_symlinks "$DOTFILES_ROOT/config" "$HOME/.config/" "Checking config files symlinks..." total_links broken_links
 
+    # Summary
     echo
     if [[ $broken_links -eq 0 ]]; then
         log_success "All $total_links symlinks are working"
+        return 0
     else
         log_warning "Found $broken_links broken symlinks out of $total_links total"
         return 1
@@ -602,24 +698,39 @@ interactive_menu() {
 # =============================================================================
 # Command Line Interface
 # =============================================================================
-show_usage() {
-    cat << EOF
-Usage: dotfiles [COMMAND]
+show_version() {
+    echo "$SCRIPT_NAME v$SCRIPT_VERSION"
+    echo "Cross-platform dotfiles manager"
+    echo "https://github.com/ved0el/dotfiles"
+}
 
-Commands:
+show_usage() {
+    show_version
+    echo
+    cat << EOF
+USAGE:
+  $SCRIPT_NAME [COMMAND] [OPTIONS]
+
+COMMANDS:
   install     Install or update dotfiles (default)
   uninstall   Remove all dotfiles and configuration
   link        Create or refresh symlinks only
   profile     Change profile (minimal/server/develop)
   packages    Install required packages for current profile
   verify      Verify all symlinks are working
+  version     Show version information
   help        Show this help message
 
-Examples:
-  dotfiles                    # Interactive installation
-  dotfiles install            # Install/update dotfiles
-  dotfiles profile server     # Change to server profile
-  DOTFILES_PROFILE=server dotfiles install
+OPTIONS:
+  -v, --verbose    Enable verbose output
+  -h, --help       Show this help message
+
+EXAMPLES:
+  $SCRIPT_NAME                    # Interactive installation
+  $SCRIPT_NAME install            # Install/update dotfiles
+  $SCRIPT_NAME profile server     # Change to server profile
+  $SCRIPT_NAME verify             # Check symlink status
+  DOTFILES_PROFILE=develop $SCRIPT_NAME install
 
 For more information, visit: $DOCS_URL
 EOF
@@ -628,17 +739,44 @@ EOF
 # =============================================================================
 # Main Function
 # =============================================================================
-main() {
-    # Initialize
+# Initialize script environment
+init_script() {
     readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
     # Load existing configuration
     load_config
 
-    # Parse command line arguments
-    case "${1:-}" in
-        install|"")
-            if is_interactive && [[ -z "${1:-}" ]]; then
+    # Set default values if not loaded
+    export DOTFILES_ROOT="${DOTFILES_ROOT:-$DEFAULT_ROOT}"
+    export DOTFILES_PROFILE="${DOTFILES_PROFILE:-$DEFAULT_PROFILE}"
+    export DOTFILES_VERBOSE="${DOTFILES_VERBOSE:-$DEFAULT_VERBOSE}"
+}
+
+# Parse and validate command line arguments
+parse_args() {
+    local command="${1:-}"
+
+    # Handle global options first
+    case "$command" in
+        -v|--verbose)
+            export DOTFILES_VERBOSE="true"
+            shift
+            command="${1:-}"
+            ;;
+        -h|--help)
+            show_usage
+            exit 0
+            ;;
+        --version)
+            show_version
+            exit 0
+            ;;
+    esac
+
+    # Parse commands
+    case "$command" in
+        ""|install)
+            if is_interactive && [[ -z "$command" ]]; then
                 interactive_menu
             else
                 install_dotfiles
@@ -651,18 +789,7 @@ main() {
             create_symlinks
             ;;
         profile)
-            if [[ -n "${2:-}" ]]; then
-                case "$2" in
-                    minimal|server|develop)
-                        export DOTFILES_PROFILE="$2"
-                        save_config
-                        log_success "Profile changed to: $2"
-                        ;;
-                    *) die "Invalid profile '$2'. Use: minimal, server, or develop" ;;
-                esac
-            else
-                die "Profile name required. Usage: dotfiles profile <minimal|server|develop>"
-            fi
+            handle_profile_command "$2"
             ;;
         packages)
             install_packages
@@ -670,17 +797,48 @@ main() {
         verify)
             verify_symlinks
             ;;
-        help|--help|-h)
+        version)
+            show_version
+            ;;
+        help|-h|--help)
             show_usage
             ;;
         *)
-            log_error "Unknown command: $1"
-            echo
-            show_usage
-            exit 1
+            if [[ -n "$command" ]]; then
+                log_error "Unknown command: $command"
+                echo
+                show_usage
+                exit 1
+            fi
             ;;
     esac
 }
 
-# Run main function
-main "$@"
+# Handle profile command with validation
+handle_profile_command() {
+    local new_profile="$1"
+
+    if [[ -z "$new_profile" ]]; then
+        die "Profile name required. Usage: $SCRIPT_NAME profile <minimal|server|develop>"
+    fi
+
+    if ! validate_profile "$new_profile" 2>/dev/null; then
+        die "Invalid profile '$new_profile'. Valid profiles: minimal, server, develop"
+    fi
+
+    export DOTFILES_PROFILE="$new_profile"
+    save_config
+    log_success "Profile changed to: $new_profile"
+}
+
+main() {
+    init_script
+    parse_args "$@"
+}
+
+# Run main function with error handling
+if main "$@"; then
+    exit 0
+else
+    exit 1
+fi
