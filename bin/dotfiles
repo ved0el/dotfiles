@@ -203,8 +203,7 @@ save_config() {
 
     # Add new configuration block with timestamp
     cat >> "$CONFIG_FILE" << EOF
-
-# Dotfiles Configuration - Auto-generated $(date '+%Y-%m-%d %H:%M:%S')
+# Dotfiles Configuration
 export DOTFILES_ROOT="${DOTFILES_ROOT:-$DEFAULT_ROOT}"
 export DOTFILES_PROFILE="${DOTFILES_PROFILE:-$DEFAULT_PROFILE}"
 export DOTFILES_VERBOSE="${DOTFILES_VERBOSE:-$DEFAULT_VERBOSE}"
@@ -632,7 +631,7 @@ interactive_menu() {
                 ;;
             3)
                 create_symlinks
-                verify_syml
+                verify_symlinks
                 echo -e "\n${GRAY}${DIM}Press Enter to continue...${NC}"
                 read -r
                 ;;
