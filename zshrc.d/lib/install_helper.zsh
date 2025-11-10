@@ -5,22 +5,40 @@
 # =============================================================================
 
 # -----------------------------------------------------------------------------
+# Color Constants (Modern, Windows Terminal compatible)
+# -----------------------------------------------------------------------------
+readonly RED='\033[31m'
+readonly GREEN='\033[32m'
+readonly YELLOW='\033[33m'
+readonly BLUE='\033[34m'
+readonly MAGENTA='\033[35m'
+readonly CYAN='\033[36m'
+readonly WHITE='\033[37m'
+readonly GRAY='\033[90m'
+readonly BOLD='\033[1m'
+readonly RESET='\033[0m'
+
+# -----------------------------------------------------------------------------
 # Colored Logging Functions
 # -----------------------------------------------------------------------------
 _dotfiles_log_debug() {
-    [[ "${DOTFILES_VERBOSE:-false}" == "true" ]] && echo "\033[0;35m[ DEBUG ]\033[0m $*"
+    [[ "${DOTFILES_VERBOSE:-false}" == "true" ]] && echo -e "${MAGENTA}[VERBOSE]${RESET} ${GRAY}$*${RESET}"
 }
 
 _dotfiles_log_warning() {
-    [[ "${DOTFILES_VERBOSE:-false}" == "true" ]] && echo "\033[0;33m[WARNING]\033[0m $*"
+    [[ "${DOTFILES_VERBOSE:-false}" == "true" ]] && echo -e "${YELLOW}[WARNING]${RESET} ${WHITE}$*${RESET}"
 }
 
 _dotfiles_log_error() {
-    [[ "${DOTFILES_VERBOSE:-false}" == "true" ]] && echo "\033[0;31m[ ERROR ]\033[0m $*"
+    echo -e "${RED}[ ERROR ]${RESET} ${BOLD}${WHITE}$*${RESET}"
 }
 
 _dotfiles_log_success() {
-    [[ "${DOTFILES_VERBOSE:-false}" == "true" ]] && echo "\033[0;32m[SUCCESS]\033[0m $*"
+    [[ "${DOTFILES_VERBOSE:-false}" == "true" ]] && echo -e "${GREEN}[SUCCESS]${RESET} ${WHITE}$*${RESET}"
+}
+
+_dotfiles_log_info() {
+    [[ "${DOTFILES_VERBOSE:-false}" == "true" ]] && echo -e "${CYAN}[ INFO ]${RESET} ${WHITE}$*${RESET}"
 }
 
 # -----------------------------------------------------------------------------

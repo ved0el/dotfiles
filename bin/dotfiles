@@ -14,8 +14,6 @@ set -euo pipefail
 # =============================================================================
 # Configuration & Constants
 # =============================================================================
-readonly SCRIPT_VERSION="1.0.0"
-readonly SCRIPT_NAME="dotfiles"
 readonly DEFAULT_ROOT="$HOME/.dotfiles"
 readonly DEFAULT_PROFILE="minimal"
 readonly DEFAULT_VERBOSE="false"
@@ -33,21 +31,6 @@ readonly CONFIG_FILE="$HOME/.zshenv"
 # Cross-Platform Detection & Utilities
 # =============================================================================
 get_os_type() { uname -s; }
-
-get_linux_distro() {
-    [[ -f /etc/os-release ]] && source /etc/os-release 2>/dev/null && echo "${ID:-unknown}" || echo "unknown"
-}
-
-# Cross-platform stat command
-stat_modification_time() {
-    local file="$1"
-    if command -v stat &>/dev/null; then
-        # Try GNU stat first (Linux), fallback to macOS/BSD
-        stat --version 2>/dev/null | grep -q "GNU" && stat -c %Y "$file" 2>/dev/null || stat -f %m "$file" 2>/dev/null || echo "0"
-    else
-        echo "0"
-    fi
-}
 
 # Cross-platform sed in-place editing
 sed_inplace() {
@@ -75,18 +58,18 @@ extract_config_value() {
 # =============================================================================
 # Color & UI Constants
 # =============================================================================
-# ANSI color codes - compatible with most terminals
-readonly RED='\033[0;31m'
-readonly GREEN='\033[0;32m'
-readonly YELLOW='\033[0;33m'
-readonly BLUE='\033[0;34m'
-readonly PURPLE='\033[0;35m'
-readonly CYAN='\033[0;36m'
-readonly WHITE='\033[1;37m'
-readonly GRAY='\033[0;90m'
+# Modern ANSI color codes - compatible with Windows Terminal, macOS Terminal, Linux
+# Using standard 16-color palette for maximum compatibility
+readonly RED='\033[31m'
+readonly GREEN='\033[32m'
+readonly YELLOW='\033[33m'
+readonly BLUE='\033[34m'
+readonly MAGENTA='\033[35m'
+readonly CYAN='\033[36m'
+readonly WHITE='\033[37m'
+readonly GRAY='\033[90m'
 readonly BOLD='\033[1m'
-readonly DIM='\033[2m'
-readonly NC='\033[0m'  # No Color (reset)
+readonly RESET='\033[0m'            # Reset all attributes
 
 # UI symbols - fallback to ASCII if Unicode not supported
 readonly CHECK="✓"
@@ -97,18 +80,23 @@ readonly BULLET="•"
 # =============================================================================
 # Logging Functions
 # =============================================================================
-log_info() { echo -e "${CYAN}${BULLET}${NC} ${WHITE}$1${NC}"; }
-log_success() { echo -e "${GREEN}${CHECK}${NC} ${BOLD}$1${NC}"; }
-log_warning() { echo -e "${YELLOW}⚠${NC}  ${YELLOW}$1${NC}"; }
-log_error() { echo -e "${RED}${CROSS}${NC} ${RED}${BOLD}$1${NC}"; }
-log_step() { echo -e "${PURPLE}${ARROW}${NC} ${BOLD}$1${NC}"; }
-log_dim() { echo -e "${GRAY}${DIM}  $1${NC}"; }
-log_verbose() { [[ "${DOTFILES_VERBOSE:-$DEFAULT_VERBOSE}" == "true" ]] && echo -e "${GRAY}${DIM}[VERBOSE] $1${NC}"; }
+# Check if verbose mode is enabled
+is_verbose() {
+    [[ "${DOTFILES_VERBOSE:-$DEFAULT_VERBOSE}" == "true" ]]
+}
+
+log_info() { echo -e "${CYAN}${BULLET}${RESET} ${WHITE}$1${RESET}"; }
+log_success() { echo -e "${GREEN}${CHECK}${RESET} ${BOLD}${GREEN}$1${RESET}"; }
+log_warning() { echo -e "${YELLOW}⚠${RESET}  ${YELLOW}$1${RESET}"; }
+log_error() { echo -e "${RED}${CROSS}${RESET} ${BOLD}${RED}$1${RESET}"; }
+log_step() { echo -e "${MAGENTA}${ARROW}${RESET} ${BOLD}${MAGENTA}$1${RESET}"; }
+log_dim() { echo -e "${GRAY}  $1${RESET}"; }
+log_verbose() { is_verbose && echo -e "${MAGENTA}[VERBOSE]${RESET} ${GRAY}$1${RESET}"; }
 
 # =============================================================================
 # Validation Functions
 # =============================================================================
-# Validate profile value
+# Validate profile value (returns 0 if valid, 1 if invalid)
 validate_profile() {
     local profile="$1"
     local valid_profiles=("minimal" "server" "develop")
@@ -117,15 +105,7 @@ validate_profile() {
         [[ "$profile" == "$valid_profile" ]] && return 0
     done
 
-    die "Invalid profile '$profile'. Valid profiles: ${valid_profiles[*]}"
-}
-
-# Validate verbose value
-validate_verbose() {
-    local verbose="$1"
-    [[ "$verbose" =~ ^(true|false)$ ]] && return 0
-
-    log_warning "Invalid verbose value '$verbose', defaulting to '$DEFAULT_VERBOSE'"
+    log_error "Invalid profile '$profile'. Valid profiles: ${valid_profiles[*]}"
     return 1
 }
 
@@ -137,26 +117,39 @@ die() { log_error "$1"; exit 1; }
 # Banner & UI Functions
 # =============================================================================
 show_banner() {
-    echo -e "${BOLD}${BLUE}╭────────────────────────────────────────────────────────────────╮${NC}"
-    echo -e "${BOLD}${BLUE}│${NC}                    ${BOLD}${WHITE}🚀 Dotfiles Manager${NC}                         ${BOLD}${BLUE}│${NC}"
-    echo -e "${BOLD}${BLUE}│${NC}              ${GRAY}Clean, Cross-Platform Setup${NC}                       ${BOLD}${BLUE}│${NC}"
-    echo -e "${BOLD}${BLUE}╰────────────────────────────────────────────────────────────────╯${NC}"
+    echo -e "${BOLD}${BLUE}╭────────────────────────────────────────────────────────────────╮${RESET}"
+    echo -e "${BOLD}${BLUE}│${RESET}                    ${BOLD}${WHITE}🚀 Dotfiles Manager${RESET}                         ${BOLD}${BLUE}│${RESET}"
+    echo -e "${BOLD}${BLUE}│${RESET}              ${GRAY}Clean, Cross-Platform Setup${RESET}                       ${BOLD}${BLUE}│${RESET}"
+    echo -e "${BOLD}${BLUE}╰────────────────────────────────────────────────────────────────╯${RESET}"
     echo
 }
 
+# Show section header (only in verbose mode)
 show_section() {
-    echo; echo -e "${BOLD}${PURPLE}◆ $1${NC}"
-    echo -e "${GRAY}${DIM}────────────────────────────────────────────────────────────────${NC}"
+    is_verbose || return 0
+    echo; echo -e "${BOLD}${MAGENTA}◆ $1${RESET}"
+    echo -e "${GRAY}────────────────────────────────────────────────────────────────${RESET}"
 }
 
-show_subsection() { echo -e "${CYAN}${BULLET} ${BOLD}$1${NC}"; }
+# Show subsection header (only in verbose mode)
+show_subsection() {
+    is_verbose || return 0
+    echo -e "${CYAN}${BULLET}${RESET} ${BOLD}${CYAN}$1${RESET}";
+}
 
 # =============================================================================
 # Configuration Management
 # =============================================================================
+# Set default values for all dotfiles variables
+set_defaults() {
+    export DOTFILES_ROOT="${DOTFILES_ROOT:-$DEFAULT_ROOT}"
+    export DOTFILES_PROFILE="${DOTFILES_PROFILE:-$DEFAULT_PROFILE}"
+    export DOTFILES_VERBOSE="${DOTFILES_VERBOSE:-$DEFAULT_VERBOSE}"
+    export DOTFILES_BRANCH="${DOTFILES_BRANCH:-$DEFAULT_BRANCH}"
+}
+
 load_config() {
     [[ ! -f "$CONFIG_FILE" ]] && {
-        export DOTFILES_CONFIG_LOADED_FROM_ZSHENV=false
         log_verbose "No configuration file found at $CONFIG_FILE"
         return 0
     }
@@ -166,7 +159,6 @@ load_config() {
     # Load configuration values with fallbacks
     local value
 
-    # Use || true to prevent set -e from exiting on grep/sed failures
     if value=$(extract_config_value "DOTFILES_ROOT" "$CONFIG_FILE" 2>/dev/null || true); then
         [[ -n "$value" ]] && export DOTFILES_ROOT="$value"
         log_verbose "Loaded DOTFILES_ROOT: ${value:-default}"
@@ -182,7 +174,6 @@ load_config() {
         log_verbose "Loaded DOTFILES_VERBOSE: ${value:-default}"
     fi
 
-    export DOTFILES_CONFIG_LOADED_FROM_ZSHENV=true
     log_verbose "Configuration loaded successfully"
 }
 
@@ -216,16 +207,13 @@ EOF
 # Environment Setup
 # =============================================================================
 setup_environment() {
+    # Always show progress, detailed section only in verbose mode
+    log_step "Setting up environment..."
     show_section "Configuration Setup"
 
-    # Load existing configuration
+    # Load existing configuration and set defaults
     load_config
-
-    # Set defaults
-    export DOTFILES_ROOT="${DOTFILES_ROOT:-$DEFAULT_ROOT}"
-    export DOTFILES_PROFILE="${DOTFILES_PROFILE:-$DEFAULT_PROFILE}"
-    export DOTFILES_VERBOSE="${DOTFILES_VERBOSE:-$DEFAULT_VERBOSE}"
-    export DOTFILES_BRANCH="${DOTFILES_BRANCH:-$DEFAULT_BRANCH}"
+    set_defaults
 
     # Auto-detect repository
     if [[ -z "${DOTFILES_REPO:-}" ]]; then
@@ -239,32 +227,41 @@ setup_environment() {
     fi
     export DOTFILES_REPO
 
-    # Validate settings
-    validate_profile "$DOTFILES_PROFILE"
-    validate_verbose "$DOTFILES_VERBOSE"
-
+    # Validate settings (show error but don't exit)
+    validate_profile "$DOTFILES_PROFILE" || {
+        log_warning "Using default profile '$DEFAULT_PROFILE'"
+        export DOTFILES_PROFILE="$DEFAULT_PROFILE"
+    }
 }
 
 # =============================================================================
 # Repository Management
 # =============================================================================
 setup_repository() {
+    # Always show progress, detailed section only in verbose mode
+    log_step "Setting up repository..."
     show_section "Repository Management"
 
     if [[ -d "$DOTFILES_ROOT/.git" ]]; then
-        log_step "Updating existing repository"
+        is_verbose && log_step "Updating existing repository"
         cd "$DOTFILES_ROOT"
-        log_dim "Fetching latest changes..."
+        is_verbose && log_dim "Fetching latest changes..."
         git fetch origin >/dev/null 2>&1
-        log_dim "Switching to branch '$DOTFILES_BRANCH'..."
+        is_verbose && log_dim "Switching to branch '$DOTFILES_BRANCH'..."
         git checkout "$DOTFILES_BRANCH" >/dev/null 2>&1
-        log_dim "Pulling latest changes..."
+        is_verbose && log_dim "Pulling latest changes..."
         git pull origin "$DOTFILES_BRANCH" >/dev/null 2>&1
     else
-        log_step "Cloning repository"
-        [[ -n "$DOTFILES_REPO" ]] || die "Repository URL not specified"
-        log_dim "Downloading from $DOTFILES_REPO..."
-        git clone -b "$DOTFILES_BRANCH" "$DOTFILES_REPO" "$DOTFILES_ROOT" >/dev/null 2>&1
+        is_verbose && log_step "Cloning repository"
+        if [[ -z "$DOTFILES_REPO" ]]; then
+            log_error "Repository URL not specified"
+            return 1
+        fi
+        is_verbose && log_dim "Downloading from $DOTFILES_REPO..."
+        git clone -b "$DOTFILES_BRANCH" "$DOTFILES_REPO" "$DOTFILES_ROOT" >/dev/null 2>&1 || {
+            log_error "Failed to clone repository"
+            return 1
+        }
     fi
 
     cd "$DOTFILES_ROOT"
@@ -306,9 +303,9 @@ create_single_symlink() {
         }
     fi
 
-    # Create symlink
+    # Create symlink (always do the work, only show output if verbose)
     if ln -sf "$source_path" "$target_path"; then
-        log_dim "${GREEN}${CHECK}${NC} $display_name ${ARROW} $target_path"
+        is_verbose && log_dim "${GREEN}${CHECK}${RESET} $display_name ${MAGENTA}${ARROW}${RESET} $target_path"
         return 0
     else
         log_error "Failed to create symlink: $source_path -> $target_path"
@@ -354,8 +351,8 @@ link_directory_files() {
 }
 
 create_symlinks() {
-    [[ "${DOTFILES_VERBOSE:-$DEFAULT_VERBOSE}" != "true" ]] && return 0
-
+    # Always show progress message, detailed section only in verbose mode
+    log_step "Creating symlinks..."
     show_section "Creating symlinks..."
 
     # Link dotfiles (files in root directory)
@@ -380,8 +377,8 @@ check_directory_symlinks() {
 
     local item_count=0
 
-    while IFS= read -r item; do
-        [[ -z "$item" ]] && continue
+    for item in "$source_dir"/*; do
+        [[ ! -e "$item" ]] && continue
 
         local name=$(basename "$item")
         local target="$target_prefix$name"
@@ -389,19 +386,21 @@ check_directory_symlinks() {
         if ! should_exclude "$name" && [[ -f "$item" || -d "$item" ]]; then
             ((item_count++))
             if [[ -L "$target" ]] && [[ -e "$target" ]]; then
-                log_dim "${GREEN}${CHECK}${NC} $name ${ARROW} $target"
+                is_verbose && log_dim "${GREEN}${CHECK}${RESET} $name ${MAGENTA}${ARROW}${RESET} $target"
                 eval "$total_links_ref=\$(($total_links_ref + 1))"
             else
-                log_error "${RED}${CROSS}${NC} Broken or missing: $target"
+                log_error "Broken or missing: $target"
                 eval "$broken_links_ref=\$(($broken_links_ref + 1))"
             fi
         fi
-    done < <(ls -1 "$source_dir" 2>/dev/null || echo "")
+    done
 
     log_verbose "Checked $item_count items in $source_dir"
 }
 
 verify_symlinks() {
+    # Always show progress, detailed section only in verbose mode
+    log_step "Verifying symlinks..."
     show_section "Verifying symlinks..."
 
     [[ -n "$DOTFILES_ROOT" ]] || { log_error "DOTFILES_ROOT is not set"; return 1; }
@@ -416,7 +415,7 @@ verify_symlinks() {
     # Check config files symlinks
     check_directory_symlinks "$DOTFILES_ROOT/config" "$HOME/.config/" "Checking config files symlinks..." total_links broken_links
 
-    # Summary
+    # Summary (always show)
     echo
     if [[ $broken_links -eq 0 ]]; then
         log_success "All $total_links symlinks are working"
@@ -431,6 +430,8 @@ verify_symlinks() {
 # Package Installation
 # =============================================================================
 install_packages() {
+    # Always show progress, detailed section only in verbose mode
+    log_step "Installing packages for profile: $DOTFILES_PROFILE"
     show_section "Package Installation"
 
     # Check if zsh is available
@@ -439,15 +440,10 @@ install_packages() {
         return 0
     }
 
-    log_info "Installing packages for profile: $DOTFILES_PROFILE"
-
     # Determine which packages to install based on profile
-    local pkg_patterns=()
-    case "$DOTFILES_PROFILE" in
-        minimal) pkg_patterns=('*_m_*.zsh') ;;
-        server)  pkg_patterns=('*_m_*.zsh' '*_s_*.zsh') ;;
-        develop) pkg_patterns=('*_m_*.zsh' '*_s_*.zsh' '*_d_*.zsh') ;;
-    esac
+    local pkg_patterns=('*_m_*.zsh')
+    [[ "$DOTFILES_PROFILE" == "server" || "$DOTFILES_PROFILE" == "develop" ]] && pkg_patterns+=('*_s_*.zsh')
+    [[ "$DOTFILES_PROFILE" == "develop" ]] && pkg_patterns+=('*_d_*.zsh')
 
     # Source each matching package file to trigger installation
     (   # Subshell to contain shopt changes
@@ -455,7 +451,7 @@ install_packages() {
         for pattern in "${pkg_patterns[@]}"; do
             for pkg_file in "$DOTFILES_ROOT/zshrc.d/pkg/$pattern"; do
                 if [[ -f "$pkg_file" ]]; then
-                    log_dim "Loading package: $(basename "$pkg_file")"
+                    is_verbose && log_dim "Loading package: $(basename "$pkg_file")"
                     source "$pkg_file"
                 fi
             done
@@ -480,39 +476,51 @@ configure_profile() {
 install_dotfiles() {
     show_banner
     log_step "Starting dotfiles installation"
+
+    # Step 1: Setup environment (load config, set defaults)
     setup_environment
-    setup_repository
-    install_packages
+
+    # Step 2: Clone the repository
+    setup_repository || {
+        log_error "Failed to setup repository"
+        return 1
+    }
+
+    # Step 3: Link the files
     create_symlinks
-    verify_symlinks
+
+    # Step 4: Install required packages (includes package initialization)
+    install_packages
+
+    # Step 5: Initialize (save configuration)
     configure_profile
 
     # Success message
     echo
-    echo -e "${BOLD}${GREEN}╭────────────────────────────────────────────────────────────────╮${NC}"
-    echo -e "${BOLD}${GREEN}│${NC}${BOLD}${WHITE}                    🎉 Installation Complete!                   ${NC}${BOLD}${GREEN}│${NC}"
-    echo -e "${BOLD}${GREEN}╰────────────────────────────────────────────────────────────────╯${NC}"
+    echo -e "${BOLD}${GREEN}╭────────────────────────────────────────────────────────────────╮${RESET}"
+    echo -e "${BOLD}${GREEN}│${RESET}${BOLD}${WHITE}                    🎉 Installation Complete!                   ${RESET}${BOLD}${GREEN}│${RESET}"
+    echo -e "${BOLD}${GREEN}╰────────────────────────────────────────────────────────────────╯${RESET}"
     echo
 
     log_success "Profile '$DOTFILES_PROFILE' is now active"
 
     # Show what's included
     echo
-    echo -e "${BOLD}${WHITE}What's Included:${NC}"
+    echo -e "${BOLD}${WHITE}What's Included:${RESET}"
     case "$DOTFILES_PROFILE" in
         minimal)
-            echo -e "  ${GREEN}${CHECK}${NC} Shell essentials (zsh, sheldon, tmux)"
+            echo -e "  ${GREEN}${CHECK}${RESET} Shell essentials (zsh, sheldon, tmux)"
             ;;
         server)
-            echo -e "  ${GREEN}${CHECK}${NC} Shell + utilities (bat, fzf, eza, fd, ripgrep, tealdeer, zoxide)"
+            echo -e "  ${GREEN}${CHECK}${RESET} Shell + utilities (bat, fzf, eza, fd, ripgrep, tealdeer, zoxide)"
             ;;
         develop)
-            echo -e "  ${GREEN}${CHECK}${NC} Full development environment"
-            echo -e "  ${GREEN}${CHECK}${NC} All server tools + dev tools (nvm, pyenv, goenv, curlie)"
+            echo -e "  ${GREEN}${CHECK}${RESET} Full development environment"
+            echo -e "  ${GREEN}${CHECK}${RESET} All server tools + dev tools (nvm, pyenv, goenv, curlie)"
             ;;
     esac
 
-    # Start new shell
+    # Step 6: Source a new zsh shell
     if command -v zsh &>/dev/null; then
         log_info "Starting new zsh shell..."
         exec zsh -l </dev/null
@@ -524,6 +532,26 @@ install_dotfiles() {
 # =============================================================================
 # Uninstallation
 # =============================================================================
+# Remove symlinks from a directory
+remove_symlinks_from_dir() {
+    local source_dir="$1"
+    local target_prefix="$2"
+    local unlink_count_ref="$3"
+
+    [[ ! -d "$source_dir" ]] && return 0
+
+    for item in "$source_dir"/*; do
+        [[ ! -e "$item" ]] && continue
+
+        local name=$(basename "$item")
+        local target="$target_prefix$name"
+
+        if [[ -L "$target" ]] && [[ "$(readlink "$target")" == *"/.dotfiles/"* ]]; then
+            rm "$target" && eval "$unlink_count_ref=\$(($unlink_count_ref + 1))"
+        fi
+    done
+}
+
 uninstall_dotfiles() {
     log_warning "This will remove all dotfiles symlinks and configuration"
 
@@ -535,35 +563,15 @@ uninstall_dotfiles() {
 
     local unlink_count=0
 
-    # Remove root symlinks
-    if [[ -d "$DOTFILES_ROOT" ]]; then
-        for item in "$DOTFILES_ROOT"/*; do
-            [[ -f "$item" ]] || continue
-            local name="$(basename "$item")"
-            local target="$HOME/.$name"
-            if [[ -L "$target" ]] && [[ "$(readlink "$target")" == *"/.dotfiles/"* ]]; then
-                rm "$target"
-                ((unlink_count++))
-            fi
-        done
-    fi
-
-    # Remove config symlinks
-    if [[ -d "$HOME/.config" ]]; then
-        for item in "$HOME/.config"/*; do
-            if [[ -L "$item" ]] && [[ "$(readlink "$item")" == *"/.dotfiles/"* ]]; then
-                rm "$item"
-                ((unlink_count++))
-            fi
-        done
-    fi
+    # Remove root and config symlinks using shared function
+    remove_symlinks_from_dir "$DOTFILES_ROOT" "$HOME/." unlink_count
+    remove_symlinks_from_dir "$DOTFILES_ROOT/config" "$HOME/.config/" unlink_count
 
     # Remove from .zshenv
-    local zshenv="$HOME/.zshenv"
-    if [[ -f "$zshenv" ]]; then
-        sed_inplace "$zshenv" '/^export DOTFILES_/d'
-        sed_inplace "$zshenv" '/^# Dotfiles Configuration/d'
-    fi
+    [[ -f "$CONFIG_FILE" ]] && {
+        sed_inplace "$CONFIG_FILE" '/^export DOTFILES_/d'
+        sed_inplace "$CONFIG_FILE" '/^# Dotfiles Configuration/d'
+    }
 
     # Remove dotfiles directory
     [[ -d "$DOTFILES_ROOT" ]] && rm -rf "$DOTFILES_ROOT"
@@ -579,27 +587,25 @@ show_menu() {
     show_banner
 
     # Ensure variables are set with defaults
-    DOTFILES_ROOT="${DOTFILES_ROOT:-$DEFAULT_ROOT}"
-    DOTFILES_PROFILE="${DOTFILES_PROFILE:-$DEFAULT_PROFILE}"
-    DOTFILES_VERBOSE="${DOTFILES_VERBOSE:-$DEFAULT_VERBOSE}"
+    set_defaults
 
-    echo -e "${BOLD}${WHITE}Current Configuration:${NC}"
-    echo -e "  ${GRAY}OS:${NC}                  ${PURPLE}$(get_os_type)${NC}"
-    echo -e "  ${GRAY}Path:${NC}                ${CYAN}${DOTFILES_ROOT}${NC}"
-    echo -e "  ${GRAY}Profile:${NC}             ${YELLOW}${DOTFILES_PROFILE}${NC}"
-    echo -e "  ${GRAY}Verbose:${NC}             ${GREEN}${DOTFILES_VERBOSE}${NC}"
+    echo -e "${BOLD}${WHITE}Current Configuration:${RESET}"
+    echo -e "  ${GRAY}OS:${RESET}                  ${MAGENTA}$(get_os_type)${RESET}"
+    echo -e "  ${GRAY}Path:${RESET}                ${CYAN}${DOTFILES_ROOT}${RESET}"
+    echo -e "  ${GRAY}Profile:${RESET}             ${YELLOW}${DOTFILES_PROFILE}${RESET}"
+    echo -e "  ${GRAY}Verbose:${RESET}             ${GREEN}${DOTFILES_VERBOSE}${RESET}"
 
     echo
-    echo -e "${BOLD}${WHITE}Available Actions:${NC}"
-    echo -e "  ${CYAN}1)${NC} Install/Update dotfiles"
-    echo -e "  ${CYAN}2)${NC} Change profile (minimal/server/develop)"
-    echo -e "  ${CYAN}3)${NC} Create/refresh symlinks only"
-    echo -e "  ${CYAN}4)${NC} Install required packages"
-    echo -e "  ${CYAN}5)${NC} Verify symlinks"
-    echo -e "  ${CYAN}6)${NC} Uninstall everything"
-    echo -e "  ${CYAN}7)${NC} Toggle verbose mode"
-    echo -e "  ${CYAN}8)${NC} Show help"
-    echo -e "  ${CYAN}q)${NC} Quit"
+    echo -e "${BOLD}${WHITE}Available Actions:${RESET}"
+    echo -e "  ${CYAN}1)${RESET} Install/Update dotfiles"
+    echo -e "  ${CYAN}2)${RESET} Change profile (minimal/server/develop)"
+    echo -e "  ${CYAN}3)${RESET} Create/refresh symlinks only"
+    echo -e "  ${CYAN}4)${RESET} Install required packages"
+    echo -e "  ${CYAN}5)${RESET} Verify symlinks"
+    echo -e "  ${CYAN}6)${RESET} Uninstall everything"
+    echo -e "  ${CYAN}7)${RESET} Toggle verbose mode"
+    echo -e "  ${CYAN}8)${RESET} Show help"
+    echo -e "  ${CYAN}q)${RESET} Quit"
 
     echo
     echo -n "Choose an option [1-8,q]: "
@@ -620,40 +626,38 @@ interactive_menu() {
             2)
                 echo -n "Enter new profile (minimal/server/develop): "
                 read -r new_profile
-                case "$new_profile" in
-                    minimal|server|develop)
-                        export DOTFILES_PROFILE="$new_profile"
-                        log_success "Profile changed to: $new_profile"
-                        ;;
-                    *) log_error "Invalid profile. Use: minimal, server, or develop" ;;
-                esac
+                if validate_profile "$new_profile" 2>/dev/null; then
+                    export DOTFILES_PROFILE="$new_profile"
+                    save_config
+                    log_success "Profile changed to: $new_profile"
+                fi
                 sleep 2
                 ;;
             3)
                 create_symlinks
                 verify_symlinks
-                echo -e "\n${GRAY}${DIM}Press Enter to continue...${NC}"
+                echo -e "\n${GRAY}Press Enter to continue...${RESET}"
                 read -r
                 ;;
             4)
                 install_packages
-                echo -e "\n${GRAY}${DIM}Press Enter to continue...${NC}"
+                echo -e "\n${GRAY}Press Enter to continue...${RESET}"
                 read -r
                 ;;
             5)
                 verify_symlinks
-                echo -e "\n${GRAY}${DIM}Press Enter to continue...${NC}"
+                echo -e "\n${GRAY}Press Enter to continue...${RESET}"
                 read -r
                 ;;
             6)
                 uninstall_dotfiles
                 [[ $? -eq 0 ]] && exit 0
-                echo -e "\n${GRAY}${DIM}Press Enter to continue...${NC}"
+                echo -e "\n${GRAY}Press Enter to continue...${RESET}"
                 read -r
                 ;;
             7)
                 # Toggle verbose mode
-                if [[ "${DOTFILES_VERBOSE:-$DEFAULT_VERBOSE}" == "true" ]]; then
+                if is_verbose; then
                     export DOTFILES_VERBOSE="false"
                     log_success "Verbose mode disabled"
                 else
@@ -665,23 +669,23 @@ interactive_menu() {
                 ;;
             8)
                 echo
-                echo -e "${BOLD}${PURPLE}Help - Dotfiles Manager${NC}"
+                echo -e "${BOLD}${MAGENTA}Help - Dotfiles Manager${RESET}"
                 echo
-                echo -e "${BOLD}${WHITE}Installation:${NC}"
-                echo -e "  ${CYAN}${BULLET}${NC} Interactive: bash <(curl -fsSL $INSTALL_COMMAND_URL)"
-                echo -e "  ${CYAN}${BULLET}${NC} One-liner:   curl -fsSL $INSTALL_COMMAND_URL | bash"
+                echo -e "${BOLD}${WHITE}Installation:${RESET}"
+                echo -e "  ${CYAN}${BULLET}${RESET} Interactive: bash <(curl -fsSL $INSTALL_COMMAND_URL)"
+                echo -e "  ${CYAN}${BULLET}${RESET} One-liner:   curl -fsSL $INSTALL_COMMAND_URL | bash"
                 echo
-                echo -e "${BOLD}${WHITE}Profiles:${NC}"
-                echo -e "  ${YELLOW}minimal${NC}  - Shell essentials (sheldon, tmux)"
-                echo -e "  ${YELLOW}server${NC}   - Shell + utilities (bat, fzf, eza, etc.)"
-                echo -e "  ${YELLOW}develop${NC}  - Full development environment"
+                echo -e "${BOLD}${WHITE}Profiles:${RESET}"
+                echo -e "  ${YELLOW}minimal${RESET}  - Shell essentials (sheldon, tmux)"
+                echo -e "  ${YELLOW}server${RESET}   - Shell + utilities (bat, fzf, eza, etc.)"
+                echo -e "  ${YELLOW}develop${RESET}  - Full development environment"
                 echo
-                echo -e "${BOLD}${WHITE}Environment Variables:${NC}"
-                echo -e "  ${CYAN}DOTFILES_ROOT${NC}     - Installation directory"
-                echo -e "  ${CYAN}DOTFILES_PROFILE${NC}  - Profile selection"
-                echo -e "  ${CYAN}DOTFILES_VERBOSE${NC}  - Enable verbose logging"
+                echo -e "${BOLD}${WHITE}Environment Variables:${RESET}"
+                echo -e "  ${CYAN}DOTFILES_ROOT${RESET}     - Installation directory"
+                echo -e "  ${CYAN}DOTFILES_PROFILE${RESET}  - Profile selection"
+                echo -e "  ${CYAN}DOTFILES_VERBOSE${RESET}  - Enable verbose logging"
                 echo
-                echo -e "${GRAY}${DIM}Press Enter to continue...${NC}"
+                echo -e "${GRAY}Press Enter to continue...${RESET}"
                 read -r
                 ;;
             q)
@@ -742,13 +746,9 @@ EOF
 init_script() {
     readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-    # Load existing configuration
+    # Load existing configuration and set defaults
     load_config
-
-    # Set default values if not loaded
-    export DOTFILES_ROOT="${DOTFILES_ROOT:-$DEFAULT_ROOT}"
-    export DOTFILES_PROFILE="${DOTFILES_PROFILE:-$DEFAULT_PROFILE}"
-    export DOTFILES_VERBOSE="${DOTFILES_VERBOSE:-$DEFAULT_VERBOSE}"
+    set_defaults
 }
 
 # Parse and validate command line arguments
@@ -788,7 +788,7 @@ parse_args() {
             create_symlinks
             ;;
         profile)
-            handle_profile_command "$2"
+            handle_profile_command "${2:-}"
             ;;
         packages)
             install_packages
@@ -818,16 +818,18 @@ handle_profile_command() {
     local new_profile="$1"
 
     if [[ -z "$new_profile" ]]; then
-        die "Profile name required. Usage: $SCRIPT_NAME profile <minimal|server|develop>"
+        log_error "Profile name required. Usage: $SCRIPT_NAME profile <minimal|server|develop>"
+        return 1
     fi
 
-    if ! validate_profile "$new_profile" 2>/dev/null; then
-        die "Invalid profile '$new_profile'. Valid profiles: minimal, server, develop"
+    if ! validate_profile "$new_profile"; then
+        return 1
     fi
 
     export DOTFILES_PROFILE="$new_profile"
     save_config
     log_success "Profile changed to: $new_profile"
+    return 0
 }
 
 main() {
