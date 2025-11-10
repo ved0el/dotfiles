@@ -67,7 +67,9 @@ if [[ -z "$ZSHRC_COMPILED" ]]; then
     }
 
     # Run in background to keep interactive startup fast
+    # Redirect stderr to suppress job control messages ([N] PID)
+    # Keep stdout for verbose mode messages
     (
         _dotfiles_zcompile_update
-    ) & disown
+    ) 2>/dev/null &!
 fi
