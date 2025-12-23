@@ -1,0 +1,8 @@
+# Follow symlinks by default
+--follow
+
+# Search hidden files and directories by default
+--hidden
+
+# Show line numbers in output
+--line-number
