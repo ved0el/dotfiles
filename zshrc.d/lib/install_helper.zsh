@@ -7,16 +7,17 @@
 # -----------------------------------------------------------------------------
 # Color Constants (Modern, Windows Terminal compatible)
 # -----------------------------------------------------------------------------
-readonly RED='\033[31m'
-readonly GREEN='\033[32m'
-readonly YELLOW='\033[33m'
-readonly BLUE='\033[34m'
-readonly MAGENTA='\033[35m'
-readonly CYAN='\033[36m'
-readonly WHITE='\033[37m'
-readonly GRAY='\033[90m'
-readonly BOLD='\033[1m'
-readonly RESET='\033[0m'
+# Only set if not already readonly (allows re-sourcing without errors)
+[[ -v RED ]] || readonly RED='\033[31m'
+[[ -v GREEN ]] || readonly GREEN='\033[32m'
+[[ -v YELLOW ]] || readonly YELLOW='\033[33m'
+[[ -v BLUE ]] || readonly BLUE='\033[34m'
+[[ -v MAGENTA ]] || readonly MAGENTA='\033[35m'
+[[ -v CYAN ]] || readonly CYAN='\033[36m'
+[[ -v WHITE ]] || readonly WHITE='\033[37m'
+[[ -v GRAY ]] || readonly GRAY='\033[90m'
+[[ -v BOLD ]] || readonly BOLD='\033[1m'
+[[ -v RESET ]] || readonly RESET='\033[0m'
 
 # -----------------------------------------------------------------------------
 # Colored Logging Functions
