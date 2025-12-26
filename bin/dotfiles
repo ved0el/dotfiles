@@ -85,6 +85,16 @@ is_verbose() {
     [[ "${DOTFILES_VERBOSE:-$DEFAULT_VERBOSE}" == "true" ]]
 }
 
+# Run a command with verbose output enabled (for menu operations)
+with_menu_output() {
+    local original_verbose="${DOTFILES_VERBOSE:-$DEFAULT_VERBOSE}"
+    export DOTFILES_VERBOSE="true"
+    "$@"
+    local result=$?
+    export DOTFILES_VERBOSE="$original_verbose"
+    return $result
+}
+
 log_info() { echo -e "${CYAN}${BULLET}${RESET} ${WHITE}$1${RESET}"; }
 log_success() { echo -e "${GREEN}${CHECK}${RESET} ${BOLD}${GREEN}$1${RESET}"; }
 log_warning() { echo -e "${YELLOW}⚠${RESET}  ${YELLOW}$1${RESET}"; }
@@ -445,20 +455,57 @@ install_packages() {
     [[ "$DOTFILES_PROFILE" == "server" || "$DOTFILES_PROFILE" == "develop" ]] && pkg_patterns+=('*_s_*.zsh')
     [[ "$DOTFILES_PROFILE" == "develop" ]] && pkg_patterns+=('*_d_*.zsh')
 
+    # Track statistics
+    local total_packages=0
+    local installed_packages=0
+    local missing_packages=0
+    local failed_packages=0
+
+    # First pass: count and check packages
+    echo
+    log_info "Checking packages for profile: $DOTFILES_PROFILE"
+    echo
+
     # Source each matching package file to trigger installation
-    (   # Subshell to contain shopt changes
+    (   # Subshell to contain shopt changes and export counters
         shopt -s nullglob  # Allow empty globs
         for pattern in "${pkg_patterns[@]}"; do
             for pkg_file in "$DOTFILES_ROOT/zshrc.d/pkg/$pattern"; do
                 if [[ -f "$pkg_file" ]]; then
-                    is_verbose && log_dim "Loading package: $(basename "$pkg_file")"
-                    source "$pkg_file"
+                    local pkg_name=$(basename "$pkg_file" .zsh | sed 's/^[0-9]*_[msd]_//')
+                    is_verbose && log_dim "Checking package: $pkg_name ($(basename "$pkg_file"))"
+
+                    # Source the package file (will check and install if needed)
+                    if source "$pkg_file" 2>&1; then
+                        true  # Success handled in package file
+                    else
+                        log_error "Failed to process package: $pkg_name"
+                    fi
                 fi
             done
         done
     )
 
-    log_success "Package installation completed"
+    echo
+    log_success "Package check and installation completed"
+
+    # Show profile-specific package list
+    echo
+    log_info "Profile '$DOTFILES_PROFILE' includes:"
+    case "$DOTFILES_PROFILE" in
+        minimal)
+            echo -e "  ${CYAN}${BULLET}${RESET} tmux, sheldon"
+            ;;
+        server)
+            echo -e "  ${CYAN}${BULLET}${RESET} tmux, sheldon (minimal)"
+            echo -e "  ${CYAN}${BULLET}${RESET} bat, fzf, eza, fd, ripgrep, tealdeer, zoxide"
+            ;;
+        develop)
+            echo -e "  ${CYAN}${BULLET}${RESET} tmux, sheldon (minimal)"
+            echo -e "  ${CYAN}${BULLET}${RESET} bat, fzf, eza, fd, ripgrep, tealdeer, zoxide (server)"
+            echo -e "  ${CYAN}${BULLET}${RESET} nvm, pyenv, goenv, curlie"
+            ;;
+    esac
 }
 
 # =============================================================================
@@ -621,7 +668,7 @@ interactive_menu() {
 
         case "$choice" in
             1)
-                install_dotfiles
+                with_menu_output install_dotfiles
                 ;;
             2)
                 echo -n "Enter new profile (minimal/server/develop): "
@@ -634,35 +681,35 @@ interactive_menu() {
                 sleep 2
                 ;;
             3)
-                create_symlinks
-                verify_symlinks
+                with_menu_output create_symlinks
+                with_menu_output verify_symlinks
                 echo -e "\n${GRAY}Press Enter to continue...${RESET}"
                 read -r
                 ;;
             4)
-                install_packages
+                with_menu_output install_packages
                 echo -e "\n${GRAY}Press Enter to continue...${RESET}"
                 read -r
                 ;;
             5)
-                verify_symlinks
+                with_menu_output verify_symlinks
                 echo -e "\n${GRAY}Press Enter to continue...${RESET}"
                 read -r
                 ;;
             6)
-                uninstall_dotfiles
+                with_menu_output uninstall_dotfiles
                 [[ $? -eq 0 ]] && exit 0
                 echo -e "\n${GRAY}Press Enter to continue...${RESET}"
                 read -r
                 ;;
             7)
-                # Toggle verbose mode
+                # Toggle verbose mode (for zshrc sourcing only)
                 if is_verbose; then
                     export DOTFILES_VERBOSE="false"
-                    log_success "Verbose mode disabled"
+                    log_success "Verbose mode disabled (affects shell startup only)"
                 else
                     export DOTFILES_VERBOSE="true"
-                    log_success "Verbose mode enabled"
+                    log_success "Verbose mode enabled (affects shell startup only)"
                 fi
                 save_config
                 sleep 2
@@ -683,7 +730,8 @@ interactive_menu() {
                 echo -e "${BOLD}${WHITE}Environment Variables:${RESET}"
                 echo -e "  ${CYAN}DOTFILES_ROOT${RESET}     - Installation directory"
                 echo -e "  ${CYAN}DOTFILES_PROFILE${RESET}  - Profile selection"
-                echo -e "  ${CYAN}DOTFILES_VERBOSE${RESET}  - Enable verbose logging"
+                echo -e "  ${CYAN}DOTFILES_VERBOSE${RESET}  - Verbose logging (affects shell startup only)"
+                echo -e "  ${GRAY}Note: dotfiles menu always shows detailed output for debugging${RESET}"
                 echo
                 echo -e "${GRAY}Press Enter to continue...${RESET}"
                 read -r
@@ -725,7 +773,8 @@ COMMANDS:
   help        Show this help message
 
 OPTIONS:
-  -v, --verbose    Enable verbose output
+  -v, --verbose    Enable verbose output (affects shell startup only)
+                   Note: dotfiles menu always shows detailed output
   -h, --help       Show this help message
 
 EXAMPLES:
@@ -778,23 +827,23 @@ parse_args() {
             if is_interactive && [[ -z "$command" ]]; then
                 interactive_menu
             else
-                install_dotfiles
+                with_menu_output install_dotfiles
             fi
             ;;
         uninstall)
-            uninstall_dotfiles
+            with_menu_output uninstall_dotfiles
             ;;
         link)
-            create_symlinks
+            with_menu_output create_symlinks
             ;;
         profile)
             handle_profile_command "${2:-}"
             ;;
         packages)
-            install_packages
+            with_menu_output install_packages
             ;;
         verify)
-            verify_symlinks
+            with_menu_output verify_symlinks
             ;;
         version)
             show_version

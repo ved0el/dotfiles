@@ -7,6 +7,20 @@ export DOTFILES_ROOT="${DOTFILES_ROOT:-$HOME/.dotfiles}"
 export DOTFILES_PROFILE="${DOTFILES_PROFILE:-minimal}"
 export DOTFILES_VERBOSE="${DOTFILES_VERBOSE:-false}"
 
+# Validate DOTFILES_ROOT exists
+if [[ ! -d "$DOTFILES_ROOT" ]]; then
+    echo "ERROR: DOTFILES_ROOT directory not found: $DOTFILES_ROOT" >&2
+    echo "Please check your dotfiles installation or set DOTFILES_ROOT correctly." >&2
+    return 1 2>/dev/null || exit 1
+fi
+
+# Validate required directory structure exists
+if [[ ! -d "$DOTFILES_ROOT/zshrc.d" ]]; then
+    echo "ERROR: Required directory structure missing: $DOTFILES_ROOT/zshrc.d" >&2
+    echo "Your dotfiles installation may be corrupted." >&2
+    return 1 2>/dev/null || exit 1
+fi
+
 # Load core modules immediately
 for core_file in "$DOTFILES_ROOT"/zshrc.d/core/*.zsh(N); do
   [[ -r "$core_file" ]] && source "$core_file"

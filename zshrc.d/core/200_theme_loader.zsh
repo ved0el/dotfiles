@@ -15,5 +15,12 @@ typeset -g POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=()
 # Powerlevel10k instant prompt (must load before theme)
 [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k/p10k-instant-prompt-${(%):-%n}.zsh" ]] && source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k/p10k-instant-prompt-${(%):-%n}.zsh"
 
-# Load Powerlevel10k theme
-[[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
+# Load Powerlevel10k theme configuration
+# Check symlink first, then fallback to dotfiles source
+if [[ -r ~/.p10k.zsh ]]; then
+    source ~/.p10k.zsh
+elif [[ -r "$DOTFILES_ROOT/p10k.zsh" ]]; then
+    source "$DOTFILES_ROOT/p10k.zsh"
+else
+    [[ "${DOTFILES_VERBOSE:-false}" == "true" ]] && echo "Warning: p10k.zsh configuration not found" >&2
+fi
