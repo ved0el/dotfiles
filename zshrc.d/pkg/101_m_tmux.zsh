@@ -15,7 +15,8 @@ pkg_post_install() {
 }
 
 pkg_init() {
-    # Tmux initialization is handled by tmux_loader.zsh if needed
+    # Tmux is installed but not auto-started
+    # Run 'tmux' manually when needed (especially useful for SSH sessions)
     # Just verify tmux is available
     return 0
 }

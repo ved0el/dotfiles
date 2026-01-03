@@ -33,26 +33,5 @@ _tmux_setup_tpm() {
 # Setup TPM and plugins
 _tmux_setup_tpm
 
-# Auto-start tmux (skip in integrated terminals and SSH)
-# Check if tmux command exists
-if [[ -n "$(command -v tmux 2>/dev/null)" ]]; then
-  # Check if not in SSH connection
-  if [[ -z "$SSH_CONNECTION" ]]; then
-    # Check if not in integrated terminals (vscode, cursor, etc.)
-    local is_integrated_terminal=false
-    case "$TERM_PROGRAM" in
-      vscode|cursor|WezTerm|Hyper|iTerm.app|Apple_Terminal)
-        is_integrated_terminal=true
-        ;;
-    esac
-
-    # Also check for VSCODE_INJECTION which indicates VSCode terminal
-    [[ -n "$VSCODE_INJECTION" ]] && is_integrated_terminal=true
-
-    # Only start tmux if not in integrated terminal and not already in tmux session
-    if [[ "$is_integrated_terminal" == false && -z "$TMUX" ]]; then
-      # Attach to existing session or create a new one
-      exec tmux new-session -A -s main
-    fi
-  fi
-fi
+# Note: tmux is not auto-started. Run 'tmux' manually when needed.
+# This is especially useful for SSH sessions to keep work alive after disconnection.
