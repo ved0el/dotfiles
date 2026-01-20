@@ -17,7 +17,6 @@ set -euo pipefail
 readonly DEFAULT_ROOT="$HOME/.dotfiles"
 readonly DEFAULT_PROFILE="minimal"
 readonly DEFAULT_VERBOSE="false"
-readonly DEFAULT_BRANCH="main"
 
 # URLs - Easy to update
 readonly REPO_URL="https://github.com/ved0el/dotfiles.git"
@@ -155,7 +154,6 @@ set_defaults() {
     export DOTFILES_ROOT="${DOTFILES_ROOT:-$DEFAULT_ROOT}"
     export DOTFILES_PROFILE="${DOTFILES_PROFILE:-$DEFAULT_PROFILE}"
     export DOTFILES_VERBOSE="${DOTFILES_VERBOSE:-$DEFAULT_VERBOSE}"
-    export DOTFILES_BRANCH="${DOTFILES_BRANCH:-$DEFAULT_BRANCH}"
 }
 
 load_config() {
@@ -257,10 +255,8 @@ setup_repository() {
         cd "$DOTFILES_ROOT"
         is_verbose && log_dim "Fetching latest changes..."
         git fetch origin >/dev/null 2>&1
-        is_verbose && log_dim "Switching to branch '$DOTFILES_BRANCH'..."
-        git checkout "$DOTFILES_BRANCH" >/dev/null 2>&1
         is_verbose && log_dim "Pulling latest changes..."
-        git pull origin "$DOTFILES_BRANCH" >/dev/null 2>&1
+        git pull >/dev/null 2>&1
     else
         is_verbose && log_step "Cloning repository"
         if [[ -z "$DOTFILES_REPO" ]]; then
@@ -268,7 +264,7 @@ setup_repository() {
             return 1
         fi
         is_verbose && log_dim "Downloading from $DOTFILES_REPO..."
-        git clone -b "$DOTFILES_BRANCH" "$DOTFILES_REPO" "$DOTFILES_ROOT" >/dev/null 2>&1 || {
+        git clone "$DOTFILES_REPO" "$DOTFILES_ROOT" >/dev/null 2>&1 || {
             log_error "Failed to clone repository"
             return 1
         }
@@ -455,19 +451,12 @@ install_packages() {
     [[ "$DOTFILES_PROFILE" == "server" || "$DOTFILES_PROFILE" == "develop" ]] && pkg_patterns+=('*_s_*.zsh')
     [[ "$DOTFILES_PROFILE" == "develop" ]] && pkg_patterns+=('*_d_*.zsh')
 
-    # Track statistics
-    local total_packages=0
-    local installed_packages=0
-    local missing_packages=0
-    local failed_packages=0
-
-    # First pass: count and check packages
     echo
     log_info "Checking packages for profile: $DOTFILES_PROFILE"
     echo
 
     # Source each matching package file to trigger installation
-    (   # Subshell to contain shopt changes and export counters
+    (   # Subshell to contain shopt changes
         shopt -s nullglob  # Allow empty globs
         for pattern in "${pkg_patterns[@]}"; do
             for pkg_file in "$DOTFILES_ROOT/zshrc.d/pkg/$pattern"; do
@@ -750,8 +739,7 @@ interactive_menu() {
 # Command Line Interface
 # =============================================================================
 show_version() {
-    echo "$SCRIPT_NAME v$SCRIPT_VERSION"
-    echo "Cross-platform dotfiles manager"
+    echo "dotfiles - Cross-platform dotfiles manager"
     echo "https://github.com/ved0el/dotfiles"
 }
 
