@@ -245,19 +245,17 @@ setup_environment() {
 # =============================================================================
 # Repository Management
 # =============================================================================
+is_fresh_install() {
+    [[ ! -d "$DOTFILES_ROOT/.git" ]]
+}
+
 setup_repository() {
     # Always show progress, detailed section only in verbose mode
-    log_step "Setting up repository..."
     show_section "Repository Management"
 
-    if [[ -d "$DOTFILES_ROOT/.git" ]]; then
-        is_verbose && log_step "Updating existing repository"
-        cd "$DOTFILES_ROOT"
-        is_verbose && log_dim "Fetching latest changes..."
-        git fetch origin >/dev/null 2>&1
-        is_verbose && log_dim "Pulling latest changes..."
-        git pull >/dev/null 2>&1
-    else
+    if is_fresh_install; then
+        # INSTALL: Clone the repository
+        log_step "Installing dotfiles (fresh installation)..."
         is_verbose && log_step "Cloning repository"
         if [[ -z "$DOTFILES_REPO" ]]; then
             log_error "Repository URL not specified"
@@ -268,10 +266,38 @@ setup_repository() {
             log_error "Failed to clone repository"
             return 1
         }
-    fi
+        cd "$DOTFILES_ROOT"
+        log_success "Repository cloned at $DOTFILES_ROOT"
+    else
+        # UPDATE: Hard reset with rebase enabled, then pull
+        log_step "Updating dotfiles (pulling latest changes)..."
+        cd "$DOTFILES_ROOT"
+        is_verbose && log_step "Updating existing repository"
 
-    cd "$DOTFILES_ROOT"
-    log_success "Repository ready at $DOTFILES_ROOT"
+        # Get current branch
+        local current_branch
+        current_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
+        is_verbose && log_dim "Current branch: $current_branch"
+
+        # Fetch latest changes
+        is_verbose && log_dim "Fetching latest changes..."
+        git fetch origin >/dev/null 2>&1
+
+        # Hard reset to remote branch with rebase
+        is_verbose && log_dim "Hard resetting to origin/$current_branch..."
+        git reset --hard "origin/$current_branch" >/dev/null 2>&1 || {
+            log_warning "Failed to reset, attempting normal pull..."
+        }
+
+        # Pull with rebase enabled
+        is_verbose && log_dim "Pulling latest changes with rebase..."
+        git pull --rebase origin "$current_branch" >/dev/null 2>&1 || {
+            log_error "Failed to pull latest changes"
+            return 1
+        }
+
+        log_success "Repository updated at $DOTFILES_ROOT"
+    fi
 }
 
 # =============================================================================
@@ -511,52 +537,75 @@ configure_profile() {
 # =============================================================================
 install_dotfiles() {
     show_banner
-    log_step "Starting dotfiles installation"
+
+    local is_install=false
+    is_fresh_install && is_install=true
+
+    if $is_install; then
+        log_step "Starting dotfiles installation (fresh install)"
+    else
+        log_step "Starting dotfiles update"
+    fi
 
     # Step 1: Setup environment (load config, set defaults)
     setup_environment
 
-    # Step 2: Clone the repository
+    # Step 2: Clone or update the repository
     setup_repository || {
         log_error "Failed to setup repository"
         return 1
     }
 
-    # Step 3: Link the files
+    # Step 3: (Re)link the files (always relink to ensure latest structure)
     create_symlinks
 
-    # Step 4: Install required packages (includes package initialization)
-    install_packages
+    # Step 4: Install required packages (only on fresh install)
+    if $is_install; then
+        install_packages
+    else
+        is_verbose && log_info "Skipping package installation (update mode)"
+    fi
 
-    # Step 5: Initialize (save configuration)
+    # Step 5: Save configuration
     configure_profile
 
     # Success message
     echo
-    echo -e "${BOLD}${GREEN}╭────────────────────────────────────────────────────────────────╮${RESET}"
-    echo -e "${BOLD}${GREEN}│${RESET}${BOLD}${WHITE}                    🎉 Installation Complete!                   ${RESET}${BOLD}${GREEN}│${RESET}"
-    echo -e "${BOLD}${GREEN}╰────────────────────────────────────────────────────────────────╯${RESET}"
+    if $is_install; then
+        echo -e "${BOLD}${GREEN}╭────────────────────────────────────────────────────────────────╮${RESET}"
+        echo -e "${BOLD}${GREEN}│${RESET}${BOLD}${WHITE}                    🎉 Installation Complete!                   ${RESET}${BOLD}${GREEN}│${RESET}"
+        echo -e "${BOLD}${GREEN}╰────────────────────────────────────────────────────────────────╯${RESET}"
+        echo
+
+        log_success "Profile '$DOTFILES_PROFILE' is now active"
+
+        # Show what's included
+        echo
+        echo -e "${BOLD}${WHITE}What's Included:${RESET}"
+        case "$DOTFILES_PROFILE" in
+            minimal)
+                echo -e "  ${GREEN}${CHECK}${RESET} Shell essentials (zsh, sheldon, tmux)"
+                ;;
+            server)
+                echo -e "  ${GREEN}${CHECK}${RESET} Shell + utilities (bat, fzf, eza, fd, ripgrep, tealdeer, zoxide)"
+                ;;
+            develop)
+                echo -e "  ${GREEN}${CHECK}${RESET} Full development environment"
+                echo -e "  ${GREEN}${CHECK}${RESET} All server tools + dev tools (nvm, pyenv, goenv, curlie)"
+                ;;
+        esac
+    else
+        echo -e "${BOLD}${GREEN}╭────────────────────────────────────────────────────────────────╮${RESET}"
+        echo -e "${BOLD}${GREEN}│${RESET}${BOLD}${WHITE}                      ✨ Update Complete!                       ${RESET}${BOLD}${GREEN}│${RESET}"
+        echo -e "${BOLD}${GREEN}╰────────────────────────────────────────────────────────────────╯${RESET}"
+        echo
+
+        log_success "Dotfiles updated to latest version"
+        log_success "Profile '$DOTFILES_PROFILE' is active"
+    fi
+
+    # Step 6: Source a new zsh shell (always)
     echo
-
-    log_success "Profile '$DOTFILES_PROFILE' is now active"
-
-    # Show what's included
-    echo
-    echo -e "${BOLD}${WHITE}What's Included:${RESET}"
-    case "$DOTFILES_PROFILE" in
-        minimal)
-            echo -e "  ${GREEN}${CHECK}${RESET} Shell essentials (zsh, sheldon, tmux)"
-            ;;
-        server)
-            echo -e "  ${GREEN}${CHECK}${RESET} Shell + utilities (bat, fzf, eza, fd, ripgrep, tealdeer, zoxide)"
-            ;;
-        develop)
-            echo -e "  ${GREEN}${CHECK}${RESET} Full development environment"
-            echo -e "  ${GREEN}${CHECK}${RESET} All server tools + dev tools (nvm, pyenv, goenv, curlie)"
-            ;;
-    esac
-
-    # Step 6: Source a new zsh shell
     if command -v zsh &>/dev/null; then
         log_info "Starting new zsh shell..."
         exec zsh -l </dev/null
@@ -752,6 +801,8 @@ USAGE:
 
 COMMANDS:
   install     Install or update dotfiles (default)
+              • Fresh install: clone repo, link files, install packages, start new shell
+              • Update: hard reset + pull with rebase, relink files, start new shell
   uninstall   Remove all dotfiles and configuration
   link        Create or refresh symlinks only
   profile     Change profile (minimal/server/develop)
