@@ -22,15 +22,12 @@ pkg_init() {
         return 1
     fi
 
-    # Alias cd to use zoxide's z function
-    alias cd="z"
-
     # Set FZF options for zoxide interactive mode (if eza is available)
     if command -v eza &>/dev/null; then
         export _ZO_FZF_OPTS="--preview 'eza -al --tree --level 1 --group-directories-first --header --no-user --no-time --no-filesize --no-permissions {2..}' --preview-window right,50% --height 35% --reverse --ansi --with-nth 2.."
     fi
 
-    _dotfiles_log_debug "zoxide initialized successfully with cd alias"
+    _dotfiles_log_debug "zoxide initialized successfully"
     return 0
 }
 

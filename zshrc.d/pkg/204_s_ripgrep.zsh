@@ -5,7 +5,6 @@ PKG_DESC="A line-oriented search tool that recursively searches directories"
 PKG_CMD="rg"
 
 pkg_init() {
-    alias grep="rg"
     export RIPGREP_CONFIG_PATH="${XDG_CONFIG_HOME:-$HOME/.config}/ripgrep/ripgreprc"
 }
 
