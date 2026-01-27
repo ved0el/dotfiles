@@ -2,14 +2,16 @@
 
 # Pyenv Lazy Loading
 
+# Make pyenv binary available immediately (not lazy loaded)
+# This allows running pyenv commands like 'pyenv versions', 'pyenv install', etc.
+if [[ -d "${HOME}/.pyenv" ]]; then
+    export PYENV_ROOT="${HOME}/.pyenv"
+    export PATH="$PYENV_ROOT/bin:$PATH"
+fi
+
 lazy_load_pyenv() {
     local pyenv_dir="${HOME}/.pyenv"
     [[ -d "$pyenv_dir" ]] || return 1
-
-    export PYENV_ROOT="$pyenv_dir"
-
-    # Add pyenv bin directory to PATH
-    export PATH="$PYENV_ROOT/bin:$PATH"
 
     # Add shims directory to PATH (contains python, pip, etc.)
     export PATH="$PYENV_ROOT/shims:$PATH"
