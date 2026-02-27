@@ -15,7 +15,8 @@ setopt PUSHD_SILENT
 setopt EXTENDED_GLOB
 setopt NO_CASE_GLOB
 setopt NUMERIC_GLOB_SORT
-setopt GLOB_COMPLETE
+# NOTE: GLOB_COMPLETE removed — it breaks interactive tab completion by
+# treating Tab input as glob patterns instead of prefix completion.
 
 # Job control
 setopt AUTO_CONTINUE

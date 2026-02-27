@@ -30,13 +30,13 @@ github = "zdharma-continuum/fast-syntax-highlighting"
 
 [plugins.zsh-completions]
 github = "zsh-users/zsh-completions"
-apply = ["defer"]
-hooks.pre = "fpath+=(${0:h}/src)"
+# Loaded immediately (not deferred) so fpath is set before compinit runs
+hooks.pre = "fpath+=(${0:A:h}/src)"
 
 [plugins.fzf-tab]
 github = "Aloxaf/fzf-tab"
 apply = ["defer"]
-hooks.pre = "autoload -Uz compinit && compinit -C"
+# compinit is now handled in zshrc.d/core/05_completion_init.zsh
 
 # =============================================================================
 # UI Enhancement Plugins (Deferred)

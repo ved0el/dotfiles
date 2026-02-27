@@ -25,6 +25,14 @@ pkg_post_install() {
 
 pkg_init() {
     eval "$(sheldon source)"
+
+    # Initialize completions AFTER sheldon so zsh-completions is fully in fpath
+    autoload -Uz compinit
+    if [[ -n ~/.zcompdump(#qN.mh+24) ]]; then
+        compinit
+    else
+        compinit -C
+    fi
 }
 
 init_package_template "$PKG_NAME"
