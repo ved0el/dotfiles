@@ -269,30 +269,25 @@ setup_repository() {
         cd "$DOTFILES_ROOT"
         log_success "Repository cloned at $DOTFILES_ROOT"
     else
-        # UPDATE: Hard reset with rebase enabled, then pull
+        # UPDATE: Fast-forward only pull (never creates merge commits)
         log_step "Updating dotfiles (pulling latest changes)..."
         cd "$DOTFILES_ROOT"
-        is_verbose && log_step "Updating existing repository"
 
-        # Get current branch
+        # Abort if working tree is dirty — user must resolve first
+        if ! git diff --quiet 2>/dev/null || ! git diff --cached --quiet 2>/dev/null; then
+            log_error "Local changes detected. Commit or stash them before updating."
+            return 1
+        fi
+
         local current_branch
         current_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
         is_verbose && log_dim "Current branch: $current_branch"
 
-        # Fetch latest changes
-        is_verbose && log_dim "Fetching latest changes..."
-        git fetch origin >/dev/null 2>&1
+        local remote_branch="${DOTFILES_BRANCH:-$current_branch}"
+        is_verbose && log_dim "Pulling from origin/$remote_branch (--ff-only)..."
 
-        # Hard reset to remote branch with rebase
-        is_verbose && log_dim "Hard resetting to origin/$current_branch..."
-        git reset --hard "origin/$current_branch" >/dev/null 2>&1 || {
-            log_warning "Failed to reset, attempting normal pull..."
-        }
-
-        # Pull with rebase enabled
-        is_verbose && log_dim "Pulling latest changes with rebase..."
-        git pull --rebase origin "$current_branch" >/dev/null 2>&1 || {
-            log_error "Failed to pull latest changes"
+        git pull --ff-only origin "$remote_branch" >/dev/null 2>&1 || {
+            log_error "Failed to pull — non-fast-forward or network error. Check 'git status' and try again."
             return 1
         }
 
@@ -304,8 +299,8 @@ setup_repository() {
 # Symlink Management
 # =============================================================================
 readonly EXCLUDE_PATTERNS=(
-    "README.md" ".gitignore" "install" "bin" "config" "zshrc.d"
-    ".vscode" ".git" "*.zwc" "*.zwc.old"
+    "README.md" "CLAUDE.md" ".gitignore" "install" "bin" "config"
+    "zsh" "docs" "zshenv" ".vscode" ".git" "*.zwc" "*.zwc.old"
 )
 
 should_exclude() {
@@ -472,30 +467,33 @@ install_packages() {
         return 0
     }
 
-    # Determine which packages to install based on profile
-    local pkg_patterns=('*_m_*.zsh')
-    [[ "$DOTFILES_PROFILE" == "server" || "$DOTFILES_PROFILE" == "develop" ]] && pkg_patterns+=('*_s_*.zsh')
-    [[ "$DOTFILES_PROFILE" == "develop" ]] && pkg_patterns+=('*_d_*.zsh')
+    # Build list of tier directories for the active profile
+    local pkg_dirs=("$DOTFILES_ROOT/zsh/packages/minimal")
+    [[ "$DOTFILES_PROFILE" == "server"  || "$DOTFILES_PROFILE" == "develop" ]] && \
+        pkg_dirs+=("$DOTFILES_ROOT/zsh/packages/server")
+    [[ "$DOTFILES_PROFILE" == "develop" ]] && \
+        pkg_dirs+=("$DOTFILES_ROOT/zsh/packages/develop")
 
     echo
     log_info "Checking packages for profile: $DOTFILES_PROFILE"
     echo
 
-    # Source each matching package file to trigger installation
-    (   # Subshell to contain shopt changes
-        shopt -s nullglob  # Allow empty globs
-        for pattern in "${pkg_patterns[@]}"; do
-            for pkg_file in "$DOTFILES_ROOT/zshrc.d/pkg/$pattern"; do
-                if [[ -f "$pkg_file" ]]; then
-                    local pkg_name=$(basename "$pkg_file" .zsh | sed 's/^[0-9]*_[msd]_//')
-                    is_verbose && log_dim "Checking package: $pkg_name ($(basename "$pkg_file"))"
-
-                    # Source the package file (will check and install if needed)
-                    if source "$pkg_file" 2>&1; then
-                        true  # Success handled in package file
-                    else
-                        log_error "Failed to process package: $pkg_name"
-                    fi
+    # Source each package file with VERBOSE=true to trigger install flow
+    export DOTFILES_VERBOSE="true"
+    (   # Subshell so VERBOSE override doesn't leak
+        shopt -s nullglob
+        # Source shared libraries first
+        source "$DOTFILES_ROOT/zsh/lib/platform.zsh"
+        source "$DOTFILES_ROOT/zsh/lib/installer.zsh"
+        source "$DOTFILES_ROOT/zsh/lib/lazy.zsh"
+        for pkg_dir in "${pkg_dirs[@]}"; do
+            [[ -d "$pkg_dir" ]] || continue
+            for pkg_file in "$pkg_dir"/*.zsh; do
+                [[ -f "$pkg_file" ]] || continue
+                local pkg_name; pkg_name=$(basename "$pkg_file" .zsh)
+                is_verbose && log_dim "Processing: $pkg_name"
+                if ! source "$pkg_file" 2>&1; then
+                    log_error "Failed to process package: $pkg_name"
                 fi
             done
         done
@@ -518,7 +516,7 @@ install_packages() {
         develop)
             echo -e "  ${CYAN}${BULLET}${RESET} tmux, sheldon (minimal)"
             echo -e "  ${CYAN}${BULLET}${RESET} bat, fzf, eza, fd, ripgrep, tealdeer, zoxide (server)"
-            echo -e "  ${CYAN}${BULLET}${RESET} nvm, pyenv, goenv, curlie"
+            echo -e "  ${CYAN}${BULLET}${RESET} nvm, pyenv, goenv"
             ;;
     esac
 }
@@ -559,12 +557,8 @@ install_dotfiles() {
     # Step 3: (Re)link the files (always relink to ensure latest structure)
     create_symlinks
 
-    # Step 4: Install required packages (only on fresh install)
-    if $is_install; then
-        install_packages
-    else
-        is_verbose && log_info "Skipping package installation (update mode)"
-    fi
+    # Step 4: Install / verify packages for active profile
+    install_packages
 
     # Step 5: Save configuration
     configure_profile
@@ -591,7 +585,7 @@ install_dotfiles() {
                 ;;
             develop)
                 echo -e "  ${GREEN}${CHECK}${RESET} Full development environment"
-                echo -e "  ${GREEN}${CHECK}${RESET} All server tools + dev tools (nvm, pyenv, goenv, curlie)"
+                echo -e "  ${GREEN}${CHECK}${RESET} All server tools + dev tools (nvm, pyenv, goenv)"
                 ;;
         esac
     else
