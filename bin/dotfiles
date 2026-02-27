@@ -453,6 +453,72 @@ verify_symlinks() {
     fi
 }
 
+# Check which packages in the active profile are not installed
+verify_packages() {
+    log_step "Checking package status for profile: $DOTFILES_PROFILE"
+    show_section "Package Status"
+
+    command -v zsh &>/dev/null || {
+        log_warning "zsh not found, cannot check packages"
+        return 0
+    }
+
+    # Run packages with VERBOSE=false; init_package_template prints a warning
+    # line to stderr for each not-installed package: "[dotfiles] X not installed"
+    local warnings
+    warnings=$(
+        DOTFILES_VERBOSE=false \
+        DOTFILES_PROFILE="$DOTFILES_PROFILE" \
+        DOTFILES_ROOT="$DOTFILES_ROOT" \
+        zsh -c '
+            setopt NULL_GLOB
+            source "$DOTFILES_ROOT/zsh/lib/platform.zsh"
+            source "$DOTFILES_ROOT/zsh/lib/installer.zsh"
+            source "$DOTFILES_ROOT/zsh/lib/lazy.zsh"
+
+            typeset -a pkg_dirs
+            case "$DOTFILES_PROFILE" in
+                minimal) pkg_dirs=("$DOTFILES_ROOT/zsh/packages/minimal") ;;
+                server)  pkg_dirs=("$DOTFILES_ROOT/zsh/packages/minimal"
+                                   "$DOTFILES_ROOT/zsh/packages/server") ;;
+                *)       pkg_dirs=("$DOTFILES_ROOT/zsh/packages/minimal"
+                                   "$DOTFILES_ROOT/zsh/packages/server"
+                                   "$DOTFILES_ROOT/zsh/packages/develop") ;;
+            esac
+
+            for pkg_dir in "$pkg_dirs[@]"; do
+                [[ -d "$pkg_dir" ]] || continue
+                for pkg_file in "$pkg_dir"/*.zsh(N); do
+                    source "$pkg_file"
+                done
+            done
+        ' 2>&1 | grep '^\[dotfiles\]'
+    )
+
+    echo
+    if [[ -z "$warnings" ]]; then
+        log_success "All packages for profile '$DOTFILES_PROFILE' are installed"
+        return 0
+    else
+        log_warning "Not installed packages:"
+        while IFS= read -r line; do
+            echo -e "  ${YELLOW}${BULLET}${RESET} $line"
+        done <<< "$warnings"
+        echo
+        log_info "Run 'dotfiles install' to install missing packages"
+        return 1
+    fi
+}
+
+# Combined verify: symlinks + packages
+verify_all() {
+    local sym_rc=0 pkg_rc=0
+    verify_symlinks || sym_rc=$?
+    echo
+    verify_packages || pkg_rc=$?
+    [[ $sym_rc -eq 0 && $pkg_rc -eq 0 ]]
+}
+
 # =============================================================================
 # Package Installation
 # =============================================================================
@@ -461,43 +527,46 @@ install_packages() {
     log_step "Installing packages for profile: $DOTFILES_PROFILE"
     show_section "Package Installation"
 
-    # Check if zsh is available
     command -v zsh &>/dev/null || {
         log_warning "zsh not found, skipping package installation"
         return 0
     }
 
-    # Build list of tier directories for the active profile
-    local pkg_dirs=("$DOTFILES_ROOT/zsh/packages/minimal")
-    [[ "$DOTFILES_PROFILE" == "server"  || "$DOTFILES_PROFILE" == "develop" ]] && \
-        pkg_dirs+=("$DOTFILES_ROOT/zsh/packages/server")
-    [[ "$DOTFILES_PROFILE" == "develop" ]] && \
-        pkg_dirs+=("$DOTFILES_ROOT/zsh/packages/develop")
-
     echo
     log_info "Checking packages for profile: $DOTFILES_PROFILE"
     echo
 
-    # Source each package file with VERBOSE=true to trigger install flow
-    export DOTFILES_VERBOSE="true"
-    (   # Subshell so VERBOSE override doesn't leak
-        shopt -s nullglob
-        # Source shared libraries first
+    # Package files use zsh-specific syntax (typeset, setopt, glob qualifiers).
+    # Must run in a zsh subprocess — bash cannot source them correctly.
+    local exit_code=0
+    DOTFILES_VERBOSE=true \
+    DOTFILES_PROFILE="$DOTFILES_PROFILE" \
+    DOTFILES_ROOT="$DOTFILES_ROOT" \
+    zsh -c '
+        setopt NULL_GLOB
         source "$DOTFILES_ROOT/zsh/lib/platform.zsh"
         source "$DOTFILES_ROOT/zsh/lib/installer.zsh"
         source "$DOTFILES_ROOT/zsh/lib/lazy.zsh"
-        for pkg_dir in "${pkg_dirs[@]}"; do
+
+        typeset -a pkg_dirs
+        case "$DOTFILES_PROFILE" in
+            minimal) pkg_dirs=("$DOTFILES_ROOT/zsh/packages/minimal") ;;
+            server)  pkg_dirs=("$DOTFILES_ROOT/zsh/packages/minimal"
+                               "$DOTFILES_ROOT/zsh/packages/server") ;;
+            *)       pkg_dirs=("$DOTFILES_ROOT/zsh/packages/minimal"
+                               "$DOTFILES_ROOT/zsh/packages/server"
+                               "$DOTFILES_ROOT/zsh/packages/develop") ;;
+        esac
+
+        for pkg_dir in "$pkg_dirs[@]"; do
             [[ -d "$pkg_dir" ]] || continue
-            for pkg_file in "$pkg_dir"/*.zsh; do
-                [[ -f "$pkg_file" ]] || continue
-                local pkg_name; pkg_name=$(basename "$pkg_file" .zsh)
-                is_verbose && log_dim "Processing: $pkg_name"
-                if ! source "$pkg_file" 2>&1; then
-                    log_error "Failed to process package: $pkg_name"
-                fi
+            for pkg_file in "$pkg_dir"/*.zsh(N); do
+                source "$pkg_file"
             done
         done
-    )
+    ' || exit_code=$?
+
+    [[ $exit_code -ne 0 ]] && log_error "Package installation encountered errors (exit $exit_code)"
 
     echo
     log_success "Package check and installation completed"
@@ -714,7 +783,7 @@ interactive_menu() {
                 ;;
             3)
                 with_menu_output create_symlinks
-                with_menu_output verify_symlinks
+                with_menu_output verify_all
                 echo -e "\n${GRAY}Press Enter to continue...${RESET}"
                 read -r
                 ;;
@@ -724,7 +793,7 @@ interactive_menu() {
                 read -r
                 ;;
             5)
-                with_menu_output verify_symlinks
+                with_menu_output verify_all
                 echo -e "\n${GRAY}Press Enter to continue...${RESET}"
                 read -r
                 ;;
@@ -876,7 +945,7 @@ parse_args() {
             with_menu_output install_packages
             ;;
         verify)
-            with_menu_output verify_symlinks
+            with_menu_output verify_all
             ;;
         version)
             show_version
@@ -895,7 +964,8 @@ parse_args() {
     esac
 }
 
-# Handle profile command with validation
+# Handle profile command — update only DOTFILES_PROFILE in ~/.zshenv
+# Uses targeted sed to replace or append the line (does not rewrite other vars)
 handle_profile_command() {
     local new_profile="$1"
 
@@ -908,9 +978,19 @@ handle_profile_command() {
         return 1
     fi
 
+    local config_file="$CONFIG_FILE"   # ~/.zshenv
+
+    if grep -q "^export DOTFILES_PROFILE=" "$config_file" 2>/dev/null; then
+        # Replace existing line in-place
+        sed_inplace "$config_file" \
+            "s|^export DOTFILES_PROFILE=.*|export DOTFILES_PROFILE=\"${new_profile}\"|"
+    else
+        # Append if not present
+        echo "export DOTFILES_PROFILE=\"${new_profile}\"" >> "$config_file"
+    fi
+
     export DOTFILES_PROFILE="$new_profile"
-    save_config
-    log_success "Profile changed to: $new_profile"
+    log_success "Profile set to ${new_profile}. Run: source ~/.zshrc"
     return 0
 }
 

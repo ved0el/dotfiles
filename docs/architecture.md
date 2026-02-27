@@ -593,26 +593,22 @@ rm -f ~/.zcompdump && exec zsh
 
 ---
 
-## Migration: `zshrc.d/` → `zsh/`
+## Migration: `zshrc.d/` → `zsh/` ✓ Complete
 
-The target structure renames `zshrc.d/` to `zsh/` and reorganizes packages into
-tier subdirectories. The current layout is the **source**; the target layout above is
-where the codebase is headed. Key migration steps:
+This migration was completed in two commits. The old `zshrc.d/` directory no longer
+exists. The current `zsh/` layout is the canonical structure.
 
-| Current path | Target path | Notes |
-|--------------|-------------|-------|
-| `zshrc.d/core/` | `zsh/core/` | Files renamed: `10_perf_options.zsh` → `10-options.zsh`, etc. |
-| `zshrc.d/lib/install_helper.zsh` | `zsh/lib/installer.zsh` | Renamed |
-| `zshrc.d/lib/lazy_load_wrapper.zsh` | `zsh/lib/lazy.zsh` | Renamed |
-| `zshrc.d/lib/platform.zsh` | `zsh/lib/platform.zsh` | New file (extracted from installer) |
-| `zshrc.d/lib/nvm_lazy.zsh` | Inlined into `zsh/packages/develop/nvm.zsh` | No separate file |
-| `zshrc.d/lib/pyenv_lazy.zsh` | Inlined into `zsh/packages/develop/pyenv.zsh` | No separate file |
-| `zshrc.d/lib/goenv_lazy.zsh` | Inlined into `zsh/packages/develop/goenv.zsh` | No separate file |
-| `zshrc.d/lib/tmux_loader.zsh` | Inlined into `zsh/packages/minimal/tmux.zsh` | No separate file |
-| `zshrc.d/pkg/100_m_sheldon.zsh` | `zsh/packages/minimal/00-sheldon.zsh` | Renamed with order prefix |
-| `zshrc.d/pkg/101_m_tmux.zsh` | `zsh/packages/minimal/tmux.zsh` | |
-| `zshrc.d/pkg/2XX_s_*.zsh` | `zsh/packages/server/*.zsh` | Strip number prefix |
-| `zshrc.d/pkg/3XX_d_*.zsh` | `zsh/packages/develop/*.zsh` | Strip number prefix |
+**What changed:**
 
-`zshrc` must be updated to source from `zsh/` instead of `zshrc.d/` after the migration.
-Perform the migration in a single commit to avoid a broken intermediate state.
+| Old path | New path | Notes |
+|----------|----------|-------|
+| `zshrc.d/core/` | `zsh/core/` | Files renamed with hyphen separators |
+| `zshrc.d/lib/install_helper.zsh` | `zsh/lib/installer.zsh` | + PKG_CHECK_FUNC, warnings, fallback |
+| `zshrc.d/lib/lazy_load_wrapper.zsh` | `zsh/lib/lazy.zsh` | |
+| _(new)_ | `zsh/lib/platform.zsh` | OS/distro detection (extracted from installer) |
+| `zshrc.d/lib/*_lazy.zsh` | Inlined into package `pkg_init()` | No separate lazy files |
+| `zshrc.d/lib/tmux_loader.zsh` | Inlined into `zsh/packages/minimal/tmux.zsh` | |
+| `zshrc.d/pkg/100_m_sheldon.zsh` | `zsh/packages/minimal/00-sheldon.zsh` | Order prefix |
+| `zshrc.d/pkg/*_m_*.zsh` | `zsh/packages/minimal/*.zsh` | |
+| `zshrc.d/pkg/*_s_*.zsh` | `zsh/packages/server/*.zsh` | |
+| `zshrc.d/pkg/*_d_*.zsh` | `zsh/packages/develop/*.zsh` | curlie removed |
