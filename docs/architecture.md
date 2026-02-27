@@ -59,7 +59,7 @@ This is the **target structure** (some paths are pending refactoring from the cu
 │   │
 │   └── packages/                   # One .zsh file per tool, grouped by tier
 │       ├── minimal/
-│       │   ├── sheldon.zsh         # Plugin manager (loads first in its tier)
+│       │   ├── 00-sheldon.zsh      # Plugin manager — must load first (order prefix required)
 │       │   └── tmux.zsh
 │       ├── server/
 │       │   ├── bat.zsh
@@ -99,7 +99,7 @@ This is the **target structure** (some paths are pending refactoring from the cu
   ├── 1. Source zsh/core/*.zsh  (alphabetical = numeric order)
   │       10-options.zsh     — setopt (extended_glob, auto_cd, etc.)
   │       20-history.zsh     — HISTFILE, HISTSIZE, fzf Ctrl-R binding
-  │       30-completion.zsh  — zstyle config (runs after sheldon sets fpath)
+  │       30-completion.zsh  — zstyle declarations ONLY (no compinit call here)
   │       40-aliases.zsh     — cd/ls/ll aliases with `command -v` guards
   │       50-theme.zsh       — Powerlevel10k instant prompt + p10k load
   │
@@ -150,8 +150,15 @@ name — tool name, lowercase, hyphens allowed (e.g. fzf, ripgrep, goenv)
 ```
 
 Files within a tier directory load in **alphabetical order**.
-If a package must load before others (e.g. sheldon must precede all other minimal packages),
-name it with a leading character: `sheldon.zsh` loads before `tmux.zsh` alphabetically.
+
+**Ordering contracts:**
+- Within `minimal/`, `sheldon.zsh` loads before `tmux.zsh` by natural alphabetical order
+  (`s` < `t`) — this is intentional but fragile. Any new package starting with `a`–`r`
+  would load before sheldon, which breaks the plugin system.
+- **Rule**: If a package has a strict load-order requirement, prefix its filename with a
+  two-digit number: `00-sheldon.zsh` loads before everything else regardless of new additions.
+- Non-ordered packages in `server/` and `develop/` can use plain names — they have no
+  cross-dependencies and alphabetical order is acceptable.
 
 ### Package Lifecycle API
 
@@ -193,8 +200,15 @@ init_package_template "$PKG_NAME"
 - All hook functions are optional — omit them if not needed
 - `pkg_init` runs on every shell startup — keep it under 5ms (use lazy loading for slow tools)
 - `pkg_install` fully overrides the default package manager — use it for custom install scripts
-- `pkg_install_fallback` is the escape hatch for unknown Linux distros (FR-7)
+- `pkg_install_fallback` is the escape hatch for unknown Linux distros
 - Do **not** create separate `*_lazy.zsh` files — put lazy loading inline in `pkg_init`
+
+**Hook function scope**: Each package file's hook functions (`pkg_init`, `pkg_install`, etc.)
+are defined as global shell functions. They are **not automatically unset** after
+`init_package_template` returns. The next package file's hooks overwrite the previous
+definitions — this works correctly only because package files process sequentially.
+Do not define hook functions outside package files, and do not rely on hooks from
+a previously loaded package.
 
 ### Package Lifecycle Flow
 
@@ -288,15 +302,30 @@ PKG_NAME="fd"
 PKG_DESC="A fast alternative to find"
 
 pkg_install_fallback() {
-    # Handles Alpine, NixOS, or any other unknown distro
+    # Handles Alpine, NixOS, or any other unknown distro via prebuilt musl binary
     local version="10.1.0"
     local arch="$(uname -m)"
-    curl -fsSL "https://github.com/sharkdp/fd/releases/download/v${version}/fd-v${version}-${arch}-unknown-linux-musl.tar.gz" \
-        | tar -xz --strip-components=1 -C /usr/local/bin fd-*/fd
+    local url="https://github.com/sharkdp/fd/releases/download/v${version}/fd-v${version}-${arch}-unknown-linux-musl.tar.gz"
+
+    # Security: verify checksum before extracting
+    local expected_sha="<sha256-of-the-tarball>"
+    local tmpfile="$(mktemp)"
+    curl -fsSL "$url" -o "$tmpfile"
+    echo "${expected_sha}  ${tmpfile}" | sha256sum --check --quiet || {
+        rm -f "$tmpfile"
+        echo "[dotfiles] Checksum verification failed for fd" >&2
+        return 1
+    }
+    tar -xz --strip-components=1 -C /usr/local/bin -f "$tmpfile" fd-*/fd
+    rm -f "$tmpfile"
 }
 
 init_package_template "$PKG_NAME"
 ```
+
+> **Security note**: Never use bare `curl | sh` or `curl | bash` in `pkg_install_fallback`.
+> Always download to a temp file and verify a checksum before extracting or executing.
+> For tools that provide signed releases, prefer GPG verification over SHA256.
 
 ---
 
@@ -314,10 +343,18 @@ cost until the first time a related command is actually used.
 3. Remove the wrapper function for `cmd` (the real binary takes over)
 4. Re-invoke the original command with the original arguments
 
-> **Note on extra_cmds**: The main `cmd` wrapper is removed after load.
-> Wrappers for `extra_cmds` also call `load_func` on first use but are not removed —
-> they become no-ops once the load function is idempotent.
-> For correctness, lazy load functions must be safe to call multiple times.
+> **Note on extra_cmds**: The main `cmd` wrapper is removed after load (real binary takes
+> over). Wrappers for `extra_cmds` are **not removed** — they remain as shell functions that
+> call `load_func` on every invocation. After initialization, `load_func` should return
+> immediately (idempotency check at the top), so the overhead is one function call + a guard
+> check per `npm`/`pip` invocation. This is acceptable but must be documented in `load_func`:
+> ```zsh
+> _lazy_load_nvm() {
+>     # Idempotency guard: skip if already loaded
+>     typeset -f nvm >/dev/null 2>&1 && return 0
+>     source "$NVM_DIR/nvm.sh"
+> }
+> ```
 
 ### Timing Illustration
 
@@ -415,9 +452,77 @@ Plugin load order:
 | 9 | `powerlevel10k` | Yes | Prompt theme |
 
 **`compinit` ordering**: `compinit` must run **after** `zsh-completions` adds its entries
-to `fpath`. It is called in `sheldon.zsh`'s `pkg_init`, immediately after
+to `fpath`. It is called in `00-sheldon.zsh`'s `pkg_init`, immediately after
 `eval "$(sheldon source)"`. The `zsh/core/30-completion.zsh` file contains only
 `zstyle` declarations — no `compinit` call.
+
+**`.zcompdump` rebuild logic** (in `packages/minimal/00-sheldon.zsh`'s `pkg_init`):
+```zsh
+autoload -Uz compinit
+# Rebuild the dump at most once per day; use cached otherwise
+if [[ -n ~/.zcompdump(#qN.mh+24) ]]; then
+    compinit        # full rebuild
+else
+    compinit -C     # use cached dump, skip security check
+fi
+```
+Do not remove this guard — rebuilding on every startup adds ~100ms.
+
+**`zsh-nvm` sheldon plugin vs `packages/develop/nvm.zsh`:**
+- `zsh-nvm` (sheldon plugin #8) is an optional convenience layer that auto-installs nvm
+  and sets up completion. It is loaded for all profiles via sheldon.
+- `packages/develop/nvm.zsh` is the dotfiles package that manages nvm installation
+  via the package lifecycle API and sets up lazy loading.
+- On a machine where `DOTFILES_PROFILE=develop`, both are active. `nvm.zsh`'s `pkg_init`
+  takes precedence for lazy loading because it runs after sheldon's deferred plugins settle.
+- If a conflict arises, disable `zsh-nvm` from `plugins.toml` and rely solely on
+  `packages/develop/nvm.zsh`.
+
+---
+
+## `bin/dotfiles` CLI Internals
+
+The CLI is a Bash script. Each subcommand delegates to an internal function.
+
+### `dotfiles install`
+
+1. Sets `DOTFILES_VERBOSE=true` and sources `~/.zshrc` in a subshell
+2. The package lifecycle runs for every package in the active profile
+3. Any package not installed triggers the full install flow
+4. Exits with 0 only if all packages initialize successfully
+
+### `dotfiles update`
+
+1. Checks `git status` — aborts with a warning if the working tree is dirty
+2. Runs `git pull --ff-only origin $DOTFILES_BRANCH`
+3. On success, runs `dotfiles install` to pick up new packages
+4. On merge conflict or non-fast-forward: prints error and exits 1
+
+### `dotfiles profile <name>`
+
+1. Validates `<name>` is one of `minimal`, `server`, `develop`
+2. Updates `DOTFILES_PROFILE=<name>` in `~/.zshenv`:
+   - If the line already exists: replaces it with `sed -i`
+   - If it does not exist: appends it
+3. Prints: `Profile set to <name>. Run: source ~/.zshrc`
+
+### `dotfiles verify`
+
+Runs three checks and reports each finding:
+
+| Check | Pass condition |
+|-------|----------------|
+| Symlink exists | `~/.zshrc` is a symlink |
+| Symlink target | Symlink points into `$DOTFILES_ROOT` |
+| Target file exists | The file at the symlink destination exists |
+
+Also checks each package in the active profile and reports which are not installed.
+
+### `dotfiles uninstall`
+
+1. Removes all symlinks created by this repo (checks that each symlink points into `$DOTFILES_ROOT` before removing)
+2. Removes `DOTFILES_ROOT`, `DOTFILES_PROFILE`, `DOTFILES_VERBOSE` lines from `~/.zshenv`
+3. Does **not** uninstall packages installed by `dotfiles install` — those are left for the user to remove manually
 
 ---
 
@@ -462,7 +567,7 @@ command surfaces all conflicts.
 ## Debugging and Verification
 
 ```zsh
-# Measure shell startup time (3-run average)
+# Measure shell startup time (3-run average, discard first)
 for i in 1 2 3; do time zsh -i -c exit; done
 
 # See full install/init log for all packages
@@ -476,4 +581,38 @@ dotfiles verify
 
 # See which packages have warnings (not installed)
 zsh -i -c exit 2>&1 | grep '\[dotfiles\]'
+
+# Debug lazy loading — check what type a command is before first use
+type node    # → "node is a shell function" (wrapper registered)
+node --version
+type node    # → "node is /path/to/node" (real binary after lazy load)
+
+# Force zcompdump rebuild (run after adding new completions)
+rm -f ~/.zcompdump && exec zsh
 ```
+
+---
+
+## Migration: `zshrc.d/` → `zsh/`
+
+The target structure renames `zshrc.d/` to `zsh/` and reorganizes packages into
+tier subdirectories. The current layout is the **source**; the target layout above is
+where the codebase is headed. Key migration steps:
+
+| Current path | Target path | Notes |
+|--------------|-------------|-------|
+| `zshrc.d/core/` | `zsh/core/` | Files renamed: `10_perf_options.zsh` → `10-options.zsh`, etc. |
+| `zshrc.d/lib/install_helper.zsh` | `zsh/lib/installer.zsh` | Renamed |
+| `zshrc.d/lib/lazy_load_wrapper.zsh` | `zsh/lib/lazy.zsh` | Renamed |
+| `zshrc.d/lib/platform.zsh` | `zsh/lib/platform.zsh` | New file (extracted from installer) |
+| `zshrc.d/lib/nvm_lazy.zsh` | Inlined into `zsh/packages/develop/nvm.zsh` | No separate file |
+| `zshrc.d/lib/pyenv_lazy.zsh` | Inlined into `zsh/packages/develop/pyenv.zsh` | No separate file |
+| `zshrc.d/lib/goenv_lazy.zsh` | Inlined into `zsh/packages/develop/goenv.zsh` | No separate file |
+| `zshrc.d/lib/tmux_loader.zsh` | Inlined into `zsh/packages/minimal/tmux.zsh` | No separate file |
+| `zshrc.d/pkg/100_m_sheldon.zsh` | `zsh/packages/minimal/00-sheldon.zsh` | Renamed with order prefix |
+| `zshrc.d/pkg/101_m_tmux.zsh` | `zsh/packages/minimal/tmux.zsh` | |
+| `zshrc.d/pkg/2XX_s_*.zsh` | `zsh/packages/server/*.zsh` | Strip number prefix |
+| `zshrc.d/pkg/3XX_d_*.zsh` | `zsh/packages/develop/*.zsh` | Strip number prefix |
+
+`zshrc` must be updated to source from `zsh/` instead of `zshrc.d/` after the migration.
+Perform the migration in a single commit to avoid a broken intermediate state.
