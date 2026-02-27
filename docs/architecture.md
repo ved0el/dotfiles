@@ -48,9 +48,10 @@ This is the **target structure** (some paths are pending refactoring from the cu
 │   ├── core/                       # Always-loaded modules, run in numeric order
 │   │   ├── 10-options.zsh          # Shell options (setopt)
 │   │   ├── 20-history.zsh          # History settings + fzf history keybinding
-│   │   ├── 30-completion.zsh       # compinit + zstyle config (runs after sheldon)
-│   │   ├── 40-aliases.zsh          # Aliases with runtime availability guards
-│   │   └── 50-theme.zsh            # Powerlevel10k instant prompt + theme load
+│   │   ├── 30-completion.zsh       # zstyle declarations only (compinit runs in 00-sheldon.zsh)
+│   │   ├── 40-aliases.zsh          # Shell shortcuts (cd, reload); tool aliases live in packages
+│   │   ├── 50-theme.zsh            # Powerlevel10k instant prompt + theme load
+│   │   └── 60-zcompile.zsh         # Background .zwc bytecode compilation
 │   │
 │   ├── lib/                        # Shared libraries — sourced before packages
 │   │   ├── installer.zsh           # Package lifecycle engine + logging + utilities
@@ -100,8 +101,9 @@ This is the **target structure** (some paths are pending refactoring from the cu
   │       10-options.zsh     — setopt (extended_glob, auto_cd, etc.)
   │       20-history.zsh     — HISTFILE, HISTSIZE, fzf Ctrl-R binding
   │       30-completion.zsh  — zstyle declarations ONLY (no compinit call here)
-  │       40-aliases.zsh     — cd/ls/ll aliases with `command -v` guards
+  │       40-aliases.zsh     — shell shortcuts (cd, reload); tool aliases live in packages
   │       50-theme.zsh       — Powerlevel10k instant prompt + p10k load
+  │       60-zcompile.zsh    — background .zwc bytecode compilation
   │
   ├── 2. Source zsh/lib/installer.zsh   — package lifecycle engine
   │       Source zsh/lib/lazy.zsh       — create_lazy_wrapper
@@ -448,8 +450,7 @@ Plugin load order:
 | 5 | `zsh-autosuggestions` | Yes | Fish-style inline suggestions |
 | 6 | `k` | Yes | Colorized directory listings |
 | 7 | `ni` | Yes | Package manager detection |
-| 8 | `zsh-nvm` | Yes | NVM integration |
-| 9 | `powerlevel10k` | Yes | Prompt theme |
+| 8 | `powerlevel10k` | No | Prompt theme (loaded immediately) |
 
 **`compinit` ordering**: `compinit` must run **after** `zsh-completions` adds its entries
 to `fpath`. It is called in `00-sheldon.zsh`'s `pkg_init`, immediately after
@@ -467,16 +468,6 @@ else
 fi
 ```
 Do not remove this guard — rebuilding on every startup adds ~100ms.
-
-**`zsh-nvm` sheldon plugin vs `packages/develop/nvm.zsh`:**
-- `zsh-nvm` (sheldon plugin #8) is an optional convenience layer that auto-installs nvm
-  and sets up completion. It is loaded for all profiles via sheldon.
-- `packages/develop/nvm.zsh` is the dotfiles package that manages nvm installation
-  via the package lifecycle API and sets up lazy loading.
-- On a machine where `DOTFILES_PROFILE=develop`, both are active. `nvm.zsh`'s `pkg_init`
-  takes precedence for lazy loading because it runs after sheldon's deferred plugins settle.
-- If a conflict arises, disable `zsh-nvm` from `plugins.toml` and rely solely on
-  `packages/develop/nvm.zsh`.
 
 ---
 
@@ -544,8 +535,8 @@ docs/       scripts/       bin/
 ```
 
 **Conflict handling**: If a target path already exists and is not a symlink pointing to
-this repo — the CLI prints a warning and skips it. It never overwrites. The `verify`
-command surfaces all conflicts.
+this repo — the CLI removes it and creates the new symlink. The `verify` command checks
+for broken symlinks after the fact.
 
 ---
 
@@ -572,9 +563,6 @@ for i in 1 2 3; do time zsh -i -c exit; done
 
 # See full install/init log for all packages
 DOTFILES_VERBOSE=true zsh -i -c exit
-
-# Force re-install a specific package
-DOTFILES_VERBOSE=true DOTFILES_FORCE_INSTALL=true zsh -i -c exit
 
 # Check symlink state
 dotfiles verify

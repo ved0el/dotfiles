@@ -36,7 +36,7 @@ hooks.pre = "fpath+=(${0:A:h}/src)"
 [plugins.fzf-tab]
 github = "Aloxaf/fzf-tab"
 apply = ["defer"]
-# compinit is now handled in zshrc.d/core/05_completion_init.zsh
+# compinit is handled in zsh/packages/minimal/00-sheldon.zsh (after sheldon source)
 
 # =============================================================================
 # UI Enhancement Plugins (Deferred)
@@ -60,11 +60,6 @@ hooks.pre = "export K_COLORS='di=1;34:ln=1;35:so=1;32:pi=1;33:ex=1;31:bd=34;46:c
 [plugins.ni]
 github = "azu/ni.zsh"
 use = ["ni.zsh"]
-apply = ["defer"]
-
-[plugins.zsh-nvm]
-github = "lukechilds/zsh-nvm"
-use = ["zsh-nvm.plugin.zsh"]
 apply = ["defer"]
 
 # =============================================================================

@@ -75,7 +75,7 @@ Commands wrapped per tool:
 |-------|------------------------|-------------------------------|
 | nvm   | `node`, `npm`, `npx`   | `yarn`, `pnpm` — only if found inside the nvm shims path |
 | pyenv | `python`, `python3`, `pip`, `pip3` | — |
-| goenv | `go`, `gofmt`, `godoc` | — |
+| goenv | `go`, `gofmt` | — |
 
 > **Why `yarn`/`pnpm` are conditional**: These tools can be installed globally (outside nvm).
 > Wrapping them unconditionally would intercept global installs and break them silently.
@@ -199,7 +199,6 @@ The `bin/dotfiles` command must support these subcommands:
 | `DOTFILES_ROOT` | `~/.dotfiles` | Absolute path to the dotfiles repo |
 | `DOTFILES_PROFILE` | `minimal` | Active profile: `minimal`, `server`, or `develop` |
 | `DOTFILES_VERBOSE` | `false` | Enable install logging and trigger installation flow |
-| `DOTFILES_FORCE_INSTALL` | unset | Re-install even if the tool is already present |
 | `DOTFILES_BRANCH` | `main` | Git branch used by `dotfiles update` |
 
 ---

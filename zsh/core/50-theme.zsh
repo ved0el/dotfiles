@@ -6,6 +6,7 @@
 # =============================================================================
 
 # Powerlevel10k minimal fast config
+typeset -g POWERLEVEL9K_INSTANT_PROMPT_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache/p10k}"
 typeset -g POWERLEVEL9K_INSTANT_PROMPT=quiet
 typeset -g POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=true
 typeset -g POWERLEVEL9K_DISABLE_HOT_RELOAD=true

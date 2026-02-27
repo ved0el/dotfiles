@@ -18,33 +18,14 @@ pkg_init() {
     export PATH="$PYENV_ROOT/bin:$PATH"
 
     _lazy_load_pyenv() {
+        # Idempotency guard — shims already in PATH means pyenv is loaded
+        [[ "$PATH" == *"$PYENV_ROOT/shims"* ]] && return 0
         [[ -d "$PYENV_ROOT" ]] || return 1
-        # Add shims to PATH (contains python, pip, etc.)
         export PATH="$PYENV_ROOT/shims:$PATH"
         command -v pyenv >/dev/null 2>&1 && eval "$(pyenv init -)"
     }
 
-    # Create self-destructing wrappers for python/pip commands
-    local _cmd
-    for _cmd in python python3 pip pip3; do
-        eval "
-${_cmd}() {
-    if _lazy_load_pyenv; then
-        unfunction ${_cmd} 2>/dev/null || true
-        if command -v ${_cmd} >/dev/null 2>&1; then
-            command ${_cmd} \"\$@\"
-        else
-            echo 'ERROR: ${_cmd} not available after loading pyenv' >&2
-            return 1
-        fi
-    else
-        echo 'ERROR: Failed to load pyenv' >&2
-        return 1
-    fi
-}
-"
-    done
-    unset _cmd
+    create_lazy_wrapper "pyenv" "_lazy_load_pyenv" "python" "python3" "pip" "pip3"
 }
 
 init_package_template "$PKG_NAME"

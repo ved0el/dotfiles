@@ -1,6 +1,6 @@
-# 🚀 Dotfiles – Fast, profile-based setup
+# Dotfiles – Fast, profile-based setup
 
-Clean, cross‑platform dotfiles with profile‑based installs and a simple, extensible package system.
+Clean, cross-platform dotfiles with profile-based installs and a simple, extensible package system.
 
 ## Install
 
@@ -8,97 +8,107 @@ Clean, cross‑platform dotfiles with profile‑based installs and a simple, ext
 # Interactive (recommended)
 bash <(curl -fsSL https://tinyurl.com/get-dotfiles)
 
-# Non‑interactive examples
+# Non-interactive
 curl -fsSL https://tinyurl.com/get-dotfiles | DOTFILES_PROFILE=server bash
-curl -fsSL https://tinyurl.com/get-dotfiles | DOTFILES_ROOT=~/.dotfiles bash
 ```
 
 ## Profiles
 
-| Profile | What you get |
-|--------|---------------|
-| minimal | sheldon, tmux |
-| server | minimal + bat, fzf, eza, fd, ripgrep, tealdeer, zoxide |
-| develop | server + nvm, pyenv, goenv, curlie |
+Profiles are cumulative — each includes everything below it.
 
-Set profile anytime:
+| Profile | Tools |
+|---------|-------|
+| `minimal` | sheldon, tmux |
+| `server` | minimal + bat, eza, fd, fzf, ripgrep, tealdeer, zoxide |
+| `develop` | server + nvm, pyenv, goenv |
 
-```bash
-export DOTFILES_PROFILE=server && source ~/.zshrc
-```
-
-## Project structure (core)
+Switch profile anytime:
 
 ```bash
-zshrc.d/
-  functions/
-    package_installer.zsh        # Entry – runs package scripts
-    lib/
-      logging.zsh               # log_info/log_error/…
-      platform.zsh              # get_platform/get_package_manager
-      profile.zsh               # get_profile/should_install_package
-      utils.zsh                 # is_package_installed/check_dependencies
-  packages/                      # One file per package (see template)
-    00_template.zsh
+dotfiles profile server
 ```
 
-## Package system (general, no hardcoding)
+## Project structure
 
-Each package file declares metadata and platform install methods, then calls the installer.
+```
+~/.dotfiles/
+├── zsh/
+│   ├── core/           # Always-loaded modules (options, history, completion, aliases, theme, zcompile)
+│   ├── lib/            # Shared libraries (platform, installer, lazy)
+│   └── packages/
+│       ├── minimal/    # sheldon, tmux
+│       ├── server/     # bat, eza, fd, fzf, ripgrep, tealdeer, zoxide
+│       └── develop/    # nvm, pyenv, goenv
+├── bin/
+│   └── dotfiles        # CLI (bash)
+├── config/             # App configs (sheldon, bat, tealdeer, ripgrep, yabai, skhd)
+├── docs/               # Architecture, requirements, guides
+├── zshrc               # Shell entry point (~40 lines)
+├── zshenv              # Env var template (not symlinked — CLI manages ~/.zshenv)
+└── tmux.conf
+```
 
-Filename convention: `NNN_{m|s|d}_name.zsh` where m=minimal, s=server, d=develop.
+## Package system
 
-Minimal example (see `zshrc.d/packages/00_template.zsh`):
+Each tool is a single self-contained `.zsh` file in `zsh/packages/<tier>/`. No other file changes when adding a package.
 
 ```zsh
-PACKAGE_NAME="tool"
-PACKAGE_DESC="Useful tool"
-PACKAGE_DEPS=""  # space‑separated CLI deps if any
+#!/usr/bin/env zsh
 
-typeset -A install_methods
-install_methods=(
-  [brew]="brew install tool"
-  [apt]="sudo apt update && sudo apt install -y tool"
-  [custom]="echo 'manual install here'"
-)
+PKG_NAME="mytool"
+PKG_DESC="Short description"
 
-pre_install()  { return 0 }
-post_install() { is_package_installed "$PACKAGE_NAME" }
-init()         { return 0 }
+pkg_install() {
+    brew install mytool   # Optional: override OS package manager
+}
 
-# Hand off to the general installer
-call_install_package $PACKAGE_NAME $PACKAGE_DESC $PACKAGE_DEPS "${(@kv)install_methods}"
+pkg_init() {
+    export MYTOOL_OPTS="--fast"
+    alias mt="mytool"
+}
+
+init_package_template "$PKG_NAME"
 ```
 
-## Commands
+See [`docs/guides/adding-a-package.md`](docs/guides/adding-a-package.md) for the full guide including lazy loading.
+
+## CLI commands
 
 ```bash
-dotfiles            # interactive
-dotfiles install    # install/update
-dotfiles uninstall  # remove links and config
-dotfiles profile develop
+dotfiles                  # interactive menu
+dotfiles install          # install all packages for current profile
+dotfiles link             # create/recreate symlinks
+dotfiles verify           # check symlinks + report missing packages
+dotfiles profile develop  # switch profile (persists across sessions)
+dotfiles update           # pull latest changes
+dotfiles uninstall        # remove symlinks and config
 ```
 
-## Environment
+## Environment variables
 
-| Var | Default | Purpose |
-|-----|---------|---------|
-| DOTFILES_ROOT | ~/.dotfiles | install location |
-| DOTFILES_PROFILE | minimal | minimal/server/develop |
-| DOTFILES_BRANCH | main | git branch |
-
-## Uninstall
-
-```bash
-dotfiles uninstall
-```
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `DOTFILES_ROOT` | `~/.dotfiles` | Repository location |
+| `DOTFILES_PROFILE` | `minimal` | Active profile |
+| `DOTFILES_VERBOSE` | `false` | Enable verbose output |
 
 ## Troubleshooting
 
-- On Ubuntu/Debian, ensure `curl` exists for custom installers
-- Force re‑install: `DOTFILES_FORCE_INSTALL=1 zsh`
-- Clear install marker: `rm ~/.cache/.dotfiles_installed`
+See [`docs/guides/troubleshooting.md`](docs/guides/troubleshooting.md) for common issues.
+
+Quick checks:
+
+```bash
+# Shell startup time
+for i in 1 2 3; do time zsh -i -c exit; done
+
+# Check what's missing
+dotfiles verify
+
+# Force completion rebuild
+rm -f ~/.zcompdump && exec zsh
+```
 
 ---
 
-MIT Licensed. PRs welcome. See `zshrc.d/packages/00_template.zsh` to add tools.
+MIT Licensed. See `docs/guides/adding-a-package.md` to add tools.

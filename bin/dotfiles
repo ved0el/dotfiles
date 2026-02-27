@@ -17,6 +17,7 @@ set -euo pipefail
 readonly DEFAULT_ROOT="$HOME/.dotfiles"
 readonly DEFAULT_PROFILE="minimal"
 readonly DEFAULT_VERBOSE="false"
+readonly SCRIPT_NAME="dotfiles"
 
 # URLs - Easy to update
 readonly REPO_URL="https://github.com/ved0el/dotfiles.git"
