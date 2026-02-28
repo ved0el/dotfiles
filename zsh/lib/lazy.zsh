@@ -36,13 +36,18 @@ create_lazy_wrapper() {
     fi
 
     # Main command wrapper: self-destructs after first use
+    # After load_func succeeds, two cases:
+    #   binary tool        — whence -p finds it in PATH; unfunction wrapper, call binary
+    #   shell function tool — load_func redefined cmd (e.g. nvm.sh defined nvm());
+    #                         call directly, do NOT unfunction (removes real function)
+    # NOTE: command -v in zsh matches functions too, so we use whence -p (PATH-only)
     eval "
 ${cmd}() {
     if ${load_func}; then
-        if typeset -f ${cmd} >/dev/null 2>&1; then
+        if whence -p ${cmd} >/dev/null 2>&1; then
             unfunction ${cmd} 2>/dev/null || true
-        fi
-        if command -v ${cmd} >/dev/null 2>&1; then
+            command ${cmd} \"\$@\"
+        elif typeset -f ${cmd} >/dev/null 2>&1; then
             ${cmd} \"\$@\"
         else
             echo 'ERROR: ${cmd} not available after lazy loading' >&2

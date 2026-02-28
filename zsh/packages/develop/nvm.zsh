@@ -28,14 +28,15 @@ pkg_init() {
     export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
 
     _lazy_load_nvm() {
-        # Idempotency guard: skip if nvm is already a real function
-        typeset -f nvm >/dev/null 2>&1 && return 0
+        # Idempotency guard: nvm.sh already sourced (flag set below)
+        [[ "${_DOTFILES_NVM_LOADED:-}" == "1" ]] && return 0
 
         [[ -f "$NVM_DIR/nvm.sh" ]] || return 1
         source "$NVM_DIR/nvm.sh"
         [[ -f "$NVM_DIR/bash_completion" ]] && source "$NVM_DIR/bash_completion" 2>/dev/null
 
         typeset -f nvm >/dev/null 2>&1 || return 1
+        export _DOTFILES_NVM_LOADED="1"
 
         # Auto-install LTS if no Node version is installed
         if [[ -z "$(nvm list 2>/dev/null | grep -E 'v[0-9]+')" ]]; then
