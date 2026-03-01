@@ -17,6 +17,9 @@ pkg_init() {
     export PYENV_ROOT="${HOME}/.pyenv"
     export PATH="$PYENV_ROOT/bin:$PATH"
 
+    # Guard: don't re-register wrappers if already loaded (e.g. source ~/.zshrc)
+    [[ "$PATH" == *"$PYENV_ROOT/shims"* ]] && return 0
+
     _lazy_load_pyenv() {
         # Idempotency guard — shims already in PATH means pyenv is loaded
         [[ "$PATH" == *"$PYENV_ROOT/shims"* ]] && return 0

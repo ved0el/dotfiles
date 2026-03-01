@@ -27,6 +27,9 @@ pkg_post_install() {
 pkg_init() {
     export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
 
+    # Guard: don't re-register wrappers if already loaded (e.g. source ~/.zshrc)
+    [[ "${_DOTFILES_NVM_LOADED:-}" == "1" ]] && return 0
+
     _lazy_load_nvm() {
         # Idempotency guard: nvm.sh already sourced (flag set below)
         [[ "${_DOTFILES_NVM_LOADED:-}" == "1" ]] && return 0

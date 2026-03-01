@@ -30,7 +30,9 @@ case "${DOTFILES_PROFILE}" in
     minimal) _pkg_dirs=("$DOTFILES_ROOT/zsh/packages/minimal") ;;
     server)  _pkg_dirs=("$DOTFILES_ROOT/zsh/packages/minimal" "$DOTFILES_ROOT/zsh/packages/server") ;;
     develop) _pkg_dirs=("$DOTFILES_ROOT/zsh/packages/minimal" "$DOTFILES_ROOT/zsh/packages/server" "$DOTFILES_ROOT/zsh/packages/develop") ;;
-    *)       _pkg_dirs=("$DOTFILES_ROOT/zsh/packages/minimal" "$DOTFILES_ROOT/zsh/packages/server" "$DOTFILES_ROOT/zsh/packages/develop") ;;
+    *)
+        echo "[dotfiles] Unknown profile '${DOTFILES_PROFILE}' — defaulting to minimal. Run: dotfiles profile <minimal|server|develop>" >&2
+        _pkg_dirs=("$DOTFILES_ROOT/zsh/packages/minimal") ;;
 esac
 for _pkg_dir in "$_pkg_dirs[@]"; do
     for _pkg_file in "$_pkg_dir"/*.zsh(N); do source "$_pkg_file"; done

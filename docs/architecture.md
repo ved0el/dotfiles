@@ -21,7 +21,7 @@ The system has four layers. Each layer has a single, clear responsibility:
 
 ## Directory Structure
 
-This is the **target structure** (some paths are pending refactoring from the current layout):
+Current directory structure:
 
 ```
 .dotfiles/
@@ -282,14 +282,34 @@ pkg_install() {
 }
 
 pkg_init() {
-    local nvm_dir="${NVM_DIR:-$HOME/.nvm}"
-    export NVM_DIR="$nvm_dir"
+    export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+
+    # Guard 1: don't re-register wrappers on source ~/.zshrc after nvm is loaded
+    [[ "${_DOTFILES_NVM_LOADED:-}" == "1" ]] && return 0
 
     _lazy_load_nvm() {
+        # Guard 2: npm/npx wrappers call this on every invocation — must be a no-op after load
+        [[ "${_DOTFILES_NVM_LOADED:-}" == "1" ]] && return 0
+
+        [[ -f "$NVM_DIR/nvm.sh" ]] || return 1
         source "$NVM_DIR/nvm.sh"
+        [[ -f "$NVM_DIR/bash_completion" ]] && source "$NVM_DIR/bash_completion" 2>/dev/null
+        typeset -f nvm >/dev/null 2>&1 || return 1
+        export _DOTFILES_NVM_LOADED="1"
+
+        # Auto-install LTS if no Node version is installed
+        if [[ -z "$(nvm list 2>/dev/null | grep -E 'v[0-9]+')" ]]; then
+            nvm install --lts && nvm alias default 'lts/*' && nvm use --lts
+        else
+            nvm use default &>/dev/null || nvm use --lts &>/dev/null || nvm use node &>/dev/null
+        fi
     }
 
-    create_lazy_wrapper "node" "_lazy_load_nvm" "npm" "npx" "yarn" "pnpm"
+    create_lazy_wrapper "nvm" "_lazy_load_nvm" "node" "npm" "npx"
+
+    # yarn/pnpm: only wrap if not already available globally (outside nvm)
+    command -v yarn &>/dev/null || create_lazy_wrapper "yarn" "_lazy_load_nvm"
+    command -v pnpm &>/dev/null || create_lazy_wrapper "pnpm" "_lazy_load_nvm"
 }
 
 init_package_template "$PKG_NAME"
@@ -346,17 +366,31 @@ cost until the first time a related command is actually used.
 4. Re-invoke the original command with the original arguments
 
 > **Note on extra_cmds**: The main `cmd` wrapper is removed after load (real binary takes
-> over). Wrappers for `extra_cmds` are **not removed** — they remain as shell functions that
-> call `load_func` on every invocation. After initialization, `load_func` should return
-> immediately (idempotency check at the top), so the overhead is one function call + a guard
-> check per `npm`/`pip` invocation. This is acceptable but must be documented in `load_func`:
+> over). Wrappers for `extra_cmds` (e.g. `npm`, `pip`, `go`) are **not removed** — they
+> remain as shell functions that call `load_func` on every invocation. After initialization,
+> `load_func` returns immediately via its idempotency guard, so the overhead is one function
+> call + flag check per invocation. This is acceptable but **both guards are required**:
+>
 > ```zsh
-> _lazy_load_nvm() {
->     # Idempotency guard: skip if already loaded
->     typeset -f nvm >/dev/null 2>&1 && return 0
->     source "$NVM_DIR/nvm.sh"
+> pkg_init() {
+>     # Guard 1: don't re-register wrappers on source ~/.zshrc after tool is loaded
+>     [[ "${_DOTFILES_TOOL_LOADED:-}" == "1" ]] && return 0
+>
+>     _lazy_load_tool() {
+>         # Guard 2: extra_cmd wrappers call this on every npm/go/pip invocation
+>         [[ "${_DOTFILES_TOOL_LOADED:-}" == "1" ]] && return 0
+>         ...
+>         export _DOTFILES_TOOL_LOADED="1"
+>     }
+>
+>     create_lazy_wrapper "tool" "_lazy_load_tool" "extra-cmd"
 > }
 > ```
+>
+> Without Guard 1: `source ~/.zshrc` after first use overwrites the real tool function with
+> a lazy wrapper — tool silently stops working.
+>
+> Without Guard 2: `$PATH` grows with a duplicate entry on every `npm`/`go` invocation.
 
 ### Timing Illustration
 
@@ -381,12 +415,18 @@ pkg_init() {
     export TOOL_ROOT="$HOME/.tool"
     export PATH="$TOOL_ROOT/bin:$PATH"
 
+    # Guard 1: skip if already loaded (safe for source ~/.zshrc re-runs)
+    [[ "${_DOTFILES_TOOL_LOADED:-}" == "1" ]] && return 0
+
     _lazy_load_tool() {
+        # Guard 2: extra_cmd wrappers call this on every invocation — must be fast no-op
+        [[ "${_DOTFILES_TOOL_LOADED:-}" == "1" ]] && return 0
+        [[ -d "$TOOL_ROOT" ]] || return 1
         eval "$(tool init -)"        # or: source "$TOOL_ROOT/tool.sh"
+        export _DOTFILES_TOOL_LOADED="1"
     }
 
-    [[ -d "$TOOL_ROOT" ]] && \
-        create_lazy_wrapper "tool" "_lazy_load_tool" "tool-companion-cmd"
+    create_lazy_wrapper "tool" "_lazy_load_tool" "tool-companion-cmd"
 }
 ```
 

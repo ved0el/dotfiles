@@ -87,7 +87,7 @@ The `bin/dotfiles` CLI must manage symlinks from the dotfiles repo into `$HOME`:
 
 - Root-level config files → `$HOME/.<filename>` (e.g. `zshrc` → `~/.zshrc`)
 - `config/` subtree → `$HOME/.config/<tool>/` (e.g. `config/bat/` → `~/.config/bat/`)
-- If a target already exists and is **not** a symlink to this repo: warn and skip, never overwrite
+- If a target already exists (symlink or plain file): remove it and replace with the repo symlink
 - The `verify` command must report all broken, missing, or conflicting links
 
 ### FR-5: Cross-Platform Package Installation
@@ -173,8 +173,14 @@ The `bin/dotfiles` command must support these subcommands:
 - Re-sourcing `~/.zshrc` must not produce errors or duplicate environment state
 - Package init functions must be safe to call more than once:
   - `export PATH=...` prepends are acceptable only if guarded against duplicates
-  - `create_lazy_wrapper` must check whether a wrapper already exists before registering
+  - `create_lazy_wrapper` must not be called again if the tool is already loaded
   - If a tool is already initialized (real binary in PATH), `pkg_init` must not re-wrap it
+- Version manager packages (`nvm`, `pyenv`, `goenv`) require two idempotency guards:
+  1. **`pkg_init` entry guard** — check the load flag at the top of `pkg_init` and return
+     early if set; prevents re-registering lazy wrappers on `source ~/.zshrc`
+  2. **`_lazy_load_<tool>` entry guard** — check the same flag at the top of the load
+     function and return early if set; prevents extra_cmd wrappers (`npm`, `pip`, `go`)
+     from re-running initialization on every invocation
 
 ### NFR-4: Failure Isolation
 
