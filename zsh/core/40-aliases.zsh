@@ -15,3 +15,6 @@ alias ..="cd .."
 alias ...="cd ../.."
 alias ....="cd ../../.."
 alias ~="cd ~"
+
+alias agt="antigravity"
+alias claude-mem="bun ~/.claude/plugins/cache/thedotmack/claude-mem/10.5.2/scripts/worker-service.cjs"
