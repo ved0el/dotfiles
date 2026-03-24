@@ -473,6 +473,7 @@ verify_packages() {
         DOTFILES_ROOT="$DOTFILES_ROOT" \
         zsh -c '
             setopt NULL_GLOB
+            [[ ":$PATH:" != *":$HOME/.local/bin:"* ]] && export PATH="$PATH:$HOME/.local/bin"
             source "$DOTFILES_ROOT/zsh/lib/platform.zsh"
             source "$DOTFILES_ROOT/zsh/lib/installer.zsh"
             source "$DOTFILES_ROOT/zsh/lib/lazy.zsh"
@@ -545,6 +546,7 @@ install_packages() {
     DOTFILES_ROOT="$DOTFILES_ROOT" \
     zsh -c '
         setopt NULL_GLOB
+        [[ ":$PATH:" != *":$HOME/.local/bin:"* ]] && export PATH="$PATH:$HOME/.local/bin"
         source "$DOTFILES_ROOT/zsh/lib/platform.zsh"
         source "$DOTFILES_ROOT/zsh/lib/installer.zsh"
         source "$DOTFILES_ROOT/zsh/lib/lazy.zsh"

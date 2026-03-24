@@ -48,7 +48,7 @@ _dotfiles_install_package() {
         brew)
             brew install "$package_name" && success=true ;;
         apt)
-            sudo apt-get update -qq && sudo apt-get install -y "$package_name" && success=true ;;
+            sudo apt update -qq && sudo apt install -y "$package_name" && success=true ;;
         dnf)
             sudo dnf install -y "$package_name" && success=true ;;
         yum)
@@ -101,12 +101,26 @@ _dotfiles_check_installed() {
 # Calls hook functions if defined: pkg_pre_install, pkg_install,
 #   pkg_install_fallback, pkg_post_install, pkg_init
 # -----------------------------------------------------------------------------
+_dotfiles_cleanup_package_hooks() {
+    # Properly cleanup hooks with unfunction; silence any Zsh errors
+    local h
+    for h in pkg_pre_install pkg_install pkg_install_fallback pkg_post_install pkg_init; do
+        unfunction "$h" 2>/dev/null
+    done
+    unset PKG_NAME PKG_DESC PKG_CMD PKG_CHECK_FUNC 2>/dev/null
+}
+
 init_package_template() {
-    local package_name="${1:-${PKG_NAME}}"
+    # Synchronize initial values
+    local package_name="${1:-${PKG_NAME:-}}"
     local package_desc="${PKG_DESC:-}"
     local package_command="${PKG_CMD:-$package_name}"
 
-    [[ -z "$package_name" ]] && _dotfiles_log_error "Package name not provided" && return 1
+    if [[ -z "$package_name" ]]; then
+        _dotfiles_log_error "Package name not provided"
+        _dotfiles_cleanup_package_hooks
+        return 1
+    fi
 
     _dotfiles_log_debug "Checking ${package_name}..."
 
@@ -114,50 +128,80 @@ init_package_template() {
     if _dotfiles_check_installed "$package_command"; then
         _dotfiles_log_debug "${package_name} is installed ✓"
         if typeset -f pkg_init >/dev/null; then
-            pkg_init || { _dotfiles_log_error "Failed to initialize ${package_name}"; return 1; }
+            pkg_init || {
+                _dotfiles_log_error "Failed to initialize ${package_name}"
+                _dotfiles_cleanup_package_hooks
+                return 1
+            }
         fi
         _dotfiles_log_success "${package_name} initialized"
+        _dotfiles_cleanup_package_hooks
         return 0
     fi
 
     # Not installed — warn on normal startup, full install when VERBOSE=true
     if [[ "${DOTFILES_VERBOSE:-false}" != "true" ]]; then
         echo "[dotfiles] ${package_name} not installed — run: dotfiles install" >&2
+        _dotfiles_cleanup_package_hooks
         return 0
     fi
 
     # Full install flow (DOTFILES_VERBOSE=true)
     echo
     _dotfiles_log_warning "${package_name} not found — ${package_desc}"
+
+    # Run pre-install hook
+    if typeset -f pkg_pre_install >/dev/null; then
+        pkg_pre_install || {
+            _dotfiles_log_error "Pre-install failed for ${package_name}"
+            _dotfiles_cleanup_package_hooks
+            return 1
+        }
+        # Re-sync EVERYTHING in case pre-install hook modified parameters
+        package_name="${PKG_NAME:-$package_name}"
+        package_desc="${PKG_DESC:-$package_desc}"
+        package_command="${PKG_CMD:-$package_name}"
+    fi
+
     _dotfiles_log_info "Attempting to install ${package_name}..."
 
-    if typeset -f pkg_pre_install >/dev/null; then
-        pkg_pre_install || { _dotfiles_log_error "Pre-install failed for ${package_name}"; return 1; }
-    fi
-
     if typeset -f pkg_install >/dev/null; then
-        pkg_install || { _dotfiles_log_error "Installation failed for ${package_name}"; return 1; }
+        pkg_install || {
+            _dotfiles_log_error "Installation failed for ${package_name}"
+            _dotfiles_cleanup_package_hooks
+            return 1
+        }
     else
-        _dotfiles_install_package "$package_name" "$package_desc" || \
-            { _dotfiles_log_error "Installation failed for ${package_name}"; return 1; }
-    fi
-
-    # Re-verify after install
-    if ! _dotfiles_check_installed "$package_command"; then
-        _dotfiles_log_error "${package_name} installation completed but not found"
-        return 1
+        _dotfiles_install_package "$package_name" "$package_desc" || {
+            _dotfiles_log_error "Installation failed for ${package_name}"
+            _dotfiles_cleanup_package_hooks
+            return 1
+        }
     fi
 
     if typeset -f pkg_post_install >/dev/null; then
         pkg_post_install || _dotfiles_log_warning "Post-install failed for ${package_name}"
     fi
 
+    # Re-verify after install (post-install might have created symlinks)
+    if ! _dotfiles_check_installed "$package_command"; then
+        _dotfiles_log_error "${package_name} installation completed but not found"
+        _dotfiles_cleanup_package_hooks
+        return 1
+    fi
+
     if typeset -f pkg_init >/dev/null; then
-        pkg_init || { _dotfiles_log_error "Failed to initialize ${package_name}"; return 1; }
+        pkg_init || {
+            _dotfiles_log_error "Failed to initialize ${package_name}"
+            _dotfiles_cleanup_package_hooks
+            return 1
+        }
     fi
 
     _dotfiles_log_success "${package_name} installed and initialized ✓"
     echo
+
+    _dotfiles_cleanup_package_hooks
     return 0
 }
 
