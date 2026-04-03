@@ -38,19 +38,19 @@ sed_inplace() {
     [[ "$(get_os_type)" == "Darwin" ]] && sed -i '' "$@" "$file" || sed -i "$@" "$file"
 }
 
-# Extract value from config line (format: export VAR="value")
+# Extract value from config line (format: export VAR="value" or export VAR=value)
 extract_config_value() {
     local var_name="$1"
     local config_file="$2"
 
-    # Simple extraction using bash parameter expansion
     local line
-    line=$(grep "^export ${var_name}=" "$config_file" 2>/dev/null || echo "")
+    line=$(grep "^export ${var_name}=" "$config_file" 2>/dev/null | tail -1 || echo "")
     [[ -z "$line" ]] && return 1
 
-    # Extract value between quotes
-    local value="${line#*\"}"  # Remove everything before first quote
-    value="${value%\"*}"      # Remove everything after last quote
+    # Strip "export VAR=" prefix, then strip optional surrounding quotes
+    local value="${line#*=}"   # Remove "export VAR="
+    value="${value#[\"']}"     # Strip optional leading quote
+    value="${value%[\"']}"     # Strip optional trailing quote
 
     [[ -n "$value" ]] && echo "$value"
 }
@@ -192,17 +192,25 @@ save_config() {
     config_dir=$(dirname "$CONFIG_FILE")
     [[ ! -d "$config_dir" ]] && mkdir -p "$config_dir"
 
-    # Create backup if config file exists
-    [[ -f "$CONFIG_FILE" ]] && cp "$CONFIG_FILE" "${CONFIG_FILE}.backup" 2>/dev/null
+    # Rotate backups: keep last 3 (.backup → .backup.1 → .backup.2)
+    if [[ -f "$CONFIG_FILE" ]]; then
+        [[ -f "${CONFIG_FILE}.backup.2" ]] && mv "${CONFIG_FILE}.backup.2" "${CONFIG_FILE}.backup.3" 2>/dev/null || true
+        [[ -f "${CONFIG_FILE}.backup.1" ]] && mv "${CONFIG_FILE}.backup.1" "${CONFIG_FILE}.backup.2" 2>/dev/null || true
+        [[ -f "${CONFIG_FILE}.backup"   ]] && mv "${CONFIG_FILE}.backup"   "${CONFIG_FILE}.backup.1" 2>/dev/null || true
+        cp "$CONFIG_FILE" "${CONFIG_FILE}.backup" 2>/dev/null || true
+    fi
 
-    # Remove existing dotfiles exports and comments
+    # Remove existing dotfiles block (exports + header comment)
     if [[ -f "$CONFIG_FILE" ]]; then
         sed_inplace "$CONFIG_FILE" '/^export DOTFILES_/d'
         sed_inplace "$CONFIG_FILE" '/^# Dotfiles Configuration/d'
+        # Collapse multiple consecutive blank lines to one (cleans up orphaned gaps)
+        sed_inplace "$CONFIG_FILE" '/^$/N;/^\n$/d'
     fi
 
-    # Add new configuration block with timestamp
+    # Append new configuration block
     cat >> "$CONFIG_FILE" << EOF
+
 # Dotfiles Configuration
 export DOTFILES_ROOT="${DOTFILES_ROOT:-$DEFAULT_ROOT}"
 export DOTFILES_PROFILE="${DOTFILES_PROFILE:-$DEFAULT_PROFILE}"
@@ -415,10 +423,10 @@ check_directory_symlinks() {
             ((item_count++))
             if [[ -L "$target" ]] && [[ -e "$target" ]]; then
                 is_verbose && log_dim "${GREEN}${CHECK}${RESET} $name ${MAGENTA}${ARROW}${RESET} $target"
-                eval "$total_links_ref=\$(($total_links_ref + 1))"
+                printf -v "$total_links_ref" '%d' "$((${!total_links_ref} + 1))"
             else
                 log_error "Broken or missing: $target"
-                eval "$broken_links_ref=\$(($broken_links_ref + 1))"
+                printf -v "$broken_links_ref" '%d' "$((${!broken_links_ref} + 1))"
             fi
         fi
     done
@@ -540,6 +548,8 @@ install_packages() {
 
     # Package files use zsh-specific syntax (typeset, setopt, glob qualifiers).
     # Must run in a zsh subprocess — bash cannot source them correctly.
+    # DOTFILES_VERBOSE is forced true here so package lifecycle output is visible
+    # during install. The user's saved DOTFILES_VERBOSE only affects normal shell startup.
     local exit_code=0
     DOTFILES_VERBOSE=true \
     DOTFILES_PROFILE="$DOTFILES_PROFILE" \
@@ -674,7 +684,7 @@ install_dotfiles() {
     echo
     if command -v zsh &>/dev/null; then
         log_info "Starting new zsh shell..."
-        exec zsh -l </dev/null
+        exec zsh -l
     else
         log_warning "zsh not found, please restart your terminal manually"
     fi
@@ -698,7 +708,7 @@ remove_symlinks_from_dir() {
         local target="$target_prefix$name"
 
         if [[ -L "$target" ]] && [[ "$(readlink "$target")" == *"/.dotfiles/"* ]]; then
-            rm "$target" && eval "$unlink_count_ref=\$(($unlink_count_ref + 1))"
+            rm "$target" && printf -v "$unlink_count_ref" '%d' "$((${!unlink_count_ref} + 1))"
         fi
     done
 }
@@ -724,8 +734,16 @@ uninstall_dotfiles() {
         sed_inplace "$CONFIG_FILE" '/^# Dotfiles Configuration/d'
     }
 
-    # Remove dotfiles directory
-    [[ -d "$DOTFILES_ROOT" ]] && rm -rf "$DOTFILES_ROOT"
+    # Remove dotfiles directory — validate path before deletion
+    # Guards against a misconfigured DOTFILES_ROOT wiping unintended directories
+    if [[ -d "$DOTFILES_ROOT" ]]; then
+        if [[ "$DOTFILES_ROOT" != "$HOME/"* ]] || [[ ! -d "$DOTFILES_ROOT/.git" ]]; then
+            log_error "Refusing to remove '$DOTFILES_ROOT' — not a git repo under \$HOME"
+            log_error "Delete it manually if intended: rm -rf '$DOTFILES_ROOT'"
+            return 1
+        fi
+        rm -rf "$DOTFILES_ROOT"
+    fi
 
     log_success "Removed $unlink_count symlinks and dotfiles directory"
 }

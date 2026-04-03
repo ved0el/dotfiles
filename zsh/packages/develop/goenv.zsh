@@ -6,7 +6,8 @@ PKG_CMD=""
 PKG_CHECK_FUNC="_goenv_is_installed"
 
 _goenv_is_installed() {
-    [[ -d "${HOME}/.goenv" ]]
+    # Check both directory and binary — directory alone may exist from a broken install
+    [[ -d "${HOME}/.goenv" ]] && [[ -x "${HOME}/.goenv/bin/goenv" ]]
 }
 
 pkg_install() {

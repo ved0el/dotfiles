@@ -30,6 +30,11 @@ create_lazy_wrapper() {
         return 1
     fi
 
+    if [[ ! "$load_func" =~ ^[a-zA-Z0-9_]+$ ]]; then
+        echo "ERROR: Invalid load function name: $load_func" >&2
+        return 1
+    fi
+
     if ! typeset -f "$load_func" >/dev/null; then
         echo "ERROR: Load function not found: $load_func" >&2
         return 1

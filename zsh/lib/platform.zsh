@@ -2,70 +2,86 @@
 
 # =============================================================================
 # Platform detection — OS, distro, and package manager
+# Values are cached after first call (stable per session, safe to cache).
 # =============================================================================
 
 # Returns: macos | linux | freebsd | unknown
 dotfiles_os() {
-    case "$(uname -s)" in
-        Darwin)  echo "macos" ;;
-        Linux)   echo "linux" ;;
-        FreeBSD) echo "freebsd" ;;
-        *)       echo "unknown" ;;
-    esac
+    if [[ -z "${_DOTFILES_OS_CACHE:-}" ]]; then
+        case "$(uname -s)" in
+            Darwin)  _DOTFILES_OS_CACHE="macos" ;;
+            Linux)   _DOTFILES_OS_CACHE="linux" ;;
+            FreeBSD) _DOTFILES_OS_CACHE="freebsd" ;;
+            *)       _DOTFILES_OS_CACHE="unknown" ;;
+        esac
+    fi
+    echo "$_DOTFILES_OS_CACHE"
 }
 
 # Returns: distro ID from /etc/os-release, or 'unknown' (Linux only)
 dotfiles_distro() {
-    [[ "$(dotfiles_os)" != "linux" ]] && echo "unknown" && return
-    local id=""
-    [[ -f /etc/os-release ]] && id=$(. /etc/os-release 2>/dev/null; echo "${ID:-}")
-    echo "${id:-unknown}"
+    if [[ -z "${_DOTFILES_DISTRO_CACHE:-}" ]]; then
+        if [[ "$(dotfiles_os)" != "linux" ]]; then
+            _DOTFILES_DISTRO_CACHE="unknown"
+        else
+            local id=""
+            [[ -f /etc/os-release ]] && id=$(. /etc/os-release 2>/dev/null; echo "${ID:-}")
+            _DOTFILES_DISTRO_CACHE="${id:-unknown}"
+        fi
+    fi
+    echo "$_DOTFILES_DISTRO_CACHE"
 }
 
 # Returns: brew | apt | dnf | yum | pacman | zypper | pkg | unknown
 dotfiles_pkg_manager() {
-    local os id id_like
+    if [[ -n "${_DOTFILES_PKG_MGR_CACHE:-}" ]]; then
+        echo "$_DOTFILES_PKG_MGR_CACHE"
+        return
+    fi
+
+    local os id id_like result="unknown"
     os="$(dotfiles_os)"
 
     case "$os" in
         macos)
-            command -v brew &>/dev/null && echo "brew" || echo "unknown"
-            return ;;
+            command -v brew &>/dev/null && result="brew" ;;
         freebsd)
-            command -v pkg &>/dev/null && echo "pkg" || echo "unknown"
-            return ;;
+            command -v pkg &>/dev/null && result="pkg" ;;
         linux)
+            # Source /etc/os-release once for both ID and ID_LIKE
             if [[ -f /etc/os-release ]]; then
                 id=$(. /etc/os-release 2>/dev/null; echo "${ID:-}")
                 id_like=$(. /etc/os-release 2>/dev/null; echo "${ID_LIKE:-}")
             fi
-            # Check exact ID first
+            # Check exact distro ID first
             case "$id" in
                 ubuntu|debian|raspbian|linuxmint|pop)
-                    command -v apt &>/dev/null && echo "apt" && return ;;
+                    command -v apt &>/dev/null && result="apt" ;;
                 fedora|centos|rhel|rocky|alma)
-                    command -v dnf &>/dev/null && echo "dnf" && return
-                    command -v yum &>/dev/null && echo "yum" && return ;;
+                    command -v dnf &>/dev/null && result="dnf" || \
+                    command -v yum &>/dev/null && result="yum" ;;
                 arch|manjaro|endeavouros)
-                    command -v pacman &>/dev/null && echo "pacman" && return ;;
+                    command -v pacman &>/dev/null && result="pacman" ;;
                 opensuse*|suse)
-                    command -v zypper &>/dev/null && echo "zypper" && return ;;
+                    command -v zypper &>/dev/null && result="zypper" ;;
             esac
-            # Fallback: check ID_LIKE for derivative distros
-            # (e.g. Raspbian: ID=raspbian ID_LIKE=debian; Mint: ID=linuxmint ID_LIKE=ubuntu)
-            case "$id_like" in
-                *debian*|*ubuntu*)
-                    command -v apt &>/dev/null && echo "apt" && return ;;
-                *rhel*|*fedora*)
-                    command -v dnf &>/dev/null && echo "dnf" && return
-                    command -v yum &>/dev/null && echo "yum" && return ;;
-                *arch*)
-                    command -v pacman &>/dev/null && echo "pacman" && return ;;
-                *suse*)
-                    command -v zypper &>/dev/null && echo "zypper" && return ;;
-            esac
-            echo "unknown" ;;
-        *)
-            echo "unknown" ;;
+            # Fallback to ID_LIKE for derivative distros
+            # (e.g. Raspbian: ID=raspbian ID_LIKE=debian)
+            if [[ "$result" == "unknown" ]]; then
+                case "$id_like" in
+                    *debian*|*ubuntu*)
+                        command -v apt &>/dev/null && result="apt" ;;
+                    *rhel*|*fedora*)
+                        command -v dnf &>/dev/null && result="dnf" || \
+                        command -v yum &>/dev/null && result="yum" ;;
+                    *arch*)
+                        command -v pacman &>/dev/null && result="pacman" ;;
+                    *suse*)
+                        command -v zypper &>/dev/null && result="zypper" ;;
+                esac
+            fi ;;
     esac
+
+    _DOTFILES_PKG_MGR_CACHE="$result"
+    echo "$result"
 }

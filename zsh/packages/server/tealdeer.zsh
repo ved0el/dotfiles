@@ -10,7 +10,9 @@ pkg_post_install() {
 }
 
 pkg_init() {
-    alias help="tldr"
+    # No alias: 'help' is a zsh built-in; shadowing it breaks built-in help.
+    # Use 'tldr <command>' directly.
+    :
 }
 
 init_package_template "$PKG_NAME"

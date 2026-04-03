@@ -232,3 +232,56 @@ _dotfiles_linux_compat_symlink() {
     mkdir -p "$HOME/.local/bin"
     ln -sf "$(command -v "$original")" "$HOME/.local/bin/$alias_name"
 }
+
+# -----------------------------------------------------------------------------
+# Safe installer helpers — download to temp, verify SHA256, then execute
+# Never pipe curl directly to bash.
+# -----------------------------------------------------------------------------
+
+# Verify SHA256 of a file. Works on macOS (shasum) and Linux (sha256sum).
+_dotfiles_verify_sha256() {
+    local file="$1" expected="$2"
+    local actual=""
+    if command -v sha256sum &>/dev/null; then
+        actual="$(sha256sum "$file" | awk '{print $1}')"
+    elif command -v shasum &>/dev/null; then
+        actual="$(shasum -a 256 "$file" | awk '{print $1}')"
+    else
+        _dotfiles_log_error "No sha256sum or shasum found — cannot verify installer integrity"
+        return 1
+    fi
+    if [[ "$actual" != "$expected" ]]; then
+        _dotfiles_log_error "Checksum mismatch — possible tampering or corrupted download"
+        _dotfiles_log_error "  Expected: $expected"
+        _dotfiles_log_error "  Got:      $actual"
+        return 1
+    fi
+    _dotfiles_log_debug "Checksum OK: $file"
+}
+
+# Download URL to a temp file, verify SHA256, run with bash.
+# Usage: _dotfiles_safe_run_installer <url> <sha256> [-- script_args...]
+_dotfiles_safe_run_installer() {
+    local url="$1" expected_sha256="$2"
+    shift 2
+    local tmp
+    tmp="$(mktemp /tmp/dotfiles-installer.XXXXXX)" || { _dotfiles_log_error "mktemp failed"; return 1; }
+    curl --proto '=https' --tlsv1.2 -fsSL "$url" -o "$tmp" || {
+        rm -f "$tmp"; _dotfiles_log_error "Download failed: $url"; return 1
+    }
+    _dotfiles_verify_sha256 "$tmp" "$expected_sha256" || { rm -f "$tmp"; return 1; }
+    bash "$tmp" "$@"; local rc=$?; rm -f "$tmp"; return $rc
+}
+
+# Same as above but executes with sudo bash (for system-wide installs).
+_dotfiles_safe_sudo_run_installer() {
+    local url="$1" expected_sha256="$2"
+    shift 2
+    local tmp
+    tmp="$(mktemp /tmp/dotfiles-installer.XXXXXX)" || { _dotfiles_log_error "mktemp failed"; return 1; }
+    curl --proto '=https' --tlsv1.2 -fsSL "$url" -o "$tmp" || {
+        rm -f "$tmp"; _dotfiles_log_error "Download failed: $url"; return 1
+    }
+    _dotfiles_verify_sha256 "$tmp" "$expected_sha256" || { rm -f "$tmp"; return 1; }
+    sudo bash "$tmp" "$@"; local rc=$?; rm -f "$tmp"; return $rc
+}

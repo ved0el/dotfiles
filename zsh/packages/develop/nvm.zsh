@@ -11,7 +11,12 @@ _nvm_is_installed() {
 }
 
 pkg_install() {
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+    # Pin version explicitly — check https://github.com/nvm-sh/nvm/releases for latest.
+    # Update nvm_version and installer_sha256 together when bumping.
+    local nvm_version="v0.40.1"
+    local installer_sha256="abdb525ee9f5b48b34d8ed9fc67c6013fb0f659712e401ecd88ab989b3af8f53"
+    local install_url="https://raw.githubusercontent.com/nvm-sh/nvm/${nvm_version}/install.sh"
+    _dotfiles_safe_run_installer "$install_url" "$installer_sha256"
 }
 
 pkg_post_install() {
