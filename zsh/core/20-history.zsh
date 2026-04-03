@@ -18,6 +18,14 @@ setopt HIST_EXPIRE_DUPS_FIRST  # Expire duplicates first when trimming
 setopt HIST_FIND_NO_DUPS       # Don't display duplicates when searching
 setopt HIST_IGNORE_ALL_DUPS    # Delete old entry if new entry is a duplicate
 
+# Reset mouse tracking escape sequences left behind by apps (vim, fzf, less, etc.)
+# Runs before every prompt to prevent raw SGR mouse codes leaking into the shell.
+autoload -Uz add-zsh-hook
+_dotfiles_reset_mouse() {
+    printf '\e[?1000l\e[?1002l\e[?1003l\e[?1006l'
+}
+add-zsh-hook precmd _dotfiles_reset_mouse
+
 # fzf-powered history search widget (bound to Ctrl+R)
 # Only registered when fzf is available — fzf is a server-tier package and
 # may not be present on minimal profile machines.
