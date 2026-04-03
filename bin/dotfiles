@@ -276,7 +276,10 @@ setup_repository() {
             return 1
         }
         cd "$DOTFILES_ROOT"
-        log_success "Repository cloned at $DOTFILES_ROOT"
+        local head_sha
+        head_sha="$(git -C "$DOTFILES_ROOT" rev-parse HEAD 2>/dev/null || echo "unknown")"
+        log_success "Repository cloned at $DOTFILES_ROOT (HEAD: $head_sha)"
+        log_verbose "Verify this commit at: $DOTFILES_REPO"
     else
         # UPDATE: Fast-forward only pull (never creates merge commits)
         log_step "Updating dotfiles (pulling latest changes)..."
@@ -707,7 +710,9 @@ remove_symlinks_from_dir() {
         local name=$(basename "$item")
         local target="$target_prefix$name"
 
-        if [[ -L "$target" ]] && [[ "$(readlink "$target")" == *"/.dotfiles/"* ]]; then
+        local link_target
+        link_target="$(readlink "$target" 2>/dev/null)"
+        if [[ -L "$target" ]] && [[ "$link_target" == "$DOTFILES_ROOT/"* || "$link_target" == "$DOTFILES_ROOT" ]]; then
             rm "$target" && printf -v "$unlink_count_ref" '%d' "$((${!unlink_count_ref} + 1))"
         fi
     done
@@ -823,8 +828,7 @@ interactive_menu() {
                 read -r
                 ;;
             6)
-                with_menu_output uninstall_dotfiles
-                [[ $? -eq 0 ]] && exit 0
+                with_menu_output uninstall_dotfiles && exit 0
                 echo -e "\n${GRAY}Press Enter to continue...${RESET}"
                 read -r
                 ;;
@@ -845,8 +849,9 @@ interactive_menu() {
                 echo -e "${BOLD}${MAGENTA}Help - Dotfiles Manager${RESET}"
                 echo
                 echo -e "${BOLD}${WHITE}Installation:${RESET}"
-                echo -e "  ${CYAN}${BULLET}${RESET} Interactive: bash <(curl -fsSL $INSTALL_COMMAND_URL)"
-                echo -e "  ${CYAN}${BULLET}${RESET} One-liner:   curl -fsSL $INSTALL_COMMAND_URL | bash"
+                echo -e "  ${CYAN}${BULLET}${RESET} Download and run (recommended):"
+                echo -e "    ${GRAY}curl --proto '=https' --tlsv1.2 -fsSL $INSTALL_COMMAND_URL -o /tmp/dotfiles-install.sh${RESET}"
+                echo -e "    ${GRAY}bash /tmp/dotfiles-install.sh${RESET}"
                 echo
                 echo -e "${BOLD}${WHITE}Profiles:${RESET}"
                 echo -e "  ${YELLOW}minimal${RESET}  - Shell essentials (sheldon, tmux)"
