@@ -6,8 +6,9 @@ PKG_DESC="A fast and configurable shell plugin manager"
 pkg_install() {
     if [[ "$(dotfiles_os)" == "linux" ]] && command -v curl &>/dev/null; then
         _dotfiles_log_info "Installing $PKG_NAME via verified curl installer..."
-        # SHA256 of crate.sh — verify at https://rossmacarthur.github.io/install/crate.sh
-        # Update this hash when the installer script changes upstream.
+        # SHA256 of crate.sh — verified 2026-04-03
+        # If install fails with checksum mismatch, fetch the new hash:
+        #   curl --proto '=https' --tlsv1.2 -fsSL https://rossmacarthur.github.io/install/crate.sh | shasum -a 256
         local installer_sha256="2f456def6ec8e1c11c5fc416f8653e31189682b2a823cc18dbcd33188f2e9b65"
         _dotfiles_safe_sudo_run_installer \
             "https://rossmacarthur.github.io/install/crate.sh" \
@@ -26,8 +27,14 @@ pkg_post_install() {
 }
 
 pkg_init() {
+    # Assert sheldon resolves to a real binary before eval-ing its output
+    local sheldon_bin
+    sheldon_bin="$(command -v sheldon 2>/dev/null)" || {
+        _dotfiles_log_error "sheldon not found in PATH"
+        return 1
+    }
     local sheldon_output
-    sheldon_output="$(sheldon source)" || {
+    sheldon_output="$("$sheldon_bin" source)" || {
         _dotfiles_log_error "sheldon source failed — plugins may not load correctly"
         return 1
     }

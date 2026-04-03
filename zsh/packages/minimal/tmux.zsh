@@ -12,8 +12,13 @@ pkg_post_install() {
     if [[ ! -d "$tpm_dir" ]]; then
         _dotfiles_log_info "Installing tmux plugin manager..."
         if command -v git &>/dev/null; then
-            git clone https://github.com/tmux-plugins/tpm "$tpm_dir" &>/dev/null && \
-                _dotfiles_log_success "TPM installed successfully"
+            # Pinned to v3.1.0 — update tag+SHA together when bumping
+            # Commit SHA verified 2026-04-03
+            _dotfiles_safe_git_clone \
+                "https://github.com/tmux-plugins/tpm" \
+                "v3.1.0" \
+                "7bdb7ca33c9cc6440a600202b50142f401b6fe21" \
+                "$tpm_dir" && _dotfiles_log_success "TPM installed successfully"
         else
             _dotfiles_log_warning "git not found, cannot install TPM"
             return 1

@@ -50,7 +50,12 @@ pkg_init() {
         if [[ -z "$(nvm list 2>/dev/null | grep -E 'v[0-9]+')" ]]; then
             nvm install --lts && nvm alias default 'lts/*' && nvm use --lts
         else
-            nvm use default &>/dev/null || nvm use --lts &>/dev/null || nvm use node &>/dev/null
+            nvm use default &>/dev/null || \
+            nvm use --lts  &>/dev/null || \
+            nvm use node   &>/dev/null || {
+                _dotfiles_log_error "nvm: no usable Node version found — run: nvm install --lts"
+                return 1
+            }
         fi
     }
 

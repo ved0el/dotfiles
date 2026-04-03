@@ -11,8 +11,13 @@ _pyenv_is_installed() {
 }
 
 pkg_install() {
-    # Clone directly via git — avoids curl|bash and is pinned by git's TLS/integrity
-    git clone https://github.com/pyenv/pyenv.git "$HOME/.pyenv"
+    # Pinned to v2.6.13 — update tag+SHA together when bumping
+    # Commit SHA verified 2026-04-03
+    _dotfiles_safe_git_clone \
+        "https://github.com/pyenv/pyenv.git" \
+        "v2.6.13" \
+        "fdde91269b95bd8a61e9f8d11cba9a1e2de038ad" \
+        "$HOME/.pyenv"
 }
 
 pkg_init() {

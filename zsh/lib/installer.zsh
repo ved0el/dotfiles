@@ -273,6 +273,41 @@ _dotfiles_safe_run_installer() {
     bash "$tmp" "$@"; local rc=$?; rm -f "$tmp"; return $rc
 }
 
+# Clone a git repo at a pinned tag/branch and verify the resulting HEAD commit SHA.
+# Usage: _dotfiles_safe_git_clone <url> <tag_or_branch> <expected_commit_sha> <dest>
+# For repos without tags, pass the full 40-char commit SHA as tag_or_branch too.
+_dotfiles_safe_git_clone() {
+    local url="$1" ref="$2" expected_sha="$3" dest="$4"
+
+    if [[ "$ref" =~ ^[0-9a-f]{40}$ ]]; then
+        # Bare commit SHA: full clone then checkout (no --branch possible)
+        git clone "$url" "$dest" 2>/dev/null || {
+            _dotfiles_log_error "Clone failed: $url"; return 1
+        }
+        git -C "$dest" checkout "$ref" 2>/dev/null || {
+            rm -rf "$dest"; _dotfiles_log_error "Checkout $ref failed for $url"; return 1
+        }
+    else
+        # Tag or branch: shallow clone
+        git clone --branch "$ref" --depth 1 "$url" "$dest" 2>/dev/null || {
+            rm -rf "$dest"; _dotfiles_log_error "Clone failed: $url at $ref"; return 1
+        }
+    fi
+
+    local actual_sha
+    actual_sha="$(git -C "$dest" rev-parse HEAD 2>/dev/null)" || {
+        rm -rf "$dest"; _dotfiles_log_error "Could not read HEAD SHA for $dest"; return 1
+    }
+    if [[ "$actual_sha" != "$expected_sha" ]]; then
+        rm -rf "$dest"
+        _dotfiles_log_error "Commit SHA mismatch for $url at $ref"
+        _dotfiles_log_error "  Expected: $expected_sha"
+        _dotfiles_log_error "  Got:      $actual_sha"
+        return 1
+    fi
+    _dotfiles_log_debug "Verified clone: $url ($actual_sha)"
+}
+
 # Same as above but executes with sudo bash (for system-wide installs).
 _dotfiles_safe_sudo_run_installer() {
     local url="$1" expected_sha256="$2"

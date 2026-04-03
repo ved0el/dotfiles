@@ -16,7 +16,8 @@ pkg_init() {
     export FZF_CTRL_T_COMMAND="rg --files --hidden --follow --glob '!.git/*'"
     export FZF_CTRL_T_OPTS="--preview 'bat --line-range :100 {}'"
     export FZF_ALT_C_COMMAND="fd --type d"
-    export FZF_ALT_C_OPTS="--preview 'tree -C {} | head -100'"
+    # Use eza --tree (guaranteed available in server tier) instead of tree (not installed)
+    export FZF_ALT_C_OPTS="--preview 'eza --tree --level 2 --group-directories-first {}'"
 }
 
 init_package_template "$PKG_NAME"

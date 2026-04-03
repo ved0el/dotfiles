@@ -11,7 +11,13 @@ _goenv_is_installed() {
 }
 
 pkg_install() {
-    git clone https://github.com/syndbg/goenv.git ~/.goenv
+    # goenv has no semver releases; pinned to a known-good HEAD commit
+    # SHA verified 2026-04-03 — update when intentionally upgrading goenv
+    _dotfiles_safe_git_clone \
+        "https://github.com/syndbg/goenv.git" \
+        "2fe3f44316262e4d4f2ca58a4b625289de2acb3f" \
+        "2fe3f44316262e4d4f2ca58a4b625289de2acb3f" \
+        "$HOME/.goenv"
 }
 
 pkg_init() {
@@ -24,7 +30,8 @@ pkg_init() {
         # Idempotency guard: extra_cmd wrappers (go, gofmt) call this on every invocation
         [[ "${_DOTFILES_GOENV_LOADED:-}" == "1" ]] && return 0
         [[ -d "$GOENV_ROOT" ]] || return 1
-        export PATH="$GOENV_ROOT/bin:$PATH"
+        # Dedup guard: prevent PATH growth on repeated invocations
+        [[ ":$PATH:" == *":$GOENV_ROOT/bin:"* ]] || export PATH="$GOENV_ROOT/bin:$PATH"
         [[ -f "$GOENV_ROOT/bin/goenv" ]] && eval "$(goenv init -)"
         export _DOTFILES_GOENV_LOADED="1"
     }
