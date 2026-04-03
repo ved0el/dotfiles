@@ -280,16 +280,17 @@ _dotfiles_safe_git_clone() {
     local url="$1" ref="$2" expected_sha="$3" dest="$4"
 
     if [[ "$ref" =~ ^[0-9a-f]{40}$ ]]; then
-        # Bare commit SHA: full clone then checkout (no --branch possible)
-        git clone "$url" "$dest" 2>/dev/null || {
-            _dotfiles_log_error "Clone failed: $url"; return 1
+        # Bare commit SHA: partial clone (all commits/trees, no blobs) then checkout.
+        # Much faster than a full clone; blobs are fetched lazily on checkout.
+        git clone --filter=blob:none --no-checkout "$url" "$dest" || {
+            rm -rf "$dest"; _dotfiles_log_error "Clone failed: $url"; return 1
         }
-        git -C "$dest" checkout "$ref" 2>/dev/null || {
+        git -C "$dest" checkout "$ref" || {
             rm -rf "$dest"; _dotfiles_log_error "Checkout $ref failed for $url"; return 1
         }
     else
         # Tag or branch: shallow clone
-        git clone --branch "$ref" --depth 1 "$url" "$dest" 2>/dev/null || {
+        git clone --branch "$ref" --depth 1 "$url" "$dest" || {
             rm -rf "$dest"; _dotfiles_log_error "Clone failed: $url at $ref"; return 1
         }
     fi
