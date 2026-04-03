@@ -47,10 +47,12 @@ extract_config_value() {
     line=$(grep "^export ${var_name}=" "$config_file" 2>/dev/null | tail -1 || echo "")
     [[ -z "$line" ]] && return 1
 
-    # Strip "export VAR=" prefix, then strip optional surrounding quotes
-    local value="${line#*=}"   # Remove "export VAR="
-    value="${value#[\"']}"     # Strip optional leading quote
-    value="${value%[\"']}"     # Strip optional trailing quote
+    # Strip "export VAR=" prefix, then strip ALL surrounding quotes.
+    # Using loops instead of single-strip to handle stacked extra quotes
+    # (e.g. "value""" from a corrupted file) without leaving residue.
+    local value="${line#*=}"
+    while [[ "${value:0:1}" == '"' || "${value:0:1}" == "'" ]]; do value="${value:1}"; done
+    while [[ "${value: -1:1}" == '"' || "${value: -1:1}" == "'" ]]; do value="${value%?}"; done
 
     [[ -n "$value" ]] && echo "$value"
 }
@@ -204,8 +206,6 @@ save_config() {
     if [[ -f "$CONFIG_FILE" ]]; then
         sed_inplace "$CONFIG_FILE" '/^export DOTFILES_/d'
         sed_inplace "$CONFIG_FILE" '/^# Dotfiles Configuration/d'
-        # Collapse multiple consecutive blank lines to one (cleans up orphaned gaps)
-        sed_inplace "$CONFIG_FILE" '/^$/N;/^\n$/d'
     fi
 
     # Append new configuration block
