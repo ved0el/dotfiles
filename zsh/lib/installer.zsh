@@ -221,3 +221,14 @@ create_symlink() {
     [[ ! -e "$2" && -e "$1" ]] && ln -sf "$1" "$2" 2>/dev/null
     return 0
 }
+
+# Create a ~/.local/bin compat symlink (Linux-only, for Debian/Ubuntu binary-name quirks)
+# Usage: _dotfiles_linux_compat_symlink "original_binary" "desired_name"
+# Example: _dotfiles_linux_compat_symlink "batcat" "bat"
+_dotfiles_linux_compat_symlink() {
+    local original="$1" alias_name="$2"
+    [[ "$(dotfiles_os)" == "linux" ]] || return 0
+    command -v "$original" &>/dev/null && ! command -v "$alias_name" &>/dev/null || return 0
+    mkdir -p "$HOME/.local/bin"
+    ln -sf "$(command -v "$original")" "$HOME/.local/bin/$alias_name"
+}

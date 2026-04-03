@@ -5,8 +5,8 @@ PKG_DESC="A very fast implementation of tldr in Rust"
 PKG_CMD="tldr"
 
 pkg_post_install() {
-    command -v tldr &>/dev/null && [[ ! -f "${HOME}/.cache/tealdeer" ]] && \
-        tldr --update &>/dev/null
+    # Populate the cache on first install (tealdeer cache is a directory, not a file)
+    command -v tldr &>/dev/null && tldr --update &>/dev/null
 }
 
 pkg_init() {
