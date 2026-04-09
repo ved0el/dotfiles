@@ -604,6 +604,9 @@ install_packages() {
             echo -e "  ${CYAN}${BULLET}${RESET} nvm, pyenv, goenv"
             ;;
     esac
+
+    echo
+    echo -e "  ${YELLOW}→${RESET} Reload your shell to activate: ${BOLD}exec zsh${RESET}"
 }
 
 # =============================================================================

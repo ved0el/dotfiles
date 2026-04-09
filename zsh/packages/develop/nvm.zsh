@@ -46,17 +46,15 @@ pkg_init() {
         typeset -f nvm >/dev/null 2>&1 || return 1
         export _DOTFILES_NVM_LOADED="1"
 
-        # Prompt user to install Node if none present — don't auto-install silently
+        # Try to activate a Node version — warn (don't fail) if none installed,
+        # so the user can still run `nvm install --lts`
         if [[ -z "$(nvm list 2>/dev/null | grep -E 'v[0-9]+')" ]]; then
             echo "[dotfiles] No Node version installed. Run: nvm install --lts" >&2
-            return 1
         else
             nvm use default &>/dev/null || \
             nvm use --lts  &>/dev/null || \
-            nvm use node   &>/dev/null || {
-                _dotfiles_log_error "nvm: no usable Node version found — run: nvm install --lts"
-                return 1
-            }
+            nvm use node   &>/dev/null || \
+            echo "[dotfiles] nvm: no usable Node version found — run: nvm install --lts" >&2
         fi
     }
 
