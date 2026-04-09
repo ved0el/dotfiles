@@ -36,15 +36,20 @@ pkg_init() {
     [[ "${_DOTFILES_NVM_LOADED:-}" == "1" ]] && return 0
 
     _lazy_load_nvm() {
-        # Idempotency guard: nvm.sh already sourced (flag set below)
         [[ "${_DOTFILES_NVM_LOADED:-}" == "1" ]] && return 0
+        # Set flag early: nvm.sh triggers node/npm wrappers during source,
+        # which call _lazy_load_nvm again — must be blocked before re-entry
+        _DOTFILES_NVM_LOADED="1"
 
-        [[ -f "$NVM_DIR/nvm.sh" ]] || return 1
+        if [[ ! -f "$NVM_DIR/nvm.sh" ]]; then
+            unset _DOTFILES_NVM_LOADED; return 1
+        fi
         source "$NVM_DIR/nvm.sh"
         [[ -f "$NVM_DIR/bash_completion" ]] && source "$NVM_DIR/bash_completion" 2>/dev/null
 
-        typeset -f nvm >/dev/null 2>&1 || return 1
-        export _DOTFILES_NVM_LOADED="1"
+        if ! typeset -f nvm >/dev/null 2>&1; then
+            unset _DOTFILES_NVM_LOADED; return 1
+        fi
 
         # Try to activate a Node version — warn (don't fail) if none installed,
         # so the user can still run `nvm install --lts`

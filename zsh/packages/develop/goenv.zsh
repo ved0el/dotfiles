@@ -30,11 +30,13 @@ pkg_init() {
     [[ ":$PATH:" == *":$GOENV_ROOT/bin:"* ]] || export PATH="$GOENV_ROOT/bin:$PATH"
 
     _lazy_load_goenv() {
-        # Idempotency guard: extra_cmd wrappers (go, gofmt) call this on every invocation
         [[ "${_DOTFILES_GOENV_LOADED:-}" == "1" ]] && return 0
-        [[ -d "$GOENV_ROOT" ]] || return 1
-        [[ -f "$GOENV_ROOT/bin/goenv" ]] && eval "$(goenv init -)"
-        export _DOTFILES_GOENV_LOADED="1"
+        # Set flag early to prevent re-entry from extra_cmd wrappers (go, gofmt)
+        _DOTFILES_GOENV_LOADED="1"
+        if [[ ! -d "$GOENV_ROOT" ]]; then
+            unset _DOTFILES_GOENV_LOADED; return 1
+        fi
+        [[ -x "$GOENV_ROOT/bin/goenv" ]] && eval "$("$GOENV_ROOT/bin/goenv" init - zsh)"
     }
 
     create_lazy_wrapper "goenv" "_lazy_load_goenv" "go" "gofmt"

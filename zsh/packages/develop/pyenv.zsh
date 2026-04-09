@@ -30,12 +30,14 @@ pkg_init() {
     [[ ":$PATH:" == *":$PYENV_ROOT/bin:"* ]] || export PATH="$PYENV_ROOT/bin:$PATH"
 
     _lazy_load_pyenv() {
-        # Idempotency guard: extra_cmd wrappers (python, pip, etc.) call this on every invocation
         [[ "${_DOTFILES_PYENV_LOADED:-}" == "1" ]] && return 0
-        [[ -d "$PYENV_ROOT" ]] || return 1
+        # Set flag early to prevent re-entry from extra_cmd wrappers (python, pip)
+        _DOTFILES_PYENV_LOADED="1"
+        if [[ ! -d "$PYENV_ROOT" ]]; then
+            unset _DOTFILES_PYENV_LOADED; return 1
+        fi
         [[ ":$PATH:" == *":$PYENV_ROOT/shims:"* ]] || export PATH="$PYENV_ROOT/shims:$PATH"
-        command -v pyenv >/dev/null 2>&1 && eval "$(pyenv init -)"
-        export _DOTFILES_PYENV_LOADED="1"
+        [[ -x "$PYENV_ROOT/bin/pyenv" ]] && eval "$("$PYENV_ROOT/bin/pyenv" init -)"
     }
 
     create_lazy_wrapper "pyenv" "_lazy_load_pyenv" "python" "python3" "pip" "pip3"
