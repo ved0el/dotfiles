@@ -22,7 +22,6 @@ unset _f
 # Load shared libraries
 source "$DOTFILES_ROOT/zsh/lib/platform.zsh"
 source "$DOTFILES_ROOT/zsh/lib/installer.zsh"
-source "$DOTFILES_ROOT/zsh/lib/lazy.zsh"
 
 # Load packages for active profile (cumulative: minimal ⊆ server ⊆ develop)
 typeset -a _pkg_dirs

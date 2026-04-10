@@ -31,7 +31,7 @@ tier, prefix with a two-digit number: `00-sheldon.zsh` guarantees first load.
 PKG_NAME="toolname"          # Used in log messages and install prompts
 PKG_DESC="Short description" # Shown when the tool is not installed
 # PKG_CMD="toolname"         # Binary to check (defaults to PKG_NAME)
-# PKG_CHECK_FUNC="_toolname_is_installed"  # Use for non-binary tools (nvm, pyenv)
+# PKG_CHECK_FUNC="_toolname_is_installed"  # Use for non-binary tools
 
 # Optional: custom existence check (needed when the tool is not a binary)
 # _toolname_is_installed() { [[ -d "$HOME/.toolname" ]]; }
@@ -77,7 +77,6 @@ zsh -i -c 'type toolname' 2>/dev/null
 DOTFILES_VERBOSE=true zsh -c '
   source ~/.dotfiles/zsh/lib/platform.zsh
   source ~/.dotfiles/zsh/lib/installer.zsh
-  source ~/.dotfiles/zsh/lib/lazy.zsh
   source ~/.dotfiles/zsh/packages/<tier>/toolname.zsh
 '
 
@@ -88,26 +87,21 @@ for i in 1 2 3; do time zsh -i -c exit; done
 ## Rules
 
 - **All hook functions are optional** — only define what you need
-- **`pkg_init` is synchronous** — keep it under 5ms; use lazy loading for slow tools
-- **Put lazy loading inside `pkg_init`** — do not create separate `*_lazy.zsh` files
+- **`pkg_init` is synchronous** — keep it under 5ms
 - **`PKG_CMD=""`** — set this when the tool is not a binary; pair with `PKG_CHECK_FUNC`
 - **Never use `curl | sh`** — always download to a temp file and verify a checksum first
 
-## Lazy loading example (for slow tools)
+## Idempotency example (for tools with `eval` init)
 
 ```zsh
 pkg_init() {
-    export TOOL_ROOT="$HOME/.tool"
-    export PATH="$TOOL_ROOT/bin:$PATH"
+    # Guard: don't re-initialize if already loaded (e.g. source ~/.zshrc)
+    [[ "${_DOTFILES_TOOL_LOADED:-}" == "1" ]] && return 0
 
-    _lazy_load_tool() {
-        # Idempotency guard — extra_cmds wrappers call this on every invocation
-        typeset -f tool >/dev/null 2>&1 && return 0
-        eval "$(tool init -)"
-    }
+    eval "$(tool activate zsh)"
 
-    create_lazy_wrapper "tool" "_lazy_load_tool" "tool-subcmd"
+    export _DOTFILES_TOOL_LOADED="1"
 }
 ```
 
-See `zsh/packages/develop/nvm.zsh`, `pyenv.zsh`, and `goenv.zsh` for real examples.
+See `zsh/packages/develop/vfox.zsh` for a real example with cross-platform install logic.

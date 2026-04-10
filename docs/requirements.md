@@ -30,7 +30,7 @@ The system must support three cumulative profiles:
 |-----------|------|-------------------|
 | `minimal` | `m`  | tmux |
 | `server`  | `s`  | minimal + bat, fzf, eza, fd, ripgrep, tealdeer, zoxide |
-| `develop` | `d`  | server + nvm, pyenv, goenv |
+| `develop` | `d`  | server + vfox |
 
 > **Note**: `sheldon` (zsh plugin manager) is a **core infrastructure dependency**, not a
 > user-facing tool. It is installed as part of the bootstrap process and loaded before any
@@ -50,7 +50,7 @@ A package file must be able to:
 - Declare a custom installer (`pkg_install`) when the tool is not in standard repos
 - Declare post-install setup steps (`pkg_post_install`)
 - Declare runtime initialization (`pkg_init`) that runs on every shell start
-- Define a custom existence check for tools that are not standard binaries (e.g. nvm)
+- Define a custom existence check for tools that are not standard binaries
 
 **Installation behavior:**
 - Installation only runs when `DOTFILES_VERBOSE=true` (i.e. during explicit `dotfiles install`)
@@ -63,7 +63,7 @@ A package file must be able to:
 
 ### FR-3: Lazy Loading
 
-Tools with slow startup time (nvm, pyenv, goenv) must be lazy-loaded:
+Tools with slow startup time must be lazy-loaded:
 
 - Shell wrappers intercept the **first invocation** of the tool's commands
 - On first use, the real tool initializes and all wrappers are replaced by real commands
@@ -73,13 +73,9 @@ Commands wrapped per tool:
 
 | Tool  | Commands always wrapped | Commands conditionally wrapped |
 |-------|------------------------|-------------------------------|
-| nvm   | `node`, `npm`, `npx`   | `yarn`, `pnpm` — only if found inside the nvm shims path |
-| pyenv | `python`, `python3`, `pip`, `pip3` | — |
-| goenv | `go`, `gofmt` | — |
+| vfox  | — | — (vfox is a compiled binary with fast startup; no lazy loading needed) |
 
-> **Why `yarn`/`pnpm` are conditional**: These tools can be installed globally (outside nvm).
-> Wrapping them unconditionally would intercept global installs and break them silently.
-> Only wrap if their resolved path is inside `$NVM_DIR`.
+> **Note:** vfox replaced nvm, pyenv, and goenv as a single universal version manager.
 
 ### FR-4: Symlink Management
 
@@ -158,7 +154,7 @@ The `bin/dotfiles` command must support these subcommands:
 - Shell startup must complete in **< 200ms** on a 2020+ laptop with SSD
   (reference: M1 MacBook Pro or equivalent Intel/AMD machine with 8GB+ RAM)
 - Measured with: `time zsh -i -c exit` (3-run average, discard first)
-- Heavy tools (nvm, pyenv, goenv) must not block startup (use lazy loading)
+- Heavy tools must not block startup (use lazy loading where needed)
 - `compinit` must run only once per day (cached via `~/.zcompdump`)
 
 ### NFR-2: Portability
@@ -173,12 +169,12 @@ The `bin/dotfiles` command must support these subcommands:
 - Re-sourcing `~/.zshrc` must not produce errors or duplicate environment state
 - Package init functions must be safe to call more than once:
   - `export PATH=...` prepends are acceptable only if guarded against duplicates
-  - `create_lazy_wrapper` must not be called again if the tool is already loaded
+  - `eval` initialization must not re-run if the tool is already loaded
   - If a tool is already initialized (real binary in PATH), `pkg_init` must not re-wrap it
-- Version manager packages (`nvm`, `pyenv`, `goenv`) require two idempotency guards:
+- Packages with non-trivial `pkg_init` logic require idempotency guards:
   1. **`pkg_init` entry guard** — check the load flag at the top of `pkg_init` and return
      early if set; prevents re-registering lazy wrappers on `source ~/.zshrc`
-  2. **`_lazy_load_<tool>` entry guard** — check the same flag at the top of the load
+  2. **Load function entry guard** — check the same flag at the top of the load
      function and return early if set; prevents extra_cmd wrappers (`npm`, `pip`, `go`)
      from re-running initialization on every invocation
 
@@ -194,7 +190,7 @@ The `bin/dotfiles` command must support these subcommands:
 - Adding a new package requires creating **exactly one file** in `zsh/packages/<tier>/`
 - No core file (`zshrc`, `zsh/lib/installer.zsh`, `zsh/core/*.zsh`) needs modification
 - Package files may only depend on functions from `zsh/lib/installer.zsh`,
-  `zsh/lib/lazy.zsh`, and `zsh/lib/platform.zsh`
+  and `zsh/lib/platform.zsh`
 
 ---
 

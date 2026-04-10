@@ -55,7 +55,6 @@ Current directory structure:
 │   │
 │   ├── lib/                        # Shared libraries — sourced before packages
 │   │   ├── installer.zsh           # Package lifecycle engine + logging + utilities
-│   │   ├── lazy.zsh                # Lazy loading (create_lazy_wrapper)
 │   │   └── platform.zsh            # OS/distro detection helpers
 │   │
 │   └── packages/                   # One .zsh file per tool, grouped by tier
@@ -71,9 +70,7 @@ Current directory structure:
 │       │   ├── tealdeer.zsh
 │       │   └── zoxide.zsh
 │       └── develop/
-│           ├── goenv.zsh
-│           ├── nvm.zsh
-│           └── pyenv.zsh
+│           └── vfox.zsh
 │
 ├── p10k.zsh                        # Powerlevel10k config → ~/.p10k.zsh
 ├── tmux.conf                       # Tmux config → ~/.tmux.conf
@@ -85,7 +82,7 @@ Current directory structure:
 - `zsh/` consolidates all zsh logic (replaces the current `zshrc.d/` directory)
 - Packages are grouped in subdirectories by tier — no magic number prefixes needed
 - Lazy loader logic lives **inside each package's `pkg_init()`** — no separate `*_lazy.zsh` files
-- `zsh/lib/` has exactly three files, each with a single responsibility
+- `zsh/lib/` has exactly two files, each with a single responsibility
 
 ---
 
@@ -106,7 +103,6 @@ Current directory structure:
   │       60-zcompile.zsh    — background .zwc bytecode compilation
   │
   ├── 2. Source zsh/lib/installer.zsh   — package lifecycle engine
-  │       Source zsh/lib/lazy.zsh       — create_lazy_wrapper
   │       Source zsh/lib/platform.zsh   — OS/distro detection
   │
   └── 3. Load packages for active profile:
@@ -148,7 +144,7 @@ To switch: `dotfiles profile server` (persists to `~/.zshenv`), then `source ~/.
 zsh/packages/<tier>/<name>.zsh
 
 tier — minimal | server | develop
-name — tool name, lowercase, hyphens allowed (e.g. fzf, ripgrep, goenv)
+name — tool name, lowercase, hyphens allowed (e.g. fzf, ripgrep, vfox)
 ```
 
 Files within a tier directory load in **alphabetical order**.
@@ -172,7 +168,7 @@ PKG_DESC="Short description" # Shown when tool is not installed
 PKG_CMD="toolname"           # Binary to check with `command -v` (defaults to PKG_NAME)
                              # Set to "" to use a custom check (see PKG_CHECK_FUNC)
 
-# Custom existence check — use when the tool is not a standard binary (e.g. nvm)
+# Custom existence check — use when the tool is not a standard binary
 # Must be a function name that returns 0 if installed, 1 if not
 PKG_CHECK_FUNC=""
 
@@ -262,54 +258,35 @@ pkg_init() {
 init_package_template "$PKG_NAME"
 ```
 
-### Custom Installer + Lazy Loading Example (nvm)
+### Custom Installer Example (vfox)
 
 ```zsh
 #!/usr/bin/env zsh
 
-PKG_NAME="nvm"
-PKG_DESC="Node Version Manager"
-PKG_CMD=""
-PKG_CHECK_FUNC="_nvm_is_installed"
-
-_nvm_is_installed() {
-    local dir="${NVM_DIR:-$HOME/.nvm}"
-    [[ -d "$dir" ]] && [[ -f "$dir/nvm.sh" ]]
-}
+PKG_NAME="vfox"
+PKG_DESC="Universal version manager for Node.js, Python, Go, and more"
 
 pkg_install() {
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+    local os="$(dotfiles_os)"
+    local pkg_mgr="$(dotfiles_pkg_manager)"
+
+    if [[ "$os" == "macos" ]] && [[ "$pkg_mgr" == "brew" ]]; then
+        brew install vfox || return 1
+    elif [[ "$pkg_mgr" == "apt" ]]; then
+        echo "deb [trusted=yes lang=none] https://apt.fury.io/versionfox/ /" | \
+            sudo tee /etc/apt/sources.list.d/versionfox.list >/dev/null
+        sudo apt-get update -qq && sudo apt-get install -y vfox || return 1
+    else
+        curl --proto '=https' --tlsv1.2 -fsSL \
+            https://raw.githubusercontent.com/version-fox/vfox/main/install.sh | bash || return 1
+    fi
 }
 
 pkg_init() {
-    export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
-
-    # Guard 1: don't re-register wrappers on source ~/.zshrc after nvm is loaded
-    [[ "${_DOTFILES_NVM_LOADED:-}" == "1" ]] && return 0
-
-    _lazy_load_nvm() {
-        # Guard 2: npm/npx wrappers call this on every invocation — must be a no-op after load
-        [[ "${_DOTFILES_NVM_LOADED:-}" == "1" ]] && return 0
-
-        [[ -f "$NVM_DIR/nvm.sh" ]] || return 1
-        source "$NVM_DIR/nvm.sh"
-        [[ -f "$NVM_DIR/bash_completion" ]] && source "$NVM_DIR/bash_completion" 2>/dev/null
-        typeset -f nvm >/dev/null 2>&1 || return 1
-        export _DOTFILES_NVM_LOADED="1"
-
-        # Auto-install LTS if no Node version is installed
-        if [[ -z "$(nvm list 2>/dev/null | grep -E 'v[0-9]+')" ]]; then
-            nvm install --lts && nvm alias default 'lts/*' && nvm use --lts
-        else
-            nvm use default &>/dev/null || nvm use --lts &>/dev/null || nvm use node &>/dev/null
-        fi
-    }
-
-    create_lazy_wrapper "nvm" "_lazy_load_nvm" "node" "npm" "npx"
-
-    # yarn/pnpm: only wrap if not already available globally (outside nvm)
-    command -v yarn &>/dev/null || create_lazy_wrapper "yarn" "_lazy_load_nvm"
-    command -v pnpm &>/dev/null || create_lazy_wrapper "pnpm" "_lazy_load_nvm"
+    # Single guard — vfox is a compiled binary, no lazy loading needed
+    [[ "${_DOTFILES_VFOX_LOADED:-}" == "1" ]] && return 0
+    eval "$(vfox activate zsh)"
+    export _DOTFILES_VFOX_LOADED="1"
 }
 
 init_package_template "$PKG_NAME"
@@ -353,7 +330,7 @@ init_package_template "$PKG_NAME"
 
 ## Lazy Loading
 
-Heavy tools (nvm, pyenv, goenv) take 100–500ms to initialize. Lazy loading defers this
+Heavy shell-script tools (e.g. nvm) take 100–500ms to initialize. Lazy loading defers this
 cost until the first time a related command is actually used.
 
 ### How It Works
@@ -399,13 +376,13 @@ cost until the first time a related command is actually used.
 $ type node
 node is a shell function
 
-# First invocation — wrapper fires, nvm initializes (~200ms, once only):
+# First invocation — wrapper fires, tool initializes (~200ms, once only):
 $ node --version
 v22.0.0
 
 # All subsequent calls — real binary, no overhead:
 $ type node
-node is /Users/user/.nvm/versions/node/v22.0.0/bin/node
+node is /path/to/node
 ```
 
 ### Lazy Loader Pattern (inline in pkg_init)
@@ -449,7 +426,7 @@ Sourced in `zshrc` before any package files. Provides:
 | `create_symlink target link` | `ln -sf` wrapper; skips if link already exists |
 
 > **Important**: `is_package_installed` uses `command -v`. It does **not** work for
-> shell-function-based tools (nvm, pyenv, goenv). Those must set `PKG_CHECK_FUNC`.
+> shell-function-based tools. Those must set `PKG_CHECK_FUNC`.
 
 ### `platform.zsh`
 
@@ -463,14 +440,6 @@ Sourced in `zshrc` before any package files. Provides:
 
 Used internally by `_dotfiles_install_package`. Package files can also call these
 directly for platform-specific `pkg_post_install` logic.
-
-### `lazy.zsh`
-
-Sourced in `zshrc` before any package files. Provides:
-
-| Function | Purpose |
-|----------|---------|
-| `create_lazy_wrapper cmd load_func [extras...]` | Register lazy-load wrappers for a command group |
 
 ---
 
@@ -587,9 +556,7 @@ for broken symlinks after the fact.
 | Package manager | Homebrew | apt / dnf / pacman / zypper |
 | zsh availability | System-provided (5.9+) | Must install (`apt install zsh`) |
 | `bat` binary name | `bat` | `bat` or `batcat` (handled in `pkg_post_install`) |
-| pyenv build deps | Xcode CLT | `build-essential`, `libssl-dev`, `libbz2-dev`, etc. |
-| nvm install | curl installer | curl installer |
-| goenv install | `git clone` | `git clone` |
+| vfox install | `brew install vfox` | apt repo or curl installer |
 | yabai / skhd | Config files only | Not applicable |
 | Unknown distro | n/a (brew covers all) | `pkg_install_fallback` (FR-7) |
 

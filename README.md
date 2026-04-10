@@ -20,7 +20,7 @@ Profiles are cumulative — each includes everything below it.
 |---------|-------|
 | `minimal` | sheldon, tmux |
 | `server` | minimal + bat, eza, fd, fzf, ripgrep, tealdeer, zoxide |
-| `develop` | server + nvm, pyenv, goenv |
+| `develop` | server + vfox (Node.js, Python, Go, etc.) |
 
 Switch profile anytime:
 
@@ -38,7 +38,7 @@ dotfiles profile server
 │   └── packages/
 │       ├── minimal/    # sheldon, tmux
 │       ├── server/     # bat, eza, fd, fzf, ripgrep, tealdeer, zoxide
-│       └── develop/    # nvm, pyenv, goenv
+│       └── develop/    # vfox
 ├── bin/
 │   └── dotfiles        # CLI (bash)
 ├── config/             # App configs (sheldon, bat, tealdeer, ripgrep, yabai, skhd)

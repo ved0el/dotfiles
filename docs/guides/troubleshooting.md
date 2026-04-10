@@ -41,9 +41,8 @@ dotfiles verify
 
 Check what type the command is (wrapper vs real binary):
 ```zsh
-type nvm     # → "nvm is a shell function" means lazy wrapper is registered
-nvm --version
-type nvm     # → "nvm is /path/to/nvm" means real binary loaded
+type vfox    # → "vfox is /path/to/vfox" means binary is installed
+vfox --version
 ```
 
 If the package shows as installed but `pkg_init` failed silently:
@@ -57,18 +56,18 @@ DOTFILES_VERBOSE=true zsh -i -c exit 2>&1 | head -50
 ```zsh
 # Before first use — should be a shell function
 type python
-# → python is a shell function from zsh/packages/develop/pyenv.zsh
+# → python is managed by vfox (zsh/packages/develop/vfox.zsh)
 
 # After first use — should be the real binary
 python --version
 type python
-# → python is /Users/you/.pyenv/shims/python
+# → python is /path/to/python (managed by vfox)
 ```
 
 If the real binary is still not found after first use:
-1. Verify the tool is actually installed: `pyenv versions` / `nvm list`
-2. Check that `pkg_init` sets PATH correctly before `create_lazy_wrapper`
-3. For pyenv specifically: `pyenv install <version>` then `pyenv global <version>`
+1. Verify the tool is actually installed: `vfox list`
+2. Check that `pkg_init` sets PATH correctly before initialization
+3. Install a version: `vfox install <sdk>@<version>` then `vfox use --global <sdk>@<version>`
 
 ## Symlinks are broken
 

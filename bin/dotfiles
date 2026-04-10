@@ -487,7 +487,6 @@ verify_packages() {
             [[ ":$PATH:" != *":$HOME/.local/bin:"* ]] && export PATH="$PATH:$HOME/.local/bin"
             source "$DOTFILES_ROOT/zsh/lib/platform.zsh"
             source "$DOTFILES_ROOT/zsh/lib/installer.zsh"
-            source "$DOTFILES_ROOT/zsh/lib/lazy.zsh"
 
             typeset -a pkg_dirs
             case "$DOTFILES_PROFILE" in
@@ -562,7 +561,6 @@ install_packages() {
         [[ ":$PATH:" != *":$HOME/.local/bin:"* ]] && export PATH="$PATH:$HOME/.local/bin"
         source "$DOTFILES_ROOT/zsh/lib/platform.zsh"
         source "$DOTFILES_ROOT/zsh/lib/installer.zsh"
-        source "$DOTFILES_ROOT/zsh/lib/lazy.zsh"
 
         typeset -a pkg_dirs
         case "$DOTFILES_PROFILE" in
@@ -601,7 +599,7 @@ install_packages() {
         develop)
             echo -e "  ${CYAN}${BULLET}${RESET} tmux, sheldon (minimal)"
             echo -e "  ${CYAN}${BULLET}${RESET} bat, fzf, eza, fd, ripgrep, tealdeer, zoxide (server)"
-            echo -e "  ${CYAN}${BULLET}${RESET} nvm, pyenv, goenv"
+            echo -e "  ${CYAN}${BULLET}${RESET} vfox"
             ;;
     esac
 
@@ -673,7 +671,7 @@ install_dotfiles() {
                 ;;
             develop)
                 echo -e "  ${GREEN}${CHECK}${RESET} Full development environment"
-                echo -e "  ${GREEN}${CHECK}${RESET} All server tools + dev tools (nvm, pyenv, goenv)"
+                echo -e "  ${GREEN}${CHECK}${RESET} All server tools + dev tools (vfox)"
                 ;;
         esac
     else
