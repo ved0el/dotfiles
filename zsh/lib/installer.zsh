@@ -139,14 +139,14 @@ init_package_template() {
         return 0
     fi
 
-    # Not installed — warn on normal startup, full install when VERBOSE=true
-    if [[ "${DOTFILES_VERBOSE:-false}" != "true" ]]; then
+    # Not installed — warn on normal startup, full install when DOTFILES_INSTALL=true
+    if [[ "${DOTFILES_INSTALL:-false}" != "true" ]]; then
         echo "[dotfiles] ${package_name} not installed — run: dotfiles install" >&2
         _dotfiles_cleanup_package_hooks
         return 0
     fi
 
-    # Full install flow (DOTFILES_VERBOSE=true)
+    # Full install flow (DOTFILES_INSTALL=true)
     echo
     _dotfiles_log_warning "${package_name} not found — ${package_desc}"
 

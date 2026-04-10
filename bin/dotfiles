@@ -553,6 +553,7 @@ install_packages() {
     # DOTFILES_VERBOSE is forced true here so package lifecycle output is visible
     # during install. The user's saved DOTFILES_VERBOSE only affects normal shell startup.
     local exit_code=0
+    DOTFILES_INSTALL=true \
     DOTFILES_VERBOSE=true \
     DOTFILES_PROFILE="$DOTFILES_PROFILE" \
     DOTFILES_ROOT="$DOTFILES_ROOT" \
