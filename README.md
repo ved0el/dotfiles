@@ -19,8 +19,7 @@ Profiles are cumulative — each includes everything below it.
 | Profile | Tools |
 |---------|-------|
 | `minimal` | sheldon, tmux |
-| `server` | minimal + bat, eza, fd, fzf, ripgrep, tealdeer, zoxide |
-| `develop` | server + vfox (Node.js, Python, Go, etc.) |
+| `server` | minimal + bat, eza, fd, fzf, ripgrep, tealdeer, zoxide, vfox |
 
 Switch profile anytime:
 
@@ -38,7 +37,7 @@ dotfiles profile server
 │   └── packages/
 │       ├── minimal/    # sheldon, tmux
 │       ├── server/     # bat, eza, fd, fzf, ripgrep, tealdeer, zoxide
-│       └── develop/    # vfox
+│       └── (vfox.zsh is in server/)
 ├── bin/
 │   └── dotfiles        # CLI (bash)
 ├── config/             # App configs (sheldon, bat, tealdeer, ripgrep, yabai, skhd)
@@ -79,7 +78,7 @@ dotfiles                  # interactive menu
 dotfiles install          # install all packages for current profile
 dotfiles link             # create/recreate symlinks
 dotfiles verify           # check symlinks + report missing packages
-dotfiles profile develop  # switch profile (persists across sessions)
+dotfiles profile server   # switch profile (persists across sessions)
 dotfiles update           # pull latest changes
 dotfiles uninstall        # remove symlinks and config
 ```

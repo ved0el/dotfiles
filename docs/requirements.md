@@ -29,8 +29,7 @@ The system must support three cumulative profiles:
 | Profile   | Tier | User-facing tools |
 |-----------|------|-------------------|
 | `minimal` | `m`  | tmux |
-| `server`  | `s`  | minimal + bat, fzf, eza, fd, ripgrep, tealdeer, zoxide |
-| `develop` | `d`  | server + vfox |
+| `server`  | `s`  | minimal + bat, fzf, eza, fd, ripgrep, tealdeer, zoxide, vfox |
 
 > **Note**: `sheldon` (zsh plugin manager) is a **core infrastructure dependency**, not a
 > user-facing tool. It is installed as part of the bootstrap process and loaded before any
@@ -199,7 +198,7 @@ The `bin/dotfiles` command must support these subcommands:
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `DOTFILES_ROOT` | `~/.dotfiles` | Absolute path to the dotfiles repo |
-| `DOTFILES_PROFILE` | `minimal` | Active profile: `minimal`, `server`, or `develop` |
+| `DOTFILES_PROFILE` | `minimal` | Active profile: `minimal` or `server` |
 | `DOTFILES_VERBOSE` | `false` | Enable install logging and trigger installation flow |
 | `DOTFILES_BRANCH` | `main` | Git branch used by `dotfiles update` |
 

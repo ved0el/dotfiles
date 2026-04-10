@@ -56,7 +56,7 @@ DOTFILES_VERBOSE=true zsh -i -c exit 2>&1 | head -50
 ```zsh
 # Before first use — should be a shell function
 type python
-# → python is managed by vfox (zsh/packages/develop/vfox.zsh)
+# → python is managed by vfox (zsh/packages/server/vfox.zsh)
 
 # After first use — should be the real binary
 python --version

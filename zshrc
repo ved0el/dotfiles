@@ -23,14 +23,13 @@ unset _f
 source "$DOTFILES_ROOT/zsh/lib/platform.zsh"
 source "$DOTFILES_ROOT/zsh/lib/installer.zsh"
 
-# Load packages for active profile (cumulative: minimal ⊆ server ⊆ develop)
+# Load packages for active profile (cumulative: minimal ⊆ server)
 typeset -a _pkg_dirs
 case "${DOTFILES_PROFILE}" in
     minimal) _pkg_dirs=("$DOTFILES_ROOT/zsh/packages/minimal") ;;
     server)  _pkg_dirs=("$DOTFILES_ROOT/zsh/packages/minimal" "$DOTFILES_ROOT/zsh/packages/server") ;;
-    develop) _pkg_dirs=("$DOTFILES_ROOT/zsh/packages/minimal" "$DOTFILES_ROOT/zsh/packages/server" "$DOTFILES_ROOT/zsh/packages/develop") ;;
     *)
-        echo "[dotfiles] Unknown profile '${DOTFILES_PROFILE}' — defaulting to minimal. Run: dotfiles profile <minimal|server|develop>" >&2
+        echo "[dotfiles] Unknown profile '${DOTFILES_PROFILE}' — defaulting to minimal. Run: dotfiles profile <minimal|server>" >&2
         _pkg_dirs=("$DOTFILES_ROOT/zsh/packages/minimal") ;;
 esac
 for _pkg_dir in "$_pkg_dirs[@]"; do

@@ -8,9 +8,8 @@ A package is a single `.zsh` file in `zsh/packages/<tier>/`. No other file needs
 |------|-----------|-------------|
 | `minimal` | `zsh/packages/minimal/` | Tools needed even on a bare server |
 | `server` | `zsh/packages/server/` | Productivity tools for any dev/ops machine |
-| `develop` | `zsh/packages/develop/` | Language runtimes and dev-only tools |
 
-Profiles are cumulative: `develop` includes `server` which includes `minimal`.
+Profiles are cumulative: `server` includes `minimal`.
 
 ## Step 2 — Create the package file
 
@@ -104,4 +103,4 @@ pkg_init() {
 }
 ```
 
-See `zsh/packages/develop/vfox.zsh` for a real example with cross-platform install logic.
+See `zsh/packages/server/vfox.zsh` for a real example with cross-platform install logic.

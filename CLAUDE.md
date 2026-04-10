@@ -10,8 +10,7 @@ Three cumulative profiles:
 | Profile   | Tools added |
 |-----------|-------------|
 | `minimal` | tmux (+ sheldon infrastructure) |
-| `server`  | bat, eza, fd, fzf, ripgrep, tealdeer, zoxide |
-| `develop` | vfox (universal version manager for Node.js, Python, Go, etc.) |
+| `server`  | bat, eza, fd, fzf, ripgrep, tealdeer, zoxide, vfox |
 
 ---
 
@@ -46,7 +45,7 @@ How to add a package: `docs/guides/adding-a-package.md`
 
 ## Adding a New Package
 
-1. Pick the right tier: `minimal` | `server` | `develop`
+1. Pick the right tier: `minimal` | `server`
 2. Create **one file**: `zsh/packages/<tier>/<toolname>.zsh`
 3. Do **not** modify `zshrc`, `installer.zsh`, or any other core file
 4. Call `init_package_template "$PKG_NAME"` at the end

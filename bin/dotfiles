@@ -111,7 +111,7 @@ log_verbose() { is_verbose && echo -e "${MAGENTA}[VERBOSE]${RESET} ${GRAY}$1${RE
 # Validate profile value (returns 0 if valid, 1 if invalid)
 validate_profile() {
     local profile="$1"
-    local valid_profiles=("minimal" "server" "develop")
+    local valid_profiles=("minimal" "server")
 
     for valid_profile in "${valid_profiles[@]}"; do
         [[ "$profile" == "$valid_profile" ]] && return 0
@@ -491,11 +491,8 @@ verify_packages() {
             typeset -a pkg_dirs
             case "$DOTFILES_PROFILE" in
                 minimal) pkg_dirs=("$DOTFILES_ROOT/zsh/packages/minimal") ;;
-                server)  pkg_dirs=("$DOTFILES_ROOT/zsh/packages/minimal"
-                                   "$DOTFILES_ROOT/zsh/packages/server") ;;
                 *)       pkg_dirs=("$DOTFILES_ROOT/zsh/packages/minimal"
-                                   "$DOTFILES_ROOT/zsh/packages/server"
-                                   "$DOTFILES_ROOT/zsh/packages/develop") ;;
+                                   "$DOTFILES_ROOT/zsh/packages/server") ;;
             esac
 
             for pkg_dir in "$pkg_dirs[@]"; do
@@ -566,11 +563,8 @@ install_packages() {
         typeset -a pkg_dirs
         case "$DOTFILES_PROFILE" in
             minimal) pkg_dirs=("$DOTFILES_ROOT/zsh/packages/minimal") ;;
-            server)  pkg_dirs=("$DOTFILES_ROOT/zsh/packages/minimal"
-                               "$DOTFILES_ROOT/zsh/packages/server") ;;
             *)       pkg_dirs=("$DOTFILES_ROOT/zsh/packages/minimal"
-                               "$DOTFILES_ROOT/zsh/packages/server"
-                               "$DOTFILES_ROOT/zsh/packages/develop") ;;
+                               "$DOTFILES_ROOT/zsh/packages/server") ;;
         esac
 
         for pkg_dir in "$pkg_dirs[@]"; do
@@ -595,12 +589,7 @@ install_packages() {
             ;;
         server)
             echo -e "  ${CYAN}${BULLET}${RESET} tmux, sheldon (minimal)"
-            echo -e "  ${CYAN}${BULLET}${RESET} bat, fzf, eza, fd, ripgrep, tealdeer, zoxide"
-            ;;
-        develop)
-            echo -e "  ${CYAN}${BULLET}${RESET} tmux, sheldon (minimal)"
-            echo -e "  ${CYAN}${BULLET}${RESET} bat, fzf, eza, fd, ripgrep, tealdeer, zoxide (server)"
-            echo -e "  ${CYAN}${BULLET}${RESET} vfox"
+            echo -e "  ${CYAN}${BULLET}${RESET} bat, fzf, eza, fd, ripgrep, tealdeer, zoxide, vfox"
             ;;
     esac
 
@@ -668,11 +657,7 @@ install_dotfiles() {
                 echo -e "  ${GREEN}${CHECK}${RESET} Shell essentials (zsh, sheldon, tmux)"
                 ;;
             server)
-                echo -e "  ${GREEN}${CHECK}${RESET} Shell + utilities (bat, fzf, eza, fd, ripgrep, tealdeer, zoxide)"
-                ;;
-            develop)
-                echo -e "  ${GREEN}${CHECK}${RESET} Full development environment"
-                echo -e "  ${GREEN}${CHECK}${RESET} All server tools + dev tools (vfox)"
+                echo -e "  ${GREEN}${CHECK}${RESET} Shell + utilities + vfox version manager"
                 ;;
         esac
     else
@@ -778,7 +763,7 @@ show_menu() {
     echo
     echo -e "${BOLD}${WHITE}Available Actions:${RESET}"
     echo -e "  ${CYAN}1)${RESET} Install/Update dotfiles"
-    echo -e "  ${CYAN}2)${RESET} Change profile (minimal/server/develop)"
+    echo -e "  ${CYAN}2)${RESET} Change profile (minimal/server)"
     echo -e "  ${CYAN}3)${RESET} Create/refresh symlinks only"
     echo -e "  ${CYAN}4)${RESET} Install required packages"
     echo -e "  ${CYAN}5)${RESET} Verify symlinks"
@@ -804,7 +789,7 @@ interactive_menu() {
                 with_menu_output install_dotfiles
                 ;;
             2)
-                echo -n "Enter new profile (minimal/server/develop): "
+                echo -n "Enter new profile (minimal/server): "
                 read -r new_profile
                 if validate_profile "$new_profile" 2>/dev/null; then
                     export DOTFILES_PROFILE="$new_profile"
@@ -857,8 +842,7 @@ interactive_menu() {
                 echo
                 echo -e "${BOLD}${WHITE}Profiles:${RESET}"
                 echo -e "  ${YELLOW}minimal${RESET}  - Shell essentials (sheldon, tmux)"
-                echo -e "  ${YELLOW}server${RESET}   - Shell + utilities (bat, fzf, eza, etc.)"
-                echo -e "  ${YELLOW}develop${RESET}  - Full development environment"
+                echo -e "  ${YELLOW}server${RESET}   - Shell + utilities + vfox version manager"
                 echo
                 echo -e "${BOLD}${WHITE}Environment Variables:${RESET}"
                 echo -e "  ${CYAN}DOTFILES_ROOT${RESET}     - Installation directory"
@@ -900,7 +884,7 @@ COMMANDS:
               • Update: hard reset + pull with rebase, relink files, start new shell
   uninstall   Remove all dotfiles and configuration
   link        Create or refresh symlinks only
-  profile     Change profile (minimal/server/develop)
+  profile     Change profile (minimal/server)
   packages    Install required packages for current profile
   verify      Verify all symlinks are working
   version     Show version information
@@ -916,7 +900,7 @@ EXAMPLES:
   $SCRIPT_NAME install            # Install/update dotfiles
   $SCRIPT_NAME profile server     # Change to server profile
   $SCRIPT_NAME verify             # Check symlink status
-  DOTFILES_PROFILE=develop $SCRIPT_NAME install
+  DOTFILES_PROFILE=server $SCRIPT_NAME install
 
 For more information, visit: $DOCS_URL
 EOF
@@ -1002,7 +986,7 @@ handle_profile_command() {
     local new_profile="$1"
 
     if [[ -z "$new_profile" ]]; then
-        log_error "Profile name required. Usage: $SCRIPT_NAME profile <minimal|server|develop>"
+        log_error "Profile name required. Usage: $SCRIPT_NAME profile <minimal|server>"
         return 1
     fi
 

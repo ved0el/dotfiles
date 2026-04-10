@@ -69,8 +69,7 @@ Current directory structure:
 │       │   ├── ripgrep.zsh
 │       │   ├── tealdeer.zsh
 │       │   └── zoxide.zsh
-│       └── develop/
-│           └── vfox.zsh
+│       │   └── vfox.zsh
 │
 ├── p10k.zsh                        # Powerlevel10k config → ~/.p10k.zsh
 ├── tmux.conf                       # Tmux config → ~/.tmux.conf
@@ -107,8 +106,7 @@ Current directory structure:
   │
   └── 3. Load packages for active profile:
           minimal tier:  always loaded
-          server tier:   loaded when DOTFILES_PROFILE = server | develop
-          develop tier:  loaded only when DOTFILES_PROFILE = develop
+          server tier:   loaded when DOTFILES_PROFILE = server
           │
           Each package file calls init_package_template, which either:
             (a) Tool installed  → run pkg_init
@@ -129,7 +127,6 @@ Profiles are **cumulative** — each tier includes all lower tiers:
 |-----------|-------------|-------------------|
 | `minimal` | `minimal`   | `zsh/packages/minimal/` |
 | `server`  | `minimal` + `server` | + `zsh/packages/server/` |
-| `develop` | `minimal` + `server` + `develop` | + `zsh/packages/develop/` |
 
 The profile is read from `$DOTFILES_PROFILE` at shell startup.
 To switch: `dotfiles profile server` (persists to `~/.zshenv`), then `source ~/.zshrc`.
@@ -143,7 +140,7 @@ To switch: `dotfiles profile server` (persists to `~/.zshenv`), then `source ~/.
 ```
 zsh/packages/<tier>/<name>.zsh
 
-tier — minimal | server | develop
+tier — minimal | server
 name — tool name, lowercase, hyphens allowed (e.g. fzf, ripgrep, vfox)
 ```
 
@@ -155,7 +152,7 @@ Files within a tier directory load in **alphabetical order**.
   would load before sheldon, which breaks the plugin system.
 - **Rule**: If a package has a strict load-order requirement, prefix its filename with a
   two-digit number: `00-sheldon.zsh` loads before everything else regardless of new additions.
-- Non-ordered packages in `server/` and `develop/` can use plain names — they have no
+- Non-ordered packages in `server/` can use plain names — they have no
   cross-dependencies and alphabetical order is acceptable.
 
 ### Package Lifecycle API
@@ -500,7 +497,7 @@ The CLI is a Bash script. Each subcommand delegates to an internal function.
 
 ### `dotfiles profile <name>`
 
-1. Validates `<name>` is one of `minimal`, `server`, `develop`
+1. Validates `<name>` is one of `minimal`, `server`
 2. Updates `DOTFILES_PROFILE=<name>` in `~/.zshenv`:
    - If the line already exists: replaces it with `sed -i`
    - If it does not exist: appends it
