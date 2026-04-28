@@ -371,6 +371,16 @@ link_directory_files() {
         local name=$(basename "$item")
         local target="$target_prefix$name"
 
+        # Allow caller-provided extra exclusions via DOTFILES_CONFIG_EXCLUDE array
+        local extra_excluded=false
+        if [[ -n "${DOTFILES_CONFIG_EXCLUDE+x}" ]]; then
+            local _ex
+            for _ex in "${DOTFILES_CONFIG_EXCLUDE[@]}"; do
+                [[ "$name" == "$_ex" ]] && { extra_excluded=true; break; }
+            done
+        fi
+        [[ "$extra_excluded" == "true" ]] && continue
+
         # Ensure target directory exists
         local target_dir
         target_dir=$(dirname "$target")
@@ -397,9 +407,16 @@ create_symlinks() {
     # Link dotfiles (files in root directory)
     link_directory_files "$DOTFILES_ROOT" "$HOME/." "Linking dotfiles..."
 
-    # Link config files
+    # Link config files (skip 'claude' — it lives at ~/.claude, not ~/.config/claude)
     mkdir -p "$HOME/.config"
-    link_directory_files "$DOTFILES_ROOT/config" "$HOME/.config/" "Linking config files..."
+    DOTFILES_CONFIG_EXCLUDE="claude" \
+        link_directory_files "$DOTFILES_ROOT/config" "$HOME/.config/" "Linking config files..."
+
+    # Link Claude Code config files individually into ~/.claude/
+    if [[ -d "$DOTFILES_ROOT/config/claude" ]]; then
+        mkdir -p "$HOME/.claude"
+        link_directory_files "$DOTFILES_ROOT/config/claude" "$HOME/.claude/" "Linking Claude Code config..."
+    fi
 }
 
 # Check symlinks in a directory
@@ -421,6 +438,11 @@ check_directory_symlinks() {
 
         local name=$(basename "$item")
         local target="$target_prefix$name"
+
+        # Honor caller-provided ":"-separated exclusion list
+        if [[ -n "${DOTFILES_CONFIG_EXCLUDE:-}" ]] && [[ ":${DOTFILES_CONFIG_EXCLUDE}:" == *":${name}:"* ]]; then
+            continue
+        fi
 
         if ! should_exclude "$name" && [[ -f "$item" || -d "$item" ]]; then
             ((item_count++))
@@ -451,8 +473,13 @@ verify_symlinks() {
     # Check dotfiles symlinks
     check_directory_symlinks "$DOTFILES_ROOT" "$HOME/." "Checking dotfiles symlinks..." total_links broken_links
 
-    # Check config files symlinks
-    check_directory_symlinks "$DOTFILES_ROOT/config" "$HOME/.config/" "Checking config files symlinks..." total_links broken_links
+    # Check config files symlinks (skip 'claude' — checked separately below)
+    DOTFILES_CONFIG_EXCLUDE="claude" \
+        check_directory_symlinks "$DOTFILES_ROOT/config" "$HOME/.config/" "Checking config files symlinks..." total_links broken_links
+
+    # Check Claude Code config symlinks (~/.claude/)
+    [[ -d "$DOTFILES_ROOT/config/claude" ]] && \
+        check_directory_symlinks "$DOTFILES_ROOT/config/claude" "$HOME/.claude/" "Checking Claude Code config symlinks..." total_links broken_links
 
     # Summary (always show)
     echo
@@ -697,6 +724,11 @@ remove_symlinks_from_dir() {
         local name=$(basename "$item")
         local target="$target_prefix$name"
 
+        # Honor caller-provided ":"-separated exclusion list
+        if [[ -n "${DOTFILES_CONFIG_EXCLUDE:-}" ]] && [[ ":${DOTFILES_CONFIG_EXCLUDE}:" == *":${name}:"* ]]; then
+            continue
+        fi
+
         local link_target
         link_target="$(readlink "$target" 2>/dev/null)"
         if [[ -L "$target" ]] && [[ "$link_target" == "$DOTFILES_ROOT/"* || "$link_target" == "$DOTFILES_ROOT" ]]; then
@@ -718,7 +750,12 @@ uninstall_dotfiles() {
 
     # Remove root and config symlinks using shared function
     remove_symlinks_from_dir "$DOTFILES_ROOT" "$HOME/." unlink_count
-    remove_symlinks_from_dir "$DOTFILES_ROOT/config" "$HOME/.config/" unlink_count
+    DOTFILES_CONFIG_EXCLUDE="claude" \
+        remove_symlinks_from_dir "$DOTFILES_ROOT/config" "$HOME/.config/" unlink_count
+
+    # Remove Claude Code config symlinks
+    [[ -d "$DOTFILES_ROOT/config/claude" ]] && \
+        remove_symlinks_from_dir "$DOTFILES_ROOT/config/claude" "$HOME/.claude/" unlink_count
 
     # Remove from .zshenv
     [[ -f "$CONFIG_FILE" ]] && {
