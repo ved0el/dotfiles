@@ -1,230 +1,197 @@
-#!/usr/bin/env zsh
+#!/bin/bash
 # =============================================================================
-# Claude Code 3-line statusline — tuned for vibe-coding monitoring
+# Claude Code 3-line statusline — vibe-coding edition
 # =============================================================================
-# Line 1 — IDENTITY:  cwd · branch[*] [↑↓] · model              [⚡AUTO/📋PLAN]
-# Line 2 — BURN:      ctx [bar] %  ·  in/out/cache tokens  ·  $cost
-# Line 3 — VELOCITY:  +adds -dels · Nm wall (P% api) · style · HH:MM
+# Line 1  WHERE:    📁 cwd  🔀 branch[✱] [↑↓]  +adds −dels  🌳 worktree
+# Line 2  ENGINE:   🤖 model  🎚️ effort  🧠 used%
+# Line 3  STATUS:   💵 cost  ⏱️ duration  🚦 5h X% (2pm)  🚦 7d Y% (Mon 9am)  👤 agent
 # =============================================================================
 
-set -u
+input=$(cat)
+J() { jq -r "$1 // empty" 2>/dev/null <<<"$input"; }
+SETTINGS="$HOME/.claude/settings.json"
 
-# -----------------------------------------------------------------------------
-# Read JSON input
-# -----------------------------------------------------------------------------
-input="$(cat)"
-
-# Bail quietly if jq is missing
-if ! command -v jq >/dev/null 2>&1; then
-    printf '%s' "(install jq for statusline)"
-    exit 0
+# Optional: capture last render for debugging (set DEBUG_STATUSLINE=1 in env)
+if [ "${DEBUG_STATUSLINE:-0}" = "1" ]; then
+	{
+		echo "--- INPUT @ $(date '+%H:%M:%S') ---"
+		printf '%s\n' "$input"
+	} >/tmp/cc-statusline-debug.log
 fi
 
-J() { printf '%s' "$input" | jq -r "$1 // empty" 2>/dev/null; }
+# --- Extract (official schema) -----------------------------------------------
+MODEL=$(J '.model.display_name')
+DIR=$(J '.workspace.current_dir // .cwd')
+AGENT=$(J '.agent.name')
+WORKTREE=$(J '.worktree.name // .workspace.git_worktree')
 
-# -----------------------------------------------------------------------------
-# Extract all params up front
-# -----------------------------------------------------------------------------
-cwd="$(J '.workspace.current_dir // .cwd')"
-project_dir="$(J '.workspace.project_dir')"
-model_name="$(J '.model.display_name')"
-version="$(J '.version')"
-output_style="$(J '.output_style.name')"
-permission_mode="$(J '.permission_mode')"
+EFFORT=$(J '.effort.level')
+[ -z "$EFFORT" ] && [ -f "$SETTINGS" ] &&
+	EFFORT=$(jq -r '.effortLevel // empty' "$SETTINGS" 2>/dev/null)
 
-cost_usd="$(J '.cost.total_cost_usd')"
-duration_ms="$(J '.cost.total_duration_ms')"
-api_ms="$(J '.cost.total_api_duration_ms')"
-lines_added="$(J '.cost.total_lines_added')"
-lines_removed="$(J '.cost.total_lines_removed')"
+COST=$(J '.cost.total_cost_usd // 0')
+DUR_MS=$(J '.cost.total_duration_ms // 0')
+ADDS=$(J '.cost.total_lines_added // 0')
+DELS=$(J '.cost.total_lines_removed // 0')
+PCT_USED=$(J '.context_window.used_percentage // 0' | cut -d. -f1)
 
-ctx_pct="$(J '.context_window.remaining_percentage')"
-tok_in="$(J '.context_window.input_tokens')"
-tok_out="$(J '.context_window.output_tokens')"
-tok_cache="$(J '.context_window.cached_tokens')"
+RL5_PCT=$(J '.rate_limits.five_hour.used_percentage')
+RL5_RESET=$(J '.rate_limits.five_hour.resets_at')
+RL7_PCT=$(J '.rate_limits.seven_day.used_percentage')
+RL7_RESET=$(J '.rate_limits.seven_day.resets_at')
 
-# -----------------------------------------------------------------------------
-# Color helpers (no-op when not a TTY)
-# -----------------------------------------------------------------------------
-if [ -t 1 ] || [ "${FORCE_COLOR:-0}" = "1" ]; then
-    C_RESET=$'\033[0m'      C_BOLD=$'\033[1m'        C_DIM=$'\033[2m'
-    C_RED=$'\033[31m'       C_GRN=$'\033[32m'        C_YEL=$'\033[33m'
-    C_BLU=$'\033[34m'       C_MAG=$'\033[35m'        C_CYA=$'\033[36m'
-    C_GRY=$'\033[90m'
-    C_BRED=$'\033[1;31m'    C_BYEL=$'\033[1;33m'     C_BMAG=$'\033[1;35m'
-else
-    C_RESET= C_BOLD= C_DIM= C_RED= C_GRN= C_YEL= C_BLU= C_MAG= C_CYA= C_GRY=
-    C_BRED= C_BYEL= C_BMAG=
-fi
+# --- Colors ------------------------------------------------------------------
+C='\033[36m' M='\033[35m' G='\033[32m' Y='\033[33m' R='\033[31m'
+K='\033[90m' W='\033[1m' D='\033[2m' X='\033[0m'
+BR='\033[1;31m' BY='\033[1;33m' BM='\033[1;35m' BC='\033[1;36m'
 
-# -----------------------------------------------------------------------------
-# Formatters
-# -----------------------------------------------------------------------------
+# --- Icons (emoji set — swap any of these to taste) --------------------------
+ICON_DIR="📁"
+ICON_GIT="🔀"
+ICON_MODEL="🤖"
+ICON_EFFORT="🎚️"
+ICON_CTX="🧠"
+ICON_COST="💵"
+ICON_TIME="⏱️"
+ICON_LIMIT="🚦"
+ICON_AGENT="👤"
+ICON_TREE="🌳"
 
-# Abbreviate $HOME → ~ and trim to last 3 path segments
-fmt_path() {
-    local p="$1"
-    [ -z "$p" ] && return
-    p="${p/#$HOME/~}"
-    local segs="${p//[^\/]/}"
-    if [ "${#segs}" -gt 3 ]; then
-        # keep last 3 segments, prefix with …
-        p="…/$(echo "$p" | awk -F/ '{print $(NF-2)"/"$(NF-1)"/"$NF}')"
-    fi
-    printf '%s' "$p"
+# --- Helpers -----------------------------------------------------------------
+short_path() {
+	local p="${1/#$HOME/~}"
+	local s="${p//[^\/]/}"
+	if [ "${#s}" -gt 3 ]; then
+		p="…/$(awk -F/ '{print $(NF-2)"/"$(NF-1)"/"$NF}' <<<"$p")"
+	fi
+	echo "$p"
 }
 
-# 12345 → 12.3k, 1234567 → 1.2M
-fmt_num() {
-    local n="$1"
-    [ -z "$n" ] || [ "$n" = "0" ] && { printf '0'; return; }
-    awk -v n="$n" 'BEGIN {
-        if (n < 1000)        printf "%d", n
-        else if (n < 1e6)    printf "%.1fk", n/1000
-        else                 printf "%.1fM", n/1e6
-    }'
+# 3-tier threshold color: returns RED if val>=hi, YELLOW if >=mid, else GREEN
+pct_color() {
+	if [ "$1" -ge "$2" ]; then
+		echo "$R"
+	elif [ "$1" -ge "$3" ]; then
+		echo "$Y"
+	else echo "$G"; fi
 }
 
-# Pretty duration: 23m, 1h12m, 45s
-fmt_duration() {
-    local ms="$1"
-    [ -z "$ms" ] || [ "$ms" = "0" ] && { printf '0s'; return; }
-    awk -v ms="$ms" 'BEGIN {
-        s = int(ms/1000)
-        h = int(s/3600); m = int((s%3600)/60); ss = s%60
-        if (h > 0)      printf "%dh%dm", h, m
-        else if (m > 0) printf "%dm", m
-        else            printf "%ds", ss
-    }'
+fmt_reset() {
+	local ts="$1"
+	[ -z "$ts" ] && return
+	local epoch=""
+	if [[ "$ts" =~ ^[0-9]{10}$ ]]; then
+		epoch="$ts"
+	elif [[ "$ts" =~ ^[0-9]{13}$ ]]; then
+		epoch=$((ts / 1000))
+	else
+		epoch=$(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$ts" +%s 2>/dev/null)
+		[ -z "$epoch" ] && epoch=$(date -j -f "%Y-%m-%dT%H:%M:%S" "${ts%Z}" +%s 2>/dev/null)
+		[ -z "$epoch" ] && epoch=$(date -d "$ts" +%s 2>/dev/null)
+	fi
+	[ -z "$epoch" ] && return
+
+	local today that_day
+	today=$(date +%Y%m%d)
+	that_day=$(date -r "$epoch" +%Y%m%d 2>/dev/null)
+	if [ "$today" = "$that_day" ]; then
+		date -r "$epoch" "+%-I%p" 2>/dev/null | tr A-Z a-z
+	else
+		date -r "$epoch" "+%a %-I%p" 2>/dev/null | sed -E 's/AM$/am/; s/PM$/pm/'
+	fi
 }
 
-# Build a 10-cell context bar
-ctx_bar() {
-    local pct="$1"
-    [ -z "$pct" ] && { printf '          '; return; }
-    awk -v p="$pct" 'BEGIN {
-        filled = int(p / 10 + 0.5)
-        if (filled > 10) filled = 10
-        if (filled < 0)  filled = 0
-        for (i=0; i<filled; i++)  printf "▓"
-        for (i=filled; i<10; i++) printf "░"
-    }'
-}
+# --- Context color (used %) -------------------------------------------------
+CTX_C=$(pct_color "$PCT_USED" 70 40)
 
-# -----------------------------------------------------------------------------
-# Git info
-# -----------------------------------------------------------------------------
-git_branch=""
-git_dirty=""
-git_ahead=""
-git_behind=""
-if [ -n "$cwd" ]; then
-    cwd_real="${cwd/#\~/$HOME}"
-    if [ -d "$cwd_real/.git" ] || GIT_OPTIONAL_LOCKS=0 git -C "$cwd_real" rev-parse --git-dir >/dev/null 2>&1; then
-        git_branch="$(GIT_OPTIONAL_LOCKS=0 git -C "$cwd_real" symbolic-ref --short HEAD 2>/dev/null \
-                       || GIT_OPTIONAL_LOCKS=0 git -C "$cwd_real" rev-parse --short HEAD 2>/dev/null)"
-        if [ -n "$(GIT_OPTIONAL_LOCKS=0 git -C "$cwd_real" status --porcelain 2>/dev/null)" ]; then
-            git_dirty="✱"
-        fi
-        # Ahead/behind vs upstream
-        local_remote="$(GIT_OPTIONAL_LOCKS=0 git -C "$cwd_real" rev-list --left-right --count '@{u}...HEAD' 2>/dev/null)"
-        if [ -n "$local_remote" ]; then
-            git_behind="${local_remote%%[[:space:]]*}"
-            git_ahead="${local_remote##*[[:space:]]}"
-            [ "$git_ahead"  = "0" ] && git_ahead=""
-            [ "$git_behind" = "0" ] && git_behind=""
-        fi
-    fi
-fi
-
-# -----------------------------------------------------------------------------
-# Build line 1 — IDENTITY
-# -----------------------------------------------------------------------------
-line1=""
-[ -n "$cwd" ]        && line1+="${C_CYA}$(fmt_path "$cwd")${C_RESET}"
-if [ -n "$git_branch" ]; then
-    line1+="${C_DIM} · ${C_RESET}${C_MAG}${git_branch}${C_RESET}"
-    [ -n "$git_dirty"  ] && line1+="${C_RED}${git_dirty}${C_RESET}"
-    [ -n "$git_ahead"  ] && line1+=" ${C_YEL}↑${git_ahead}${C_RESET}"
-    [ -n "$git_behind" ] && line1+=" ${C_YEL}↓${git_behind}${C_RESET}"
-fi
-[ -n "$model_name" ] && line1+="${C_DIM} · ${C_RESET}${C_BYEL}●${model_name}${C_RESET}"
-
-# Permission-mode warning (only if non-default)
-case "$permission_mode" in
-    auto|bypassPermissions|acceptEdits)
-        mode_label="$(printf '%s' "$permission_mode" | tr '[:lower:]' '[:upper:]')"
-        line1+="   ${C_BRED}⚡${mode_label}${C_RESET}"
-        ;;
-    plan)
-        line1+="   ${C_BMAG}📋PLAN${C_RESET}"
-        ;;
+# --- Effort color ------------------------------------------------------------
+case "$EFFORT" in
+high) EFFORT_C="$R" ;;
+medium) EFFORT_C="$Y" ;;
+low) EFFORT_C="$G" ;;
+*) EFFORT_C="$D" ;;
 esac
 
-# -----------------------------------------------------------------------------
-# Build line 2 — BURN (context, tokens, cost)
-# -----------------------------------------------------------------------------
-line2=""
-if [ -n "$ctx_pct" ]; then
-    pct_int=$(awk -v p="$ctx_pct" 'BEGIN { printf "%d", p+0.5 }')
-    if   [ "$pct_int" -le 10 ]; then bar_color="$C_RED"
-    elif [ "$pct_int" -le 30 ]; then bar_color="$C_YEL"
-    else                              bar_color="$C_GRN"
-    fi
-    line2+="${C_DIM}ctx${C_RESET} ${bar_color}$(ctx_bar "$pct_int")${C_RESET} ${C_BOLD}${pct_int}%${C_RESET}"
+# --- Git ---------------------------------------------------------------------
+GIT_PART=""
+DIR_REAL="${DIR/#\~/$HOME}"
+if git -C "$DIR_REAL" rev-parse --git-dir &>/dev/null; then
+	BRANCH=$(git -C "$DIR_REAL" branch --show-current 2>/dev/null)
+	[ -z "$BRANCH" ] && BRANCH=$(git -C "$DIR_REAL" rev-parse --short HEAD 2>/dev/null)
+	DIRTY=""
+	[ -n "$(git -C "$DIR_REAL" status --porcelain 2>/dev/null)" ] && DIRTY="${R}✱${X}"
+	AB_RAW=$(git -C "$DIR_REAL" rev-list --left-right --count '@{u}...HEAD' 2>/dev/null)
+	AB=""
+	if [ -n "$AB_RAW" ]; then
+		BEHIND="${AB_RAW%%[[:space:]]*}"
+		AHEAD="${AB_RAW##*[[:space:]]}"
+		[ "$AHEAD" != "0" ] && AB+=" ${Y}↑${AHEAD}${X}"
+		[ "$BEHIND" != "0" ] && AB+=" ${Y}↓${BEHIND}${X}"
+	fi
+	GIT_PART=" ${M}${ICON_GIT} ${BRANCH}${X}${DIRTY}${AB}"
 fi
 
-tokens_part=""
-[ -n "$tok_in"    ] && [ "$tok_in"    != "0" ] && tokens_part+="${C_DIM}in${C_RESET} ${C_GRN}$(fmt_num "$tok_in")${C_RESET}"
-[ -n "$tok_out"   ] && [ "$tok_out"   != "0" ] && tokens_part+="${tokens_part:+ ${C_DIM}·${C_RESET} }${C_DIM}out${C_RESET} ${C_YEL}$(fmt_num "$tok_out")${C_RESET}"
-[ -n "$tok_cache" ] && [ "$tok_cache" != "0" ] && tokens_part+="${tokens_part:+ ${C_DIM}·${C_RESET} }${C_DIM}cache${C_RESET} ${C_DIM}$(fmt_num "$tok_cache")${C_RESET}"
-[ -n "$tokens_part" ] && line2+="${line2:+   }${tokens_part}"
+# --- Edits -------------------------------------------------------------------
+EDITS=""
+[ "$ADDS" != "0" ] && EDITS+="${G}+${ADDS}${X}"
+[ "$DELS" != "0" ] && EDITS+="${EDITS:+ }${R}−${DELS}${X}"
 
-if [ -n "$cost_usd" ]; then
-    cost_int=$(awk -v c="$cost_usd" 'BEGIN { printf "%d", c+0.5 }')
-    cost_disp=$(awk -v c="$cost_usd" 'BEGIN { printf "%.2f", c }')
-    if [ "$cost_disp" != "0.00" ]; then
-        if   [ "$cost_int" -ge 5 ]; then cost_color="$C_BRED"
-        else                             cost_color="$C_BYEL"
-        fi
-        line2+="${line2:+   }${cost_color}\$${cost_disp}${C_RESET}"
-    fi
+# --- Duration ----------------------------------------------------------------
+DUR=""
+if [ "$DUR_MS" -gt 0 ]; then
+	MINS=$((DUR_MS / 60000))
+	SECS=$(((DUR_MS % 60000) / 1000))
+	if [ "$MINS" -ge 60 ]; then
+		DUR="$((MINS / 60))h$((MINS % 60))m"
+	elif [ "$MINS" -gt 0 ]; then
+		DUR="${MINS}m"
+	else
+		DUR="${SECS}s"
+	fi
 fi
 
-# -----------------------------------------------------------------------------
-# Build line 3 — VELOCITY (edits, time, api ratio, style, clock)
-# -----------------------------------------------------------------------------
-line3=""
-edits_part=""
-[ -n "$lines_added"   ] && [ "$lines_added"   != "0" ] && edits_part+="${C_GRN}+${lines_added}${C_RESET}"
-[ -n "$lines_removed" ] && [ "$lines_removed" != "0" ] && edits_part+="${edits_part:+ }${C_RED}−${lines_removed}${C_RESET}"
-[ -n "$edits_part" ] && line3+="${edits_part}"
+# --- Cost --------------------------------------------------------------------
+COST_FMT=$(printf '%.2f' "$COST")
+COST_INT=$(printf '%.0f' "$COST")
+if [ "$COST_INT" -ge 5 ]; then COST_C="$BR"; else COST_C="$BY"; fi
 
-if [ -n "$duration_ms" ] && [ "$duration_ms" != "0" ]; then
-    wall=$(fmt_duration "$duration_ms")
-    api_ratio=""
-    if [ -n "$api_ms" ] && [ "$api_ms" != "0" ]; then
-        api_ratio=$(awk -v a="$api_ms" -v w="$duration_ms" 'BEGIN { if (w>0) printf "%d", (a*100/w)+0.5; else printf "0" }')
-    fi
-    seg="${C_DIM}${wall} wall${C_RESET}"
-    [ -n "$api_ratio" ] && seg+="${C_DIM} (${api_ratio}% api)${C_RESET}"
-    line3+="${line3:+ ${C_DIM}·${C_RESET} }${seg}"
-fi
+# --- Rate-limit segment ------------------------------------------------------
+fmt_rl() {
+	local label="$1" pct="$2" reset_ts="$3"
+	[ -z "$pct" ] && return
+	pct=$(printf '%.0f' "$pct")
+	local pct_c
+	pct_c=$(pct_color "$pct" 80 50)
+	local out="${ICON_LIMIT} ${pct_c}${label} ${pct}%${X}"
+	local reset_str
+	reset_str=$(fmt_reset "$reset_ts")
+	[ -n "$reset_str" ] && out+=" ${K}(${reset_str})${X}"
+	echo "$out"
+}
 
-# Output style only if non-default
-if [ -n "$output_style" ] && [ "$output_style" != "default" ] && [ "$output_style" != "null" ]; then
-    line3+="${line3:+ ${C_DIM}·${C_RESET} }${C_DIM}style:${output_style}${C_RESET}"
-fi
+# --- LINE 1: WHERE -----------------------------------------------------------
+DIR_SHORT=$(short_path "$DIR")
+LINE1="${C}${ICON_DIR} ${DIR_SHORT}${X}${GIT_PART}"
+[ -n "$EDITS" ] && LINE1+=" ${EDITS}"
+[ -n "$WORKTREE" ] && LINE1+=" ${BM}${ICON_TREE} ${WORKTREE}${X}"
 
-# Version dim
-[ -n "$version" ] && line3+="${line3:+ ${C_DIM}·${C_RESET} }${C_DIM}v${version}${C_RESET}"
+# --- LINE 2: ENGINE (model · effort · ctx) -----------------------------------
+LINE2="${BC}${ICON_MODEL} ${MODEL}${X}"
+[ -n "$EFFORT" ] && LINE2+=" ${ICON_EFFORT} ${EFFORT_C}${EFFORT}${X}"
+LINE2+=" ${ICON_CTX} ${CTX_C}${W}${PCT_USED}%${X}"
 
-# Clock
-line3+="${line3:+ ${C_DIM}·${C_RESET} }${C_YEL}$(date +%H:%M)${C_RESET}"
+# --- LINE 3: STATUS (cost · duration · rate limits · agent) ------------------
+LINE3=""
+[ "$COST_FMT" != "0.00" ] && LINE3+="${COST_C}${ICON_COST} \$${COST_FMT}${X}"
+[ -n "$DUR" ] && LINE3+="${LINE3:+ }${K}${ICON_TIME} ${DUR}${X}"
+RL5=$(fmt_rl "5h" "$RL5_PCT" "$RL5_RESET")
+RL7=$(fmt_rl "7d" "$RL7_PCT" "$RL7_RESET")
+[ -n "$RL5" ] && LINE3+="${LINE3:+ }$RL5"
+[ -n "$RL7" ] && LINE3+="${LINE3:+ }$RL7"
+[ -n "$AGENT" ] && LINE3+="${LINE3:+ }${BY}${ICON_AGENT} ${AGENT}${X}"
 
-# -----------------------------------------------------------------------------
-# Emit (drop empty lines so visible line count = info available)
-# -----------------------------------------------------------------------------
-[ -n "$line1" ] && printf '%s\n' "$line1"
-[ -n "$line2" ] && printf '%s\n' "$line2"
-[ -n "$line3" ] && printf '%s'   "$line3"
+# --- Emit --------------------------------------------------------------------
+echo -e "$LINE1"
+echo -e "$LINE2"
+[ -n "$LINE3" ] && echo -e "$LINE3"
+exit 0
