@@ -31,8 +31,6 @@ EFFORT=$(J '.effort.level')
 
 COST=$(J '.cost.total_cost_usd // 0')
 DUR_MS=$(J '.cost.total_duration_ms // 0')
-ADDS=$(J '.cost.total_lines_added // 0')
-DELS=$(J '.cost.total_lines_removed // 0')
 PCT_USED=$(J '.context_window.used_percentage // 0' | cut -d. -f1)
 
 RL5_PCT=$(J '.rate_limits.five_hour.used_percentage')
@@ -121,6 +119,9 @@ esac
 
 # --- Git ---------------------------------------------------------------------
 GIT_PART=""
+FILES_CHANGED=""
+ADDS=""
+DELS=""
 DIR_REAL="${DIR/#\~/$HOME}"
 if git -C "$DIR_REAL" rev-parse --git-dir &>/dev/null; then
 	BRANCH=$(git -C "$DIR_REAL" branch --show-current 2>/dev/null)
@@ -136,12 +137,22 @@ if git -C "$DIR_REAL" rev-parse --git-dir &>/dev/null; then
 		[ "$BEHIND" != "0" ] && AB+=" ${Y}↓${BEHIND}${X}"
 	fi
 	GIT_PART=" ${M}${ICON_GIT} ${BRANCH}${X}${DIRTY}${AB}"
+
+	# Live diff stats vs HEAD (staged + unstaged tracked changes)
+	SHORTSTAT=$(git -C "$DIR_REAL" diff HEAD --shortstat 2>/dev/null)
+	FILES_CHANGED=$(echo "$SHORTSTAT" | grep -oE '[0-9]+ files? changed' | grep -oE '^[0-9]+')
+	ADDS=$(echo "$SHORTSTAT" | grep -oE '[0-9]+ insertions?\(\+\)' | grep -oE '^[0-9]+')
+	DELS=$(echo "$SHORTSTAT" | grep -oE '[0-9]+ deletions?\(-\)' | grep -oE '^[0-9]+')
 fi
 
-# --- Edits -------------------------------------------------------------------
+# --- Edits (git diff --shortstat: Nf +adds −dels) ----------------------------
+# Skip the segment entirely if file count can't be determined.
 EDITS=""
-[ "$ADDS" != "0" ] && EDITS+="${G}+${ADDS}${X}"
-[ "$DELS" != "0" ] && EDITS+="${EDITS:+ }${R}−${DELS}${X}"
+if [ -n "$FILES_CHANGED" ] && [ "$FILES_CHANGED" -gt 0 ] 2>/dev/null; then
+	EDITS="${K}${FILES_CHANGED}f${X}"
+	[ -n "$ADDS" ] && [ "$ADDS" -gt 0 ] && EDITS+=" ${G}+${ADDS}${X}"
+	[ -n "$DELS" ] && [ "$DELS" -gt 0 ] && EDITS+=" ${R}−${DELS}${X}"
+fi
 
 # --- Duration ----------------------------------------------------------------
 DUR=""
