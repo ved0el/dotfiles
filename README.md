@@ -107,6 +107,38 @@ dotfiles verify
 rm -f ~/.zcompdump && exec zsh
 ```
 
+## Windows (Git Bash)
+
+Windows uses a small `Makefile` to sync `config/<tool>/` into `~/.config/<tool>/`
+(and `config/claude/<file>` into `~/.claude/<file>`). `bin/dotfiles` is for
+macOS/Linux only — the `Makefile` hard-fails on those platforms.
+
+One-time setup:
+
+1. Enable **Developer Mode** (Settings → Privacy & security → For developers).
+   Lets `ln -s` create real Windows symlinks without admin.
+2. In Git Bash, add to `~/.bashrc`:
+   ```bash
+   export MSYS=winsymlinks:nativestrict
+   ```
+3. Install make and any tools you need via Scoop:
+   ```bash
+   scoop install make git
+   ```
+
+Daily use:
+
+```bash
+make            # list targets
+make doctor     # check that real symlinks work in this shell
+make link       # create / refresh all config symlinks (idempotent)
+make verify     # report OK / MISSING / STALE / CONFLICT for every expected link
+make unlink     # remove every symlink we created (only touches symlinks)
+```
+
+`link` refuses to clobber a real file at the target — it skips and prints
+`SKIP` so you can rename or delete it manually first.
+
 ## Documentation
 
 - [Architecture](docs/architecture.md) — system design, lifecycle, internals
