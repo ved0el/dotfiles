@@ -76,6 +76,13 @@ pct_color() {
 	else echo "$G"; fi
 }
 
+# Format an epoch into a date string. Tries BSD (date -r) then GNU (date -d @epoch).
+fmt_epoch() {
+	local epoch="$1" fmt="$2"
+	date -r "$epoch" "$fmt" 2>/dev/null \
+		|| date -d "@$epoch" "$fmt" 2>/dev/null
+}
+
 fmt_reset() {
 	local ts="$1"
 	[ -z "$ts" ] && return
@@ -93,11 +100,11 @@ fmt_reset() {
 
 	local today that_day
 	today=$(date +%Y%m%d)
-	that_day=$(date -r "$epoch" +%Y%m%d 2>/dev/null)
+	that_day=$(fmt_epoch "$epoch" +%Y%m%d)
 	if [ "$today" = "$that_day" ]; then
-		date -r "$epoch" "+%-I%p" 2>/dev/null | tr A-Z a-z
+		fmt_epoch "$epoch" "+%-I%p" | tr A-Z a-z
 	else
-		date -r "$epoch" "+%a %-I%p" 2>/dev/null | sed -E 's/AM$/am/; s/PM$/pm/'
+		fmt_epoch "$epoch" "+%a %-I%p" | sed -E 's/AM$/am/; s/PM$/pm/'
 	fi
 }
 
