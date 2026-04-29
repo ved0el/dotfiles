@@ -9,7 +9,7 @@
 # release. Pin to a concrete version (e.g. node = "20") if you need stability.
 
 [tools]
-node   = "latest"
+node   = "lts"
 go     = "latest"
 python = "latest"
 bun    = "latest"
