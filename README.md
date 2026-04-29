@@ -19,7 +19,7 @@ Profiles are cumulative — each includes everything below it.
 | Profile | Tools |
 |---------|-------|
 | `minimal` | sheldon, tmux |
-| `server` | minimal + bat, eza, fd, fzf, ripgrep, tealdeer, zoxide, vfox |
+| `server` | minimal + bat, eza, fd, fzf, jq, ripgrep, tealdeer, zoxide, mise |
 
 Switch profile anytime:
 
@@ -33,11 +33,10 @@ dotfiles profile server
 ~/.dotfiles/
 ├── zsh/
 │   ├── core/           # Always-loaded modules (options, history, completion, aliases, theme, zcompile)
-│   ├── lib/            # Shared libraries (platform, installer, lazy)
+│   ├── lib/            # Shared libraries (platform, installer)
 │   └── packages/
 │       ├── minimal/    # sheldon, tmux
-│       ├── server/     # bat, eza, fd, fzf, ripgrep, tealdeer, zoxide
-│       └── (vfox.zsh is in server/)
+│       └── server/     # bat, eza, fd, fzf, jq, ripgrep, tealdeer, zoxide, mise
 ├── bin/
 │   └── dotfiles        # CLI (bash)
 ├── config/             # App configs (sheldon, bat, tealdeer, ripgrep, yabai, skhd)
@@ -69,7 +68,7 @@ pkg_init() {
 init_package_template "$PKG_NAME"
 ```
 
-See [`docs/guides/adding-a-package.md`](docs/guides/adding-a-package.md) for the full guide including lazy loading.
+See [`docs/guides/adding-a-package.md`](docs/guides/adding-a-package.md) for the full lifecycle reference.
 
 ## CLI commands
 
@@ -108,6 +107,21 @@ dotfiles verify
 rm -f ~/.zcompdump && exec zsh
 ```
 
----
+## Documentation
 
-MIT Licensed. See `docs/guides/adding-a-package.md` to add tools.
+- [Architecture](docs/architecture.md) — system design, lifecycle, internals
+- [Adding a package](docs/guides/adding-a-package.md) — extension guide
+- [Troubleshooting](docs/guides/troubleshooting.md) — common issues
+- [Requirements](docs/requirements.md) — functional and non-functional spec
+
+## Contributing
+
+Pull requests welcome. Please:
+
+1. Open an issue first for non-trivial changes.
+2. Add or update tests where applicable.
+3. Run `dotfiles verify` and confirm `time zsh -i -c exit` stays under 200 ms.
+
+## License
+
+Released under the MIT License.

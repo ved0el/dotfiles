@@ -61,15 +61,16 @@ Current directory structure:
 │       ├── minimal/
 │       │   ├── 00-sheldon.zsh      # Plugin manager — must load first (order prefix required)
 │       │   └── tmux.zsh
-│       ├── server/
-│       │   ├── bat.zsh
-│       │   ├── eza.zsh
-│       │   ├── fd.zsh
-│       │   ├── fzf.zsh
-│       │   ├── ripgrep.zsh
-│       │   ├── tealdeer.zsh
-│       │   └── zoxide.zsh
-│       │   └── vfox.zsh
+│       └── server/
+│           ├── bat.zsh
+│           ├── eza.zsh
+│           ├── fd.zsh
+│           ├── fzf.zsh
+│           ├── jq.zsh
+│           ├── mise.zsh
+│           ├── ripgrep.zsh
+│           ├── tealdeer.zsh
+│           └── zoxide.zsh
 │
 ├── p10k.zsh                        # Powerlevel10k config → ~/.p10k.zsh
 ├── tmux.conf                       # Tmux config → ~/.tmux.conf
@@ -78,10 +79,9 @@ Current directory structure:
 ```
 
 **Key design decisions:**
-- `zsh/` consolidates all zsh logic (replaces the current `zshrc.d/` directory)
-- Packages are grouped in subdirectories by tier — no magic number prefixes needed
-- Lazy loader logic lives **inside each package's `pkg_init()`** — no separate `*_lazy.zsh` files
-- `zsh/lib/` has exactly two files, each with a single responsibility
+- All zsh logic lives under `zsh/`; root-level `zshrc` is a thin entry point.
+- Packages are grouped in subdirectories by tier — no magic number prefixes needed.
+- `zsh/lib/` has exactly two files, each with a single responsibility.
 
 ---
 
@@ -109,13 +109,14 @@ Current directory structure:
           server tier:   loaded when DOTFILES_PROFILE = server
           │
           Each package file calls init_package_template, which either:
-            (a) Tool installed  → run pkg_init
-            (b) Tool missing    → print one-line warning, skip
-            (c) VERBOSE=true    → run full install flow (install + init)
+            (a) Tool installed     → run pkg_init
+            (b) Tool missing       → print one-line warning, skip
+            (c) DOTFILES_INSTALL=true → run full install flow (install + init)
 ```
 
 **Key invariant**: Installation never happens on normal shell startup.
-`DOTFILES_VERBOSE=true` is the exclusive gate for all installation logic.
+`DOTFILES_INSTALL=true` is the exclusive gate for all installation logic;
+`DOTFILES_VERBOSE` controls only logging verbosity.
 
 ---
 
@@ -141,7 +142,7 @@ To switch: `dotfiles profile server` (persists to `~/.zshenv`), then `source ~/.
 zsh/packages/<tier>/<name>.zsh
 
 tier — minimal | server
-name — tool name, lowercase, hyphens allowed (e.g. fzf, ripgrep, vfox)
+name — tool name, lowercase, hyphens allowed (e.g. fzf, ripgrep, mise)
 ```
 
 Files within a tier directory load in **alphabetical order**.
@@ -185,18 +186,17 @@ pkg_post_install() { }
 
 # Optional: runs on every shell start when the tool IS installed
 # Keep this fast — it runs synchronously on every shell open
-# Put lazy loading setup here, not in a separate *_lazy.zsh file
 pkg_init() { }
 
 init_package_template "$PKG_NAME"
 ```
 
 **Rules:**
-- All hook functions are optional — omit them if not needed
-- `pkg_init` runs on every shell startup — keep it under 5ms (use lazy loading for slow tools)
-- `pkg_install` fully overrides the default package manager — use it for custom install scripts
-- `pkg_install_fallback` is the escape hatch for unknown Linux distros
-- Do **not** create separate `*_lazy.zsh` files — put lazy loading inline in `pkg_init`
+- All hook functions are optional — omit them if not needed.
+- `pkg_init` runs on every shell startup — keep it under 5 ms.
+- `pkg_install` fully overrides the default package manager — use it for custom install scripts.
+- `pkg_install_fallback` is the escape hatch for unknown Linux distros.
+- Packages with `eval`-based init must guard with a `_DOTFILES_<TOOL>_LOADED` flag.
 
 **Hook function scope**: Each package file's hook functions (`pkg_init`, `pkg_install`, etc.)
 are defined as global shell functions. They are **not automatically unset** after
@@ -219,10 +219,10 @@ init_package_template "pkgname"
   │     → done
   │
   └── Tool NOT installed:
-        DOTFILES_VERBOSE != true:
+        DOTFILES_INSTALL != true:
           → print: "[dotfiles] <name> not installed — run: dotfiles install"
           → done (non-blocking)
-        DOTFILES_VERBOSE = true:
+        DOTFILES_INSTALL = true:
           → run pkg_pre_install (if defined)
           → run pkg_install (if defined)
               else: call platform installer
@@ -255,35 +255,39 @@ pkg_init() {
 init_package_template "$PKG_NAME"
 ```
 
-### Custom Installer Example (vfox)
+### Custom Installer Example
+
+A package may declare a `pkg_install` hook when its install steps differ per
+platform (e.g. signed apt repository on Debian, Homebrew on macOS, upstream
+curl installer elsewhere). Use the `dotfiles_os` and `dotfiles_pkg_manager`
+helpers to branch:
 
 ```zsh
 #!/usr/bin/env zsh
 
-PKG_NAME="vfox"
-PKG_DESC="Universal version manager for Node.js, Python, Go, and more"
+PKG_NAME="example"
+PKG_DESC="Short description"
 
 pkg_install() {
     local os="$(dotfiles_os)"
     local pkg_mgr="$(dotfiles_pkg_manager)"
 
     if [[ "$os" == "macos" ]] && [[ "$pkg_mgr" == "brew" ]]; then
-        brew install vfox || return 1
+        brew install "$PKG_NAME" || return 1
     elif [[ "$pkg_mgr" == "apt" ]]; then
-        echo "deb [trusted=yes lang=none] https://apt.fury.io/versionfox/ /" | \
-            sudo tee /etc/apt/sources.list.d/versionfox.list >/dev/null
-        sudo apt-get update -qq && sudo apt-get install -y vfox || return 1
+        # Custom apt repo / signed keyring setup, then:
+        sudo apt-get install -y "$PKG_NAME" || return 1
     else
-        curl --proto '=https' --tlsv1.2 -fsSL \
-            https://raw.githubusercontent.com/version-fox/vfox/main/install.sh | bash || return 1
+        # Upstream installer fallback
+        curl --proto '=https' --tlsv1.2 -fsSL https://example.com/install.sh | sh || return 1
     fi
 }
 
 pkg_init() {
-    # Single guard — vfox is a compiled binary, no lazy loading needed
-    [[ "${_DOTFILES_VFOX_LOADED:-}" == "1" ]] && return 0
-    eval "$(vfox activate zsh)"
-    export _DOTFILES_VFOX_LOADED="1"
+    # Idempotency guard for any eval-based activation
+    [[ "${_DOTFILES_EXAMPLE_LOADED:-}" == "1" ]] && return 0
+    eval "$(example activate zsh)"
+    export _DOTFILES_EXAMPLE_LOADED="1"
 }
 
 init_package_template "$PKG_NAME"
@@ -322,87 +326,6 @@ init_package_template "$PKG_NAME"
 > **Security note**: Never use bare `curl | sh` or `curl | bash` in `pkg_install_fallback`.
 > Always download to a temp file and verify a checksum before extracting or executing.
 > For tools that provide signed releases, prefer GPG verification over SHA256.
-
----
-
-## Lazy Loading
-
-Heavy shell-script tools (e.g. nvm) take 100–500ms to initialize. Lazy loading defers this
-cost until the first time a related command is actually used.
-
-### How It Works
-
-`create_lazy_wrapper "cmd" "load_func" [extra_cmds...]` registers shell functions that:
-
-1. Intercept the first call to `cmd`
-2. Run `load_func` (the real initialization)
-3. Remove the wrapper function for `cmd` (the real binary takes over)
-4. Re-invoke the original command with the original arguments
-
-> **Note on extra_cmds**: The main `cmd` wrapper is removed after load (real binary takes
-> over). Wrappers for `extra_cmds` (e.g. `npm`, `pip`, `go`) are **not removed** — they
-> remain as shell functions that call `load_func` on every invocation. After initialization,
-> `load_func` returns immediately via its idempotency guard, so the overhead is one function
-> call + flag check per invocation. This is acceptable but **both guards are required**:
->
-> ```zsh
-> pkg_init() {
->     # Guard 1: don't re-register wrappers on source ~/.zshrc after tool is loaded
->     [[ "${_DOTFILES_TOOL_LOADED:-}" == "1" ]] && return 0
->
->     _lazy_load_tool() {
->         # Guard 2: extra_cmd wrappers call this on every npm/go/pip invocation
->         [[ "${_DOTFILES_TOOL_LOADED:-}" == "1" ]] && return 0
->         ...
->         export _DOTFILES_TOOL_LOADED="1"
->     }
->
->     create_lazy_wrapper "tool" "_lazy_load_tool" "extra-cmd"
-> }
-> ```
->
-> Without Guard 1: `source ~/.zshrc` after first use overwrites the real tool function with
-> a lazy wrapper — tool silently stops working.
->
-> Without Guard 2: `$PATH` grows with a duplicate entry on every `npm`/`go` invocation.
-
-### Timing Illustration
-
-```zsh
-# Shell startup — these are shell functions (wrappers), not real commands:
-$ type node
-node is a shell function
-
-# First invocation — wrapper fires, tool initializes (~200ms, once only):
-$ node --version
-v22.0.0
-
-# All subsequent calls — real binary, no overhead:
-$ type node
-node is /path/to/node
-```
-
-### Lazy Loader Pattern (inline in pkg_init)
-
-```zsh
-pkg_init() {
-    export TOOL_ROOT="$HOME/.tool"
-    export PATH="$TOOL_ROOT/bin:$PATH"
-
-    # Guard 1: skip if already loaded (safe for source ~/.zshrc re-runs)
-    [[ "${_DOTFILES_TOOL_LOADED:-}" == "1" ]] && return 0
-
-    _lazy_load_tool() {
-        # Guard 2: extra_cmd wrappers call this on every invocation — must be fast no-op
-        [[ "${_DOTFILES_TOOL_LOADED:-}" == "1" ]] && return 0
-        [[ -d "$TOOL_ROOT" ]] || return 1
-        eval "$(tool init -)"        # or: source "$TOOL_ROOT/tool.sh"
-        export _DOTFILES_TOOL_LOADED="1"
-    }
-
-    create_lazy_wrapper "tool" "_lazy_load_tool" "tool-companion-cmd"
-}
-```
 
 ---
 
@@ -553,7 +476,7 @@ for broken symlinks after the fact.
 | Package manager | Homebrew | apt / dnf / pacman / zypper |
 | zsh availability | System-provided (5.9+) | Must install (`apt install zsh`) |
 | `bat` binary name | `bat` | `bat` or `batcat` (handled in `pkg_post_install`) |
-| vfox install | `brew install vfox` | apt repo or curl installer |
+| Version manager install | Package manager (e.g. `brew install mise`) | Signed apt repo or upstream curl installer |
 | yabai / skhd | Config files only | Not applicable |
 | Unknown distro | n/a (brew covers all) | `pkg_install_fallback` (FR-7) |
 
@@ -574,33 +497,6 @@ dotfiles verify
 # See which packages have warnings (not installed)
 zsh -i -c exit 2>&1 | grep '\[dotfiles\]'
 
-# Debug lazy loading — check what type a command is before first use
-type node    # → "node is a shell function" (wrapper registered)
-node --version
-type node    # → "node is /path/to/node" (real binary after lazy load)
-
 # Force zcompdump rebuild (run after adding new completions)
 rm -f ~/.zcompdump && exec zsh
 ```
-
----
-
-## Migration: `zshrc.d/` → `zsh/` ✓ Complete
-
-This migration was completed in two commits. The old `zshrc.d/` directory no longer
-exists. The current `zsh/` layout is the canonical structure.
-
-**What changed:**
-
-| Old path | New path | Notes |
-|----------|----------|-------|
-| `zshrc.d/core/` | `zsh/core/` | Files renamed with hyphen separators |
-| `zshrc.d/lib/install_helper.zsh` | `zsh/lib/installer.zsh` | + PKG_CHECK_FUNC, warnings, fallback |
-| `zshrc.d/lib/lazy_load_wrapper.zsh` | `zsh/lib/lazy.zsh` | |
-| _(new)_ | `zsh/lib/platform.zsh` | OS/distro detection (extracted from installer) |
-| `zshrc.d/lib/*_lazy.zsh` | Inlined into package `pkg_init()` | No separate lazy files |
-| `zshrc.d/lib/tmux_loader.zsh` | Inlined into `zsh/packages/minimal/tmux.zsh` | |
-| `zshrc.d/pkg/100_m_sheldon.zsh` | `zsh/packages/minimal/00-sheldon.zsh` | Order prefix |
-| `zshrc.d/pkg/*_m_*.zsh` | `zsh/packages/minimal/*.zsh` | |
-| `zshrc.d/pkg/*_s_*.zsh` | `zsh/packages/server/*.zsh` | |
-| `zshrc.d/pkg/*_d_*.zsh` | `zsh/packages/develop/*.zsh` | curlie removed |

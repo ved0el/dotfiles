@@ -3,14 +3,14 @@
 ## Project Overview
 
 A cross-platform, profile-based zsh configuration system. Ships on macOS and common Linux
-distros. Keeps shell startup under 200ms by lazy-loading heavy tools.
+distros. Keeps shell startup under 200ms by deferring heavy work via sheldon and idempotency guards.
 
 Three cumulative profiles:
 
 | Profile   | Tools added |
 |-----------|-------------|
 | `minimal` | tmux (+ sheldon infrastructure) |
-| `server`  | bat, eza, fd, fzf, ripgrep, tealdeer, zoxide, vfox |
+| `server`  | bat, eza, fd, fzf, jq, ripgrep, tealdeer, zoxide, mise |
 
 ---
 
@@ -73,15 +73,15 @@ init_package_template "$PKG_NAME"
 |--------|-----------|---------|
 | Package variables | `PKG_NAME`, `PKG_DESC`, `PKG_CMD`, `PKG_CHECK_FUNC` | — |
 | Hook functions | `pkg_init`, `pkg_install`, `pkg_pre_install`, `pkg_post_install`, `pkg_install_fallback` | — |
-| Private helpers (check) | `_<tool>_is_installed` | `_nvm_is_installed` |
-| Load flag (idempotency) | `_DOTFILES_<TOOL>_LOADED` | `_DOTFILES_VFOX_LOADED` |
+| Private helpers (check) | `_<tool>_is_installed` | `_<tool>_is_installed` |
+| Load flag (idempotency) | `_DOTFILES_<TOOL>_LOADED` | `_DOTFILES_MISE_LOADED` |
 
 ---
 
 ## Idempotency Rules (Critical)
 
 Shell startup must be **safe to run multiple times** (e.g. `source ~/.zshrc` after a tool
-is already active). Any package with non-trivial `pkg_init` logic (sheldon, vfox) needs
+is already active). Any package with non-trivial `pkg_init` logic (sheldon, mise) needs
 a guard to prevent re-initialization:
 
 ```zsh
@@ -108,9 +108,9 @@ time zsh -i -c exit
 # Verify all symlinks and package installs
 dotfiles verify
 
-# Test vfox works correctly
+# Test the version manager works correctly
 source ~/.zshrc
-vfox --version   # should print version
+mise --version   # should print version
 
 # Re-source safety check (should produce no errors)
 source ~/.zshrc
@@ -124,11 +124,11 @@ source ~/.zshrc
 1. **Modifying core files** — Never add tool logic to `zshrc`, `installer.zsh`, or `zsh/core/*.zsh`.
    Each tool is self-contained in its own package file.
 
-2. **Forgetting idempotency guards** — Packages with `eval` init (sheldon, vfox) need
+2. **Forgetting idempotency guards** — Packages with `eval` init (sheldon, mise) need
    a load flag guard (see above). Skipping it causes hard-to-debug re-source breakage.
 
 3. **Making `pkg_init` slow** — `pkg_init` runs synchronously at shell startup. Keep it
-   under ~5ms. Use compiled tools (like vfox) that initialize quickly.
+   under ~5ms. Use compiled tools (like mise) that initialize quickly.
 
 4. **Using `command -v` for shell-function tools** — Tools like `nvm` are not
    binaries. Set `PKG_CHECK_FUNC` to a custom function, or `command -v` will always fail.
@@ -148,4 +148,5 @@ source ~/.zshrc
 |----------|---------|---------|
 | `DOTFILES_ROOT` | `~/.dotfiles` | Path to this repo |
 | `DOTFILES_PROFILE` | `minimal` | Active profile (set via `dotfiles profile <name>`) |
-| `DOTFILES_VERBOSE` | `false` | Set to `true` to trigger install flow + verbose logging |
+| `DOTFILES_VERBOSE` | `false` | Verbose logging only — does not affect the install flow |
+| `DOTFILES_INSTALL` | `false` | Set to `true` to run the install flow (set internally by `dotfiles install`) |

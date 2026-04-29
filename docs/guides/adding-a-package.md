@@ -103,4 +103,4 @@ pkg_init() {
 }
 ```
 
-See `zsh/packages/server/vfox.zsh` for a real example with cross-platform install logic.
+See `zsh/packages/server/mise.zsh` for a real example with cross-platform install logic.

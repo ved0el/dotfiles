@@ -11,7 +11,7 @@ Common causes:
 
 | Symptom | Fix |
 |---------|-----|
-| Heavy tool runs at startup | Move initialization into `pkg_init` with lazy loading |
+| Heavy tool runs at startup | Move initialization into `pkg_init` and guard with `_DOTFILES_<TOOL>_LOADED` |
 | `compinit` rebuilds every time | The `~/.zcompdump` guard in `00-sheldon.zsh` rebuilds at most once per day; if it still rebuilds, check that `~/.zcompdump` is writable |
 | Slow git status in prompt | `POWERLEVEL9K_VCS_MAX_INDEX_SIZE_DIRTY=4096` limits dirty-check to repos < 4096 files; increase if needed |
 
@@ -41,8 +41,8 @@ dotfiles verify
 
 Check what type the command is (wrapper vs real binary):
 ```zsh
-type vfox    # → "vfox is /path/to/vfox" means binary is installed
-vfox --version
+type mise    # → "mise is /path/to/mise" means binary is installed
+mise --version
 ```
 
 If the package shows as installed but `pkg_init` failed silently:
@@ -51,23 +51,17 @@ If the package shows as installed but `pkg_init` failed silently:
 DOTFILES_VERBOSE=true zsh -i -c exit 2>&1 | head -50
 ```
 
-## Lazy loading not working
+## A version-managed tool (node, python, …) is missing
 
-```zsh
-# Before first use — should be a shell function
-type python
-# → python is managed by vfox (zsh/packages/server/vfox.zsh)
+The version manager activates inside `pkg_init`, but the tools it provides
+must be installed separately. If `node`, `python`, or another managed tool is
+missing on your `$PATH`:
 
-# After first use — should be the real binary
-python --version
-type python
-# → python is /path/to/python (managed by vfox)
-```
+1. Confirm the version manager itself is installed and active.
+2. Install the tool defaults defined in the version manager's config file.
+3. List available tools and pin one if no default is configured.
 
-If the real binary is still not found after first use:
-1. Verify the tool is actually installed: `vfox list`
-2. Check that `pkg_init` sets PATH correctly before initialization
-3. Install a version: `vfox install <sdk>@<version>` then `vfox use --global <sdk>@<version>`
+Refer to your version manager's documentation for the exact subcommands.
 
 ## Symlinks are broken
 

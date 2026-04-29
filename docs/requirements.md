@@ -24,12 +24,12 @@ A cross-platform, profile-based zsh configuration system that:
 
 ### FR-1: Profile System
 
-The system must support three cumulative profiles:
+The system must support two cumulative profiles:
 
 | Profile   | Tier | User-facing tools |
 |-----------|------|-------------------|
 | `minimal` | `m`  | tmux |
-| `server`  | `s`  | minimal + bat, fzf, eza, fd, ripgrep, tealdeer, zoxide, vfox |
+| `server`  | `s`  | minimal + bat, fzf, eza, fd, jq, ripgrep, tealdeer, zoxide, mise |
 
 > **Note**: `sheldon` (zsh plugin manager) is a **core infrastructure dependency**, not a
 > user-facing tool. It is installed as part of the bootstrap process and loaded before any
@@ -52,7 +52,7 @@ A package file must be able to:
 - Define a custom existence check for tools that are not standard binaries
 
 **Installation behavior:**
-- Installation only runs when `DOTFILES_VERBOSE=true` (i.e. during explicit `dotfiles install`)
+- Installation only runs when `DOTFILES_INSTALL=true` (set by `dotfiles install`); `DOTFILES_VERBOSE` controls logging only and does not gate installation
 - On normal shell startup, if a managed package is **not installed**, the system must print
   a one-line warning so the user knows what to run:
   ```
@@ -60,21 +60,15 @@ A package file must be able to:
   ```
 - The warning must not block startup or print a stack trace
 
-### FR-3: Lazy Loading
+### FR-3: Fast Shell Startup
 
-Tools with slow startup time must be lazy-loaded:
+Shell startup must remain under 200 ms on a typical machine.
 
-- Shell wrappers intercept the **first invocation** of the tool's commands
-- On first use, the real tool initializes and all wrappers are replaced by real commands
-- Subsequent calls incur zero overhead — the real binary is called directly
-
-Commands wrapped per tool:
-
-| Tool  | Commands always wrapped | Commands conditionally wrapped |
-|-------|------------------------|-------------------------------|
-| vfox  | — | — (vfox is a compiled binary with fast startup; no lazy loading needed) |
-
-> **Note:** vfox replaced nvm, pyenv, and goenv as a single universal version manager.
+- Packages with non-trivial `pkg_init` logic must guard against duplicate
+  initialization (idempotency flag) so re-sourcing `~/.zshrc` is a no-op.
+- Tools with slow startup may be lazy-loaded by intercepting first invocation
+  via a shell wrapper that defers real initialization until needed.
+- Tools that ship as fast-starting compiled binaries do not need lazy loading.
 
 ### FR-4: Symlink Management
 
@@ -170,12 +164,10 @@ The `bin/dotfiles` command must support these subcommands:
   - `export PATH=...` prepends are acceptable only if guarded against duplicates
   - `eval` initialization must not re-run if the tool is already loaded
   - If a tool is already initialized (real binary in PATH), `pkg_init` must not re-wrap it
-- Packages with non-trivial `pkg_init` logic require idempotency guards:
-  1. **`pkg_init` entry guard** — check the load flag at the top of `pkg_init` and return
-     early if set; prevents re-registering lazy wrappers on `source ~/.zshrc`
-  2. **Load function entry guard** — check the same flag at the top of the load
-     function and return early if set; prevents extra_cmd wrappers (`npm`, `pip`, `go`)
-     from re-running initialization on every invocation
+- Packages with non-trivial `pkg_init` logic require an idempotency guard:
+  check a `_DOTFILES_<TOOL>_LOADED` flag at the top of `pkg_init` and return
+  early if set, then export it after initialization completes. This makes
+  re-sourcing `~/.zshrc` a no-op.
 
 ### NFR-4: Failure Isolation
 
@@ -199,7 +191,8 @@ The `bin/dotfiles` command must support these subcommands:
 |----------|---------|---------|
 | `DOTFILES_ROOT` | `~/.dotfiles` | Absolute path to the dotfiles repo |
 | `DOTFILES_PROFILE` | `minimal` | Active profile: `minimal` or `server` |
-| `DOTFILES_VERBOSE` | `false` | Enable install logging and trigger installation flow |
+| `DOTFILES_VERBOSE` | `false` | Verbose logging only — does not gate installation |
+| `DOTFILES_INSTALL` | `false` | Run the install flow when set to `true` (set internally by `dotfiles install`) |
 | `DOTFILES_BRANCH` | `main` | Git branch used by `dotfiles update` |
 
 ---
