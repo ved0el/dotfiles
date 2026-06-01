@@ -27,6 +27,8 @@ _dotfiles() {
         'link:Create or refresh symlinks only'
         'profile:Change active profile (alias for: config set profile)'
         'packages:Install required packages for current profile'
+        'test:Run the bundled test suite (sandboxed, hermetic)'
+        't:Alias for test'
         'version:Show version information'
         'help:Show usage information'
     )

@@ -1,0 +1,52 @@
+name: tests
+
+# Runs the bundled, hermetic dotfiles test suite (test/run.sh) across the two
+# Unix install targets — Ubuntu (Debian-family, UC-2) and macOS (UC-1) — plus a
+# shellcheck lint pass. The suite stubs package installation, so no network or
+# real toolchains are needed.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history: the suite makes local clones that need real commits.
+          fetch-depth: 0
+
+      - name: Configure git identity (sandbox clones/commits)
+        run: |
+          git config --global user.email "ci@dotfiles.test"
+          git config --global user.name "dotfiles ci"
+
+      - name: Run test suite
+        env:
+          NO_COLOR: "1"
+        run: bash test/run.sh
+
+  lint:
+    name: shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Lint shell scripts
+        run: |
+          shellcheck -s bash bin/dotfiles
+          shellcheck -s bash test/run.sh test/lib/*.sh test/cases/*.sh

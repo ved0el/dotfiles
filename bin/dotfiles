@@ -764,12 +764,17 @@ create_symlinks() {
         esac
 
         # 3. Link only the shards that exist in the repo and match the profile.
-        local _s _src
-        for _s in "${_wanted_shards[@]}"; do
-            _src="$DOTFILES_ROOT/config/mise/conf.d/$_s"
-            [[ -f "$_src" ]] || continue
-            create_single_symlink "$_src" "$HOME/.config/mise/conf.d/$_s" "$_s"
-        done
+        # Guard the expansion: bash 3.2 (macOS /bin/bash) errors on
+        # "${empty_array[@]}" under `set -u`, which would crash install/link
+        # for the `core` profile (no shards). Same pattern as parse_args.
+        if (( ${#_wanted_shards[@]} > 0 )); then
+            local _s _src
+            for _s in "${_wanted_shards[@]}"; do
+                _src="$DOTFILES_ROOT/config/mise/conf.d/$_s"
+                [[ -f "$_src" ]] || continue
+                create_single_symlink "$_src" "$HOME/.config/mise/conf.d/$_s" "$_s"
+            done
+        fi
     fi
     if [[ ! -e "$HOME/.config/mise/config.toml" ]]; then
         mkdir -p "$HOME/.config/mise"
@@ -1701,8 +1706,11 @@ uninstall_dotfiles() {
     # 3b. tmux: remove ~/.tmux.conf symlink + TPM, regardless of tmux presence
     _dotfiles_tmux_uninstall
 
-    # 4. Remove DOTFILES_* exports from zshenv
+    # 4. Strip the dotfiles-managed config from zshenv (UC-15). Remove the
+    # whole marker-delimited block first, then any legacy bare exports /
+    # header left by pre-marker installs. User content outside is preserved.
     [[ -f "$CONFIG_FILE" ]] && {
+        sed_inplace "$CONFIG_FILE" '/^# DOTFILES MANAGED BEGIN/,/^# DOTFILES MANAGED END/d'
         sed_inplace "$CONFIG_FILE" '/^export DOTFILES_/d'
         sed_inplace "$CONFIG_FILE" '/^# Dotfiles Configuration/d'
     }
@@ -2161,8 +2169,8 @@ _dispatch_pkg_hook() {
 
 # Selection key → command id. Single source of truth for both the rendered
 # table and the dispatcher.
-_MENU_KEYS=(1 2 3 4 5 6 u q)
-_MENU_IDS=(install sync status config doctor clean uninstall quit)
+_MENU_KEYS=(1 2 3 4 5 6 7 u q)
+_MENU_IDS=(install sync status config doctor clean test uninstall quit)
 _MENU_DESC=(
     "Symlink configs + install missing packages (no git pull)"
     "git pull + install in one step (the daily driver)"
@@ -2170,6 +2178,7 @@ _MENU_DESC=(
     "Change profile, toggle verbose, edit raw config"
     "Health check — badge grid + per-package detail"
     "Remove orphaned symlinks (run after deleting a package)"
+    "Run the bundled test suite (sandboxed, hermetic)"
     "Remove all symlinks, package configs, and the repo"
     "Exit the menu"
 )
@@ -2250,7 +2259,7 @@ _menu_render_page() {
 
     # TIPS — tells the user what to type.
     printf '%bTIPS%b\n' "$BOLD$CYAN" "$RESET"
-    printf '    Type %b1-6%b, %bu%b, %bq%b, or %ba command name%b · empty Enter to refresh state\n' \
+    printf '    Type %b1-7%b, %bu%b, %bq%b, or %ba command name%b · empty Enter to refresh state\n' \
         "$BOLD$MAGENTA" "$RESET" "$BOLD$MAGENTA" "$RESET" "$BOLD$MAGENTA" "$RESET" "$BOLD$WHITE" "$RESET"
     printf '    Pick %bconfig%b to toggle verbose or switch profile · %bdotfiles help%b for the full reference\n' \
         "$BOLD$WHITE" "$RESET" "$BOLD$WHITE" "$RESET"
@@ -2436,6 +2445,7 @@ _menu_execute() {
         config)    _menu_config_screen ;;   # has its own loop, no pause
         doctor)    doctor_dotfiles;         _menu_pause ;;
         clean)     clean_dotfiles;          _menu_pause ;;
+        test)      test_dotfiles;           _menu_pause ;;
         uninstall) uninstall_dotfiles && return 1 || _menu_pause ;;
         quit)      return 1 ;;
         *)         return 0 ;;
@@ -2535,6 +2545,7 @@ show_usage() {
     _help_cmd "claude-clean" "" "Strip session-volatile keys from claude settings.json"
     _help_cmd "link"      ""   "Refresh symlinks only (no package work)"
     _help_cmd "packages"  ""   "Install packages for current profile"
+    _help_cmd "test"      "t"  "Run the bundled test suite (sandboxed, hermetic)"
     _help_cmd "uninstall" ""   "Remove all symlinks, package configs, and repo"
     _help_cmd "version"   ""   "Show version and source URL"
     _help_cmd "help"      ""   "Show this help message"
@@ -2616,6 +2627,24 @@ init_script() {
     # Load existing configuration and set defaults
     load_config
     set_defaults
+}
+
+# =============================================================================
+# `dotfiles test` — run the bundled test suite (test/run.sh)
+# =============================================================================
+# Hermetic, zero-dependency suite that exercises every command across the
+# install/update/sync/clean/uninstall environments in throwaway sandboxes.
+# Passes any args straight through (e.g. `dotfiles test -f config`,
+# `dotfiles test --shellcheck`).
+test_dotfiles() {
+    local runner="$DOTFILES_ROOT/test/run.sh"
+    if [[ ! -f "$runner" ]]; then
+        _dotfiles_log_error "Test runner not found: $runner"
+        _dotfiles_log_hint "the suite ships under test/ — run from a full repo checkout"
+        return 1
+    fi
+    command -v bash >/dev/null 2>&1 || { _dotfiles_log_error "bash is required to run the tests"; return 1; }
+    bash "$runner" "$@"
 }
 
 # Parse and validate command line arguments
@@ -2706,6 +2735,9 @@ parse_args() {
         status|st)
             status_command
             ;;
+        test|t)
+            test_dotfiles "${@:2}"
+            ;;
         version)
             show_version
             ;;
@@ -2718,7 +2750,7 @@ parse_args() {
                 local _sug
                 _sug="$(_dotfiles_did_you_mean "$command" \
                     install update sync status config doctor clean claude-clean \
-                    uninstall link profile packages version help \
+                    uninstall link profile packages test version help \
                     2>/dev/null)"
                 [[ -n "$_sug" ]] && _dotfiles_log_hint "did you mean: dotfiles $_sug?"
                 echo
