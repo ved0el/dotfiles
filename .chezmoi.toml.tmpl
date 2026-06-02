@@ -1,0 +1,12 @@
+{{- $tools   := promptBoolOnce . "tools"   "Install productivity tools (ex: bat, fd, ripgrep, etc)" true -}}
+{{- $develop := promptBoolOnce . "develop" "Install development tools (ex: nodejs, golang, python, etc)" false -}}
+{{- $tmux    := promptBoolOnce . "tmux"    "Install tmux + plugins (and manage ~/.tmux.conf)" true -}}
+{{- $wm := false -}}
+{{- if eq .chezmoi.os "darwin" -}}
+{{-   $wm = promptBoolOnce . "wm" "Install the macOS window manager (yabai + skhd) and its config" false -}}
+{{- end -}}
+[data]
+    tools   = {{ $tools }}
+    develop = {{ $develop }}
+    tmux    = {{ $tmux }}
+    wm      = {{ $wm }}

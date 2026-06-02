@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# tmux-sessionizer — fuzzy-jump to a project as a tmux session.
+#
+# Pick from your zoxide "frecent" directories + currently-open session paths, then
+# switch to (or create on the fly) a session named after that directory. Bound to
+# `prefix + f` in tmux.conf. Self-gates: no-ops with a message if fzf is missing.
+set -euo pipefail
+
+command -v fzf >/dev/null 2>&1 || {
+  tmux display-message "tmux-sessionizer: fzf not installed" 2>/dev/null || echo "fzf not installed"
+  exit 0
+}
+
+if [[ $# -eq 1 ]]; then
+  selected="$1"
+else
+  selected=$(
+    {
+      tmux list-sessions -F '#{session_path}' 2>/dev/null || true
+      command -v zoxide >/dev/null 2>&1 && zoxide query -l
+    } | awk 'NF && !seen[$0]++' \
+      | fzf --reverse --border --prompt='  jump › ' \
+            --preview 'eza -la --group-directories-first --color=always {} 2>/dev/null || ls -la {}' \
+            --preview-window 'right,50%'
+  ) || true
+fi
+
+[[ -z "${selected:-}" ]] && exit 0
+
+# Session name: dir basename, with dots/spaces → underscores (tmux dislikes dots).
+name=$(basename "$selected" | tr '. ' '__')
+
+tmux has-session -t="$name" 2>/dev/null || tmux new-session -ds "$name" -c "$selected"
+
+if [[ -n "${TMUX:-}" ]]; then
+  tmux switch-client -t "$name"   # already inside tmux (e.g. the popup)
+else
+  tmux attach -t "$name"          # launched from a bare shell
+fi

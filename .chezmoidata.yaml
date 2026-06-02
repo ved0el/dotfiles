@@ -1,0 +1,7 @@
+# Default profile selection (so templates render even before `chezmoi init`).
+# `chezmoi init` runs .chezmoi.toml.tmpl and writes per-machine data that
+# OVERRIDES these defaults. Per-machine overrides live in ~/.config/chezmoi/chezmoi.toml.
+tools: true     # CLI tools via mise
+develop: false  # language runtimes via mise
+tmux: true      # tmux + TPM plugins, and ~/.tmux.conf
+wm: false       # macOS window manager (yabai + skhd) + its config — macOS only

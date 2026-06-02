@@ -1,52 +1,47 @@
-name: tests
-
-# Runs the bundled, hermetic dotfiles test suite (test/run.sh) across the two
-# Unix install targets — Ubuntu (Debian-family, UC-2) and macOS (UC-1) — plus a
-# shellcheck lint pass. The suite stubs package installation, so no network or
-# real toolchains are needed.
+name: test
 
 on:
   push:
-    branches: [main]
   pull_request:
-
-permissions:
-  contents: read
+  workflow_dispatch:
 
 jobs:
-  test:
-    name: test (${{ matrix.os }})
+  # Fast feedback on every push: templates render + dry-run, no package installs.
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install chezmoi
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Init config from this commit (renders .chezmoi.toml.tmpl with defaults)
+        run: chezmoi init --source "$PWD" --promptDefaults --no-tty
+      - name: Bootstrap script renders cleanly
+        run: chezmoi execute-template --source "$PWD" < run_onchange_after_install-packages.sh.tmpl
+      - name: Dry-run apply (no changes made)
+        run: chezmoi apply --dry-run --source "$PWD"
+
+  # Real fresh-machine test: actually runs the bootstrap on clean runners.
+  fresh-machine:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-        with:
-          # Full history: the suite makes local clones that need real commits.
-          fetch-depth: 0
-
-      - name: Configure git identity (sandbox clones/commits)
+      - name: Install chezmoi
         run: |
-          git config --global user.email "ci@dotfiles.test"
-          git config --global user.name "dotfiles ci"
-
-      - name: Run test suite
-        env:
-          NO_COLOR: "1"
-        run: bash test/run.sh
-
-  lint:
-    name: shellcheck
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install shellcheck
-        run: sudo apt-get update && sudo apt-get install -y shellcheck
-
-      - name: Lint shell scripts
-        run: |
-          shellcheck -s bash bin/dotfiles
-          shellcheck -s bash test/run.sh test/lib/*.sh test/cases/*.sh
+          mkdir -p "$HOME/.local/bin"
+          sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Fresh install (chezmoi init --apply from this commit)
+        # --promptDefaults => tools=true, develop=false, tmux=true, wm=false.
+        # wm stays off so yabai/skhd (GUI/SIP, impossible in CI) are skipped.
+        run: chezmoi init --apply --source "$PWD" --promptDefaults --no-tty
+      - name: Verify $HOME matches the repo
+        run: chezmoi verify --source "$PWD"

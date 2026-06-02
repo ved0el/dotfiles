@@ -1,0 +1,48 @@
+#!/bin/sh
+# Bootstrap packages + plugins. Re-runs automatically whenever this file's rendered
+# content changes (e.g. you toggle a profile or add a package). `after_` => runs once
+# all dotfiles are applied, so mise's conf.d/*.toml are in place when `mise install`
+# runs.
+set -eu
+
+# --- base packages every machine needs ---
+{{ if eq .chezmoi.os "darwin" -}}
+command -v brew >/dev/null 2>&1 || /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+brew install git curl wget
+{{ if .tmux }}brew install tmux{{ end }}
+{{ if .tools }}brew install btop tree{{ end }}
+{{ if .wm }}
+# macOS window manager (yabai + skhd) from the upstream tap.
+brew install koekeishiya/formulae/yabai koekeishiya/formulae/skhd
+skhd --start-service || true
+echo "[wm] yabai installed — run 'yabai --start-service' (needs SIP setup; see the yabai wiki)"
+{{ end }}
+{{ else if eq .chezmoi.os "linux" -}}
+sudo apt-get update -y
+sudo apt-get install -y git curl wget
+{{ if .tmux }}sudo apt-get install -y tmux{{ end }}
+{{ if .tools }}sudo apt-get install -y btop tree{{ end }}
+{{ end -}}
+
+# ~/.local/bin holds self-installed tools (sheldon, mise).
+export PATH="$HOME/.local/bin:$PATH"
+
+# --- sheldon (zsh plugin manager) — idempotent; --force overwrites on upgrade ---
+command -v sheldon >/dev/null 2>&1 || \
+  curl --proto '=https' -fLsS https://rossmacarthur.github.io/install/crate.sh | \
+    bash -s -- --force --repo rossmacarthur/sheldon --to "$HOME/.local/bin"
+
+# --- mise (runtimes + CLI tools, cross-platform — drives the tools/develop profiles) ---
+command -v mise >/dev/null 2>&1 || \
+  curl --proto '=https' --tlsv1.2 -fsSL https://mise.run | sh
+
+{{ if .tmux -}}
+# --- tmux plugins via TPM (only when tmux is installed) ---
+[ -d "$HOME/.tmux/plugins/tpm" ] || \
+  git clone --depth 1 https://github.com/tmux-plugins/tpm "$HOME/.tmux/plugins/tpm"
+"$HOME/.tmux/plugins/tpm/bin/install_plugins"
+{{ end -}}
+
+# --- install tools/runtimes declared in ~/.config/mise/conf.d/*.toml, lock sheldon ---
+mise install --yes
+sheldon lock --update

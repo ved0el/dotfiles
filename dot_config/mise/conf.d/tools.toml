@@ -1,0 +1,15 @@
+# Tools profile — modern CLI tools, managed by mise (cross-platform: one list works
+# on macOS, Ubuntu, and Raspberry Pi/ARM, no per-OS package-name gaps). `mise install`
+# (run by the chezmoi bootstrap) installs everything declared here. Pin versions
+# instead of "latest" if you want reproducibility.
+[tools]
+bat = "latest"
+delta = "latest"
+eza = "latest"
+fd = "latest"
+fzf = "latest"
+gh = "latest"
+jq = "latest"
+ripgrep = "latest"
+yq = "latest"
+zoxide = "latest"
