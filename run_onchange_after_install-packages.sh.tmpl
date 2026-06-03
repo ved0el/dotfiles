@@ -5,12 +5,16 @@
 # runs.
 set -eu
 
-# --- base packages every machine needs ---
+# --- base packages: install only what's missing. btop→bottom and tree→eza are handled
+#     by mise + shell aliases now, so they're no longer installed via brew/apt. ---
 {{ if eq .chezmoi.os "darwin" -}}
 command -v brew >/dev/null 2>&1 || /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-brew install git curl wget
-{{ if .tmux }}brew install tmux{{ end }}
-{{ if .tools }}brew install btop tree{{ end }}
+# git/curl ship with macOS — only install if somehow absent.
+command -v git  >/dev/null 2>&1 || brew install git
+command -v curl >/dev/null 2>&1 || brew install curl
+{{ if .tmux }}command -v tmux >/dev/null 2>&1 || brew install tmux{{ end }}
+# mole — macOS cleanup/optimization CLI (macOS only).
+command -v mole >/dev/null 2>&1 || brew install mole
 {{ if .wm }}
 # macOS window manager (yabai + skhd) from the upstream tap.
 brew install koekeishiya/formulae/yabai koekeishiya/formulae/skhd
@@ -18,10 +22,12 @@ skhd --start-service || true
 echo "[wm] yabai installed — run 'yabai --start-service' (needs SIP setup; see the yabai wiki)"
 {{ end }}
 {{ else if eq .chezmoi.os "linux" -}}
-sudo apt-get update -y
-sudo apt-get install -y git curl wget
-{{ if .tmux }}sudo apt-get install -y tmux{{ end }}
-{{ if .tools }}sudo apt-get install -y btop tree{{ end }}
+# Batch a single apt-get for whatever is missing (skip the update entirely if nothing is).
+_pkgs=""
+command -v git  >/dev/null 2>&1 || _pkgs="$_pkgs git"
+command -v curl >/dev/null 2>&1 || _pkgs="$_pkgs curl"
+{{ if .tmux }}command -v tmux >/dev/null 2>&1 || _pkgs="$_pkgs tmux"{{ end }}
+if [ -n "$_pkgs" ]; then sudo apt-get update -y && sudo apt-get install -y $_pkgs; fi
 {{ end -}}
 
 # ~/.local/bin holds self-installed tools (sheldon, mise).

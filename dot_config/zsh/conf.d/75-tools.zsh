@@ -21,6 +21,7 @@ if command -v eza &>/dev/null; then
   alias la="$_e -a"
   alias ll="$_e -l --git --time-style=relative"
   alias lla="$_e -la --git --time-style=relative"
+  alias tree="$_e --tree"   # replaces the `tree` binary (no longer installed)
   alias lt="$_e --tree"
   alias lt2="$_e --tree --level=2"
   alias lt3="$_e --tree --level=3"
