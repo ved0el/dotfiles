@@ -84,6 +84,15 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
 - A commit that changes behavior, profiles, naming, or the bootstrap MUST NOT leave the docs stale.
 
 ## Gotchas
+- **tmux plugins install via `git clone` in the bootstrap — no tmux server.** Do NOT
+  "fix" it to use TPM's `bin/install_plugins`: that needs a live server that has sourced
+  the config (for `TMUX_PLUGIN_MANAGER_PATH`); during a non-interactive bootstrap a
+  session-less `tmux start-server` exits first → TPM aborts "not configured" → 0 plugins,
+  AND it leaves a stale server on the default socket → plain `tmux` then dies with
+  "server exited unexpectedly" after the next tmux upgrade (old server vs new client).
+  A "plugin install" is just a clone into `~/.tmux/plugins/<name>`, so the bootstrap parses
+  `@plugin` lines and clones them. After upgrading tmux, `tmux kill-server` (or relog) to
+  drop a stale old-version server.
 - chezmoi **copies** files (not symlinks). Migrating from a symlink manager replaces the link with a real copy.
 - `~/.config/chezmoi/chezmoi.toml` (from `init`) OVERRIDES `.chezmoidata.yaml`.
 - `apply` does NOT re-prompt profiles — edit the config or re-run `init`.
