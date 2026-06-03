@@ -1,0 +1,1202 @@
+/* ========================================== */
+/* === ROOT VARIABLES AND BASE STYLES === */
+/* ========================================== */
+
+/* --- Root Variables (Colors) --- */
+:root {
+  /* Catppuccin Mocha color palette */
+  --rosewater: #f5e0dc;
+  --flamingo: #f2cdcd;
+  --pink: #f5c2e7;
+  --mauve: #cba6f7;
+  --red: #f38ba8;
+  --maroon: #eba0ac;
+  --peach: #fab387;
+  --yellow: #f9e2af;
+  --green: #a6e3a1;
+  --teal: #94e2d5;
+  --sky: #89dceb;
+  --sapphire: #74c7ec;
+  --blue: #89b4fa;
+  --lavender: #b4befe;
+
+  /* Text colors */
+  --text: #cdd6f4;
+  --subtext1: #bac2de;
+  --subtext0: #a6adc8;
+
+  /* Overlay colors */
+  --overlay2: #9399b2;
+  --overlay1: #7f849c;
+  --overlay0: #6c7086;
+
+  /* Surface colors */
+  --surface2: #585b70;
+  --surface1: #45475a;
+  --surface0: #282936;
+
+  /* Base colors */
+  --base: #2b2e40;
+  --mantle: #313244;
+  --crust: #11111b;
+}
+
+/* --- Base Styles --- */
+* {
+  font-size: 14px;
+  color: var(--text);
+  font-family: 'JetBrainsMono NFP, Hack Nerd Font', monospace;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* --- Yasb Bar Itself --- */
+.yasb-bar {
+  padding: 0 8px;
+  background-color: var(--crust);
+  border-radius: 8px;
+  border: 1px solid var(--surface1);
+}
+
+/* --- Individual Widgets --- */
+.widget {
+  margin: 0 4px;
+}
+
+/* --- Widget Labels --- */
+.widget .label {
+  padding-left: 4px;
+}
+
+/* --- Icons --- */
+.icon,
+.btn {
+  font-family: 'Segoe Fluent Icons', sans-serif;
+  font-size: 16px;
+}
+
+/* ========================================== */
+/* === WIDGET STYLES (ALPHABETICAL ORDER) === */
+/* ========================================== */
+
+/* ==================== */
+/* === CPU WIDGET === */
+/* ==================== */
+
+/* CPU */
+.cpu-widget .icon {
+  color: var(--sapphire);
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.cpu-widget .label {
+  color: var(--sapphire);
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* ==================== */
+/* === HOME WIDGET === */
+/* ==================== */
+
+.home-widget {
+  padding: 0;
+}
+
+.home-widget .icon {
+  font-size: 20px;
+  color: var(--overlay1);
+  padding-right: 4px;
+}
+
+.home-widget .icon:hover {
+  color: var(--overlay2);
+}
+
+.home-menu {
+  background-color: var(--crust);
+}
+
+.home-menu .menu-item {
+  padding: 6px 48px 6px 16px;
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.home-menu .menu-item:hover {
+  background-color: var(--surface0);
+  color: var(--text);
+}
+
+.home-menu .separator {
+  max-height: 1px;
+  background-color: var(--surface1);
+}
+
+/* ====================== */
+/* === KOMOREBI WIDGET === */
+/* ====================== */
+
+/* --- Komorebi Active Layout --- */
+.komorebi-active-layout .label {
+  font-size: 18px;
+  font-weight: bold;
+  padding: 0;
+  padding-right: 12px;
+  border-radius: 6px;
+  outline: none;
+}
+
+.komorebi-layout-menu {
+  background-color: var(--crust);
+}
+
+.komorebi-layout-menu .menu-item {
+  padding: 4px 16px;
+}
+
+.komorebi-layout-menu .menu-item-icon {
+  font-size: 20px;
+  font-weight: normal;
+  color: var(--subtext1);
+}
+
+.komorebi-layout-menu .menu-item-text {
+  padding-left: 4px;
+  font-weight: normal;
+  color: var(--text);
+}
+
+.komorebi-layout-menu .menu-item:hover {
+  background-color: var(--surface0);
+}
+
+.komorebi-layout-menu .separator {
+  max-height: 1px;
+  background-color: var(--surface1);
+}
+
+/* --- Workspace and Layout Containers --- */
+.komorebi-workspaces {
+  padding: 0;
+  /* background-color: var(--crust); */
+  border-radius: 12px;
+  margin: 2px 0;
+}
+
+.komorebi-workspaces .offline-status {
+  color: var(--text);
+  padding: 0 4px;
+  font-weight: 600;
+}
+
+.komorebi-workspaces .ws-btn {
+  color: transparent;
+  width: 10px;
+  height: 10px;
+  background-color: var(--surface0);
+  border-radius: 5px;
+  margin: 0 2px;
+  font-size: 1px;
+}
+
+.komorebi-workspaces .ws-btn:hover {
+  background-color: var(--subtext0);
+}
+
+.komorebi-workspaces .ws-btn.populated {
+  width: 20px;
+  height: 10px;
+  background-color: var(--surface2);
+  border-radius: 5px;
+  margin: 0 2px;
+  font-size: 1px;
+}
+
+.komorebi-workspaces .ws-btn.active {
+  color: transparent;
+  background-color: var(--subtext1);
+  width: 36px;
+  height: 10px;
+  border-radius: 5px;
+}
+
+/* ====================== */
+/* === LANGUAGE WIDGET === */
+/* ====================== */
+
+.language-widget .widget-container {
+  background-color: var(--overlay0);
+  padding: 0 6px;
+  margin: 4px 0;
+  border-radius: 6px;
+}
+
+.language-widget .icon {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.language-widget .label {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.language-menu {
+  border-radius: 7px;
+  background-color: var(--crust);
+  min-width: 300px;
+}
+
+.language-menu .header {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 2px;
+  padding: 12px;
+}
+
+.language-menu .footer {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 12px;
+  margin-top: 2px;
+  color: var(--subtext0);
+}
+
+.language-menu .footer:hover {
+  background-color: var(--surface0);
+}
+
+.language-menu .language-item {
+  padding: 6px 12px;
+  margin: 2px 4px;
+}
+
+.language-menu .language-item.active {
+  background-color: var(--surface0);
+  border-radius: 4px;
+}
+
+.language-menu .language-item:hover {
+  background-color: var(--surface0);
+}
+
+.language-menu .language-item.active:hover {
+  background-color: var(--surface0);
+  border-radius: 4px;
+}
+
+.language-menu .language-item .code {
+  font-weight: 900;
+  font-size: 14px;
+  min-width: 40px;
+  text-transform: uppercase;
+}
+
+.language-menu .language-item .icon {
+  font-family: 'Hack Nerd Font', sans-serif;
+  font-size: 16px;
+  margin-right: 8px;
+  color: var(--text);
+}
+
+.language-menu .language-item .name {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.language-menu .language-item .layout {
+  font-weight: 600;
+  font-size: 12px;
+}
+
+/* ====================== */
+/* === MEMORY WIDGET === */
+/* ====================== */
+
+.memory-widget .icon {
+  color: var(--maroon);
+  font-weight: bold;
+  font-size: 14px;
+  padding-right: 4px;
+}
+
+.memory-widget .label {
+  color: var(--maroon);
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* ====================== */
+/* === MEDIA WIDGET === */
+/* ====================== */
+
+/* --- Media Widget --- */
+.media-widget .widget-container {
+  padding: 0;
+}
+
+.media-widget .label {
+  font-family:
+    'Be Vietnam Pro', 'Noto Sans JP', 'JetBrainsMono NFP', sans-serif;
+  color: var(--text);
+  padding: 0 4px;
+}
+
+.media-widget .btn {
+  font-family: 'Hack Nerd Font', sans-serif;
+  font-size: 16px;
+  padding: 0 2px;
+  color: var(--subtext1);
+}
+
+.media-widget .btn.play {
+  font-size: 18px;
+  color: var(--subtext1);
+}
+
+.media-widget .btn.next {
+  padding-right: 8px;
+  margin-right: 2px;
+}
+
+.media-widget .btn:hover {
+  color: var(--subtext0);
+}
+
+.media-menu {
+  max-width: 640px;
+  background-color: var(--surface2);
+  border-radius: 8px;
+}
+
+.media-menu .title,
+.media-menu .artist,
+.media-menu .source {
+  font-family:
+    'Be Vietnam Pro', 'Noto Sans JP', 'JetBrainsMono NFP', sans-serif;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 500;
+  margin-left: 10px;
+}
+
+.media-menu .artist {
+  font-size: 14px;
+  color: var(--subtext1);
+  margin-top: 0px;
+  margin-bottom: 8px;
+}
+
+.media-menu .source {
+  font-size: 12px;
+  color: var(--crust);
+  font-weight: normal;
+  border-radius: 3px;
+  background-color: var(--subtext1);
+  padding: 2px 4px;
+  margin: 10px 2px 0px 2px;
+}
+
+.media-menu .source.brave {
+  background-color: var(--red);
+  color: var(--text);
+}
+
+.media-menu .source.spotify {
+  background-color: var(--green);
+  color: var(--text);
+}
+
+.media-menu .source.comet {
+  background-color: var(--blue);
+  color: var(--text);
+}
+
+.media-menu .btn {
+  font-size: 14px;
+  font-weight: 400;
+  margin: 10px 2px 0px 2px;
+  min-width: 40px;
+  max-width: 40px;
+  min-height: 40px;
+  max-height: 40px;
+  border-radius: 20px;
+}
+
+.media-menu .btn.prev,
+.media-menu .btn.next {
+  font-size: 16px;
+}
+
+.media-menu .btn:hover {
+  color: var(--text);
+  background-color: var(--surface0);
+}
+
+.media-menu .btn.play {
+  background-color: var(--surface0);
+  font-size: 20px;
+}
+
+.media-menu .btn.disabled:hover,
+.media-menu .btn.disabled {
+  color: var(--subtext1);
+  background-color: transparent;
+}
+
+.media-menu .playback-time {
+  font-size: 14px;
+  color: var(--text);
+  margin-top: 20px;
+  min-width: 100px;
+}
+
+.media-menu .progress-slider {
+  height: 10px;
+  margin: 5px 4px;
+}
+
+.media-menu .app-volume-container {
+  padding: 8px 6px;
+  border-radius: 16px;
+  margin-left: 10px;
+}
+
+.media-menu .app-volume-container .mute-button,
+.media-menu .app-volume-container .unmute-button {
+  font-family: 'Segoe Fluent Icons', sans-serif;
+  font-size: 16px;
+  color: var(--text);
+  margin-top: 4px;
+}
+
+.media-menu .app-volume-container .unmute-button {
+  color: var(--subtext0);
+}
+
+/* ====================== */
+/* === NOTES WIDGET === */
+/* ====================== */
+
+.notes-widget {
+  padding: 0;
+}
+
+.notes-widget .widget-container {
+  background-color: var(--base);
+  margin: 3.5px 0 3.5px 0;
+  border-radius: 5px;
+  padding-left: 7px;
+  padding-right: 6px;
+}
+
+.notes-widget .label {
+  font-size: 14px;
+  color: var(--green);
+}
+
+.notes-widget .icon {
+  font-size: 16px;
+  color: var(--green);
+}
+
+.notes-menu {
+  min-width: 400px;
+  max-width: 400px;
+  background-color: var(--crust);
+  border-radius: 7px;
+}
+
+.notes-menu .note-item {
+  background-color: var(--base);
+  border-bottom: 1px solid var(--surface1);
+}
+
+.notes-menu .note-item:hover {
+  background-color: var(--surface0);
+}
+
+.notes-menu .note-item .icon {
+  font-size: 16px;
+  padding: 0 4px;
+}
+
+.notes-menu .delete-button {
+  color: var(--red);
+  border: none;
+  font-size: 15px;
+  padding: 7px 8px;
+  border-radius: 3px;
+}
+
+.notes-menu .delete-button:hover {
+  background-color: var(--surface1);
+}
+
+.notes-menu .copy-button {
+  color: var(--subtext1);
+  border: none;
+  font-size: 16px;
+  padding: 4px 8px;
+  border-radius: 3px;
+}
+
+.notes-menu .copy-button:hover {
+  background-color: var(--surface1);
+}
+
+.notes-menu .note-item .title {
+  font-size: 13px;
+}
+
+.notes-menu .note-item .date {
+  margin-top: 0px;
+  font-size: 12px;
+  color: var(--overlay1);
+}
+
+.notes-menu .empty-list {
+  color: var(--overlay1);
+  font-size: 24px;
+  font-weight: 600;
+  padding: 10px 0 20px 0;
+}
+
+.notes-menu .add-button,
+.notes-menu .cancel-button {
+  padding: 8px;
+  background-color: var(--surface0);
+  border: none;
+  border-radius: 4px;
+  color: var(--text);
+}
+
+.notes-menu .cancel-button {
+  margin-left: 4px;
+}
+
+.notes-menu .add-button:hover,
+.notes-menu .cancel-button:hover {
+  background-color: var(--surface1);
+}
+
+.notes-menu .scroll-area {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+.notes-menu .note-input {
+  background-color: var(--crust);
+  border: 1px solid var(--surface1);
+  font-size: 14px;
+  max-height: 30px;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.note-input:focus {
+  border: 1px solid var(--blue);
+}
+
+/* ====================== */
+/* === POMODORO WIDGET === */
+/* ====================== */
+
+/* --- Pomodoro Widget --- */
+.pomodoro-widget {
+  padding: 0;
+}
+
+.pomodoro-widget .icon {
+  font-size: 14px;
+  padding-right: 2px;
+}
+
+.pomodoro-widget .label.paused,
+.pomodoro-widget .icon.paused {
+  color: var(--overlay1);
+}
+
+.pomodoro-widget .label.work,
+.pomodoro-widget .icon.work {
+  color: var(--green);
+}
+
+.pomodoro-widget .label.break,
+.pomodoro-widget .icon.break {
+  color: var(--blue);
+}
+
+/* Pomodoro menu styling */
+.pomodoro-menu {
+  background-color: var(--crust);
+  border-radius: 8px;
+}
+
+.pomodoro-menu .header {
+  font-size: 16px;
+  font-weight: 600;
+  max-height: 0px;
+  color: var(--text);
+}
+
+.pomodoro-menu .status {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--subtext1);
+}
+
+.pomodoro-menu .session {
+  font-size: 12px;
+  color: var(--subtext0);
+}
+
+.pomodoro-menu .button {
+  background-color: var(--surface1);
+  color: var(--subtext1);
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+}
+
+.pomodoro-menu .button.start {
+  background-color: var(--surface1);
+}
+
+.pomodoro-menu .button.reset {
+  background-color: var(--surface1);
+}
+
+.pomodoro-menu .button:hover {
+  background-color: var(--surface0);
+}
+
+.pomodoro-menu .button.pause {
+  background-color: var(--green);
+  color: var(--crust);
+}
+
+/* ====================== */
+/* === POWER MENU WIDGET === */
+/* ====================== */
+
+.power-menu-widget .label {
+  color: var(--maroon);
+  font-size: 18px;
+}
+
+.power-menu-popup {
+  background-color: var(--surface0);
+  padding: 24px;
+}
+
+.power-menu-popup .button {
+  padding: 0;
+  width: 160px;
+  height: 200px;
+  border-radius: 8px;
+}
+
+.power-menu-popup .button.hover {
+  background-color: var(--surface1);
+}
+
+.power-menu-popup .button .label {
+  padding: 8px auto;
+  font-size: 16px;
+}
+
+.power-menu-popup .button .icon {
+  font-family: 'Hack Nerd Font', monospace;
+  font-size: 64px;
+  min-width: 100px;
+  padding-top: 32px;
+  padding-right: 4px;
+}
+
+.power-menu-popup .button.cancel {
+  height: 40px;
+  font-size: 18px;
+  line-height: 40px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.power-menu-popup .button.hibernate.hover {
+  background-color: rgba(137, 180, 250, 0.2);
+}
+.power-menu-popup .button.hibernate.hover .label,
+.power-menu-popup .button.hibernate.hover .icon {
+  color: var(--blue);
+}
+
+.power-menu-popup .button.sleep.hover {
+  background-color: rgba(180, 190, 254, 0.2);
+}
+.power-menu-popup .button.sleep.hover .label,
+.power-menu-popup .button.sleep.hover .icon {
+  color: var(--lavender);
+}
+
+.power-menu-popup .button.restart.hover {
+  background-color: rgba(249, 226, 175, 0.2);
+}
+.power-menu-popup .button.restart.hover .label,
+.power-menu-popup .button.restart.hover .icon {
+  color: var(--yellow);
+}
+
+.power-menu-popup .button.signout.hover {
+  background-color: rgba(148, 226, 213, 0.2);
+}
+.power-menu-popup .button.signout.hover .label,
+.power-menu-popup .button.signout.hover .icon {
+  color: var(--teal);
+}
+
+.power-menu-popup .button.shutdown.hover {
+  background-color: rgba(243, 139, 168, 0.25);
+}
+.power-menu-popup .button.shutdown.hover .label,
+.power-menu-popup .button.shutdown.hover .icon {
+  color: var(--red);
+}
+
+.power-menu-popup .button.cancel.hover {
+  background-color: rgba(235, 160, 172, 0.15);
+}
+
+.power-menu-popup .button.cancel.hover .label,
+.power-menu-popup .button.cancel.hover .icon {
+  color: var(--red);
+}
+/* ====================== */
+/* === SYSTRAY WIDGET === */
+/* ====================== */
+
+/* --- Systray --- */
+.systray {
+  background: transparent;
+  border: none;
+  margin: 0;
+}
+
+.systray .unpinned-container {
+  background: transparent;
+  font-size: 16px;
+}
+
+.systray .pinned-container {
+  background: transparent;
+  font-size: 16px;
+}
+
+.systray .button {
+  border-radius: 4px;
+  padding: 4px;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+}
+
+.systray .button:hover {
+  background: var(--surface0);
+}
+
+.systray .unpinned-visibility-btn {
+  font-family: 'Hack Nerd Font', sans-serif;
+  border-radius: 4px;
+  padding: 0 4px;
+  color: var(--surface2);
+}
+
+.systray .unpinned-visibility-btn:hover {
+  color: var(--text);
+}
+
+/* ====================== */
+/* === VOLUME WIDGET === */
+/* ====================== */
+
+/* --- Volume Widget --- */
+.volume-widget .icon {
+  color: var(--teal);
+  margin: 0;
+  padding: 0;
+}
+
+.volume-widget .label {
+  margin-left: -2px;
+  color: var(--teal);
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* --- Volume Widget --- */
+.volume-slider {
+  border: none;
+}
+
+.audio-menu {
+  color: var(--subtext1);
+  background-color: var(--crust);
+}
+
+.audio-menu .icon {
+  font-size: 16px;
+  color: var(--subtext1);
+  margin-right: 8px;
+}
+
+.audio-container .device {
+  background-color: transparent;
+  border: none;
+  padding: 6px 8px 6px 4px;
+  margin: 2px 0;
+  font-size: 12px;
+  border-radius: 4px;
+}
+
+.audio-container .device.selected {
+  background-color: var(--surface0);
+}
+
+.audio-container .device:hover {
+  background-color: var(--surface1);
+}
+
+/* ====================== */
+/* === WEATHER WIDGET === */
+/* ====================== */
+
+/* --- Weather Widget --- */
+.weather-widget .icon {
+  font-size: 18px;
+  color: var(--yellow);
+}
+
+.weather-widget .label {
+  color: var(--yellow);
+  font-size: 12px;
+}
+
+.weather-card {
+  background-color: var(--crust);
+}
+
+.weather-card-today .label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.weather-card-today .label.location {
+  font-size: 32px;
+  font-weight: 600;
+}
+
+.weather-card-today .label.alert {
+  font-size: 13px;
+  font-weight: 600;
+  background-color: rgba(249, 226, 175, 0.1);
+  border: 1px solid rgba(249, 226, 175, 0.2);
+  color: var(--yellow);
+  border-radius: 6px;
+  padding: 5px 0;
+}
+
+.weather-card-day {
+  border-radius: 6px;
+  background-color: var(--crust);
+}
+
+.weather-card-day .label {
+  font-size: 13px;
+}
+
+.weather-card-day.active {
+  background-color: var(--surface0);
+  border: 1px solid var(--surface1);
+}
+
+.weather-card-day:hover {
+  background-color: var(--surface0);
+}
+
+.weather-card .hourly-container {
+  border: none;
+  background-color: transparent;
+  min-height: 150px;
+}
+
+.weather-card .hourly-data {
+  background-color: var(--yellow);
+  font-size: 11px;
+  font-weight: bold;
+}
+
+/* ====================== */
+/* === WIFI WIDGET === */
+/* ====================== */
+
+/* WIFI */
+.wifi-widget .icon {
+  color: var(--mauve);
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.wifi-widget .label {
+  color: var(--mauve);
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.wifi-menu {
+  background-color: var(--crust);
+  max-height: 350px;
+  min-height: 375px;
+  min-width: 375px;
+}
+
+.wifi-menu .progress-bar {
+  max-height: 2px;
+}
+
+.wifi-menu .header {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 2px;
+  padding: 12px;
+  background-color: var(--surface0);
+  color: var(--text);
+  border-bottom: 1px solid var(--surface1);
+}
+
+.wifi-menu .error-message {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 2px;
+  padding: 12px;
+  background-color: var(--red);
+  color: var(--text);
+  border-bottom: 1px solid var(--surface1);
+}
+
+.wifi-menu .wifi-list {
+  background-color: var(--base);
+  margin-right: 3px;
+}
+
+.wifi-menu .wifi-item {
+  min-height: 35px;
+  padding: 2px 12px;
+  margin: 2px 4px;
+}
+
+.wifi-menu .wifi-item:hover {
+  background-color: var(--surface0);
+  border-radius: 6px;
+}
+
+.wifi-menu .wifi-item[active='true'] {
+  background-color: var(--surface1);
+  font-size: 14px;
+  border-radius: 6px;
+  min-height: 80px;
+}
+
+.wifi-menu .wifi-item .icon {
+  font-size: 26px;
+  margin-right: 10px;
+}
+
+.wifi-menu .wifi-item .name {
+  font-size: 14px;
+  margin-right: 10px;
+}
+
+.wifi-menu .wifi-item .password {
+  background-color: transparent;
+  font-size: 14px;
+}
+
+.wifi-menu .wifi-item .status {
+  font-size: 14px;
+}
+
+.wifi-menu .wifi-item .strength {
+  font-size: 14px;
+}
+
+.wifi-menu .wifi-item .controls-container {
+  padding-top: 8px;
+}
+
+.wifi-menu .wifi-item .connect {
+  background-color: var(--surface1);
+  padding: 4px 30px;
+  border-radius: 4px;
+  border: none;
+  font-size: 14px;
+}
+
+.wifi-menu .wifi-item .connect:hover {
+  background-color: var(--surface2);
+}
+
+.wifi-menu .footer {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 12px;
+  margin-top: 2px;
+  color: var(--subtext0);
+  background-color: var(--surface0);
+  border-top: 1px solid var(--surface1);
+}
+
+.wifi-menu .footer .settings-button {
+  background-color: transparent;
+  border: none;
+  padding: 0 2px;
+  min-width: 26px;
+  min-height: 26px;
+  color: var(--text);
+}
+
+.wifi-menu .footer .refresh-icon {
+  background-color: transparent;
+  border: none;
+  min-width: 26px;
+  min-height: 26px;
+  color: var(--text);
+}
+
+.wifi-menu .footer .refresh-icon:hover {
+  background-color: var(--surface1);
+  border-radius: 4px;
+}
+
+/* ====================== */
+/* === WHKD WIDGET === */
+/* ====================== */
+
+.whkd-widget {
+  padding: 0 6px 0 6px;
+}
+
+.whkd-widget .icon {
+  font-size: 18px;
+}
+
+.whkd-popup .edit-config-button {
+  background-color: var(--blue);
+  color: var(--text);
+  padding: 4px 8px 6px 8px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 4px;
+}
+
+.whkd-popup .keybind-buttons-container {
+  min-width: 240px;
+}
+
+.whkd-popup .keybind-button {
+  background-color: var(--surface1);
+  color: var(--text);
+  padding: 4px 8px 6px 8px;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid var(--surface2);
+  border-radius: 4px;
+}
+
+.whkd-popup .keybind-button.special {
+  background-color: var(--surface1);
+}
+
+.whkd-popup .keybind-row:hover {
+  background-color: var(--surface0);
+  border-radius: 8px;
+}
+
+.whkd-popup .plus-separator {
+  padding: 0 0px;
+  border: none;
+  font-size: 16px;
+  font-weight: bold;
+  background-color: transparent;
+}
+
+.whkd-popup .filter-input {
+  padding: 0 8px 2px 8px;
+  font-size: 14px;
+  border: 1px solid var(--surface1);
+  border-radius: 4px;
+  outline: none;
+  color: var(--text);
+  background-color: var(--base);
+  min-height: 32px;
+}
+
+.whkd-popup .filter-input:focus {
+  border: 1px solid var(--blue);
+}
+
+.whkd-popup .keybind-command {
+  font-size: 14px;
+}
+
+.whkd-popup .keybind-header {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  padding: 8px 0;
+  margin-top: 20px;
+  background-color: var(--surface0);
+  border: 1px solid var(--surface1);
+  border-radius: 8px;
+}
+
+/* ====================== */
+/* === CLOCK WIDGET === */
+/* ====================== */
+
+.clock-popup.calendar .calendar-table {
+  font-family: 'Segoe UI', sans-serif;
+  margin: 0;
+  padding: 0;
+  border: none;
+  outline: none;
+}
+/* biome-ignore lint/correctness/noUnknownPseudoElement: yasb clock special config */
+/* biome-ignore lint/correctness/noUnknownPseudoClass:  yasb clock special config */
+.clock-popup.calendar .calendar-table::item:selected {
+  color: var(--sapphire);
+  font-weight: bold;
+}
+.clock-popup.calendar .day-label {
+  margin-top: 20px;
+}
+.clock-popup.calendar .month-label {
+  font-weight: normal;
+}
+.clock-popup.calendar .year-label {
+  font-weight: normal;
+}
+.clock-popup.calendar .date-label {
+  font-size: 88px;
+  font-weight: 900;
+  margin-top: -20px;
+}
+
+/* ====================== */
+/* === NOTIFICATIONS WIDGET === */
+/* ====================== */

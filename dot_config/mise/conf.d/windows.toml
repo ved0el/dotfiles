@@ -1,0 +1,10 @@
+# Windows-only mise tools — applied only on Windows (gated in .chezmoiignore).
+# Cross-platform tools live in tools.toml / develop.toml; this file is for tools that
+# only make sense on Windows (e.g. a prompt, since Unix uses powerlevel10k).
+#
+# Ad-hoc, machine-specific additions go in ~/.config/mise/config.toml — that file is
+# NOT managed by chezmoi, and MISE_GLOBAL_CONFIG_FILE points `mise use -g` at it, so
+# experiments never pollute these tracked files. Put tools you want on EVERY Windows
+# machine here instead.
+[tools]
+"aqua:starship/starship" = "latest"  # shell prompt (Unix uses powerlevel10k)

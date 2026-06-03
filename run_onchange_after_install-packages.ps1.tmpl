@@ -1,0 +1,89 @@
+# Windows bootstrap: scoop (OS package manager) + mise (runtimes/CLI tools). The
+# analogue of run_onchange_after_install-packages.sh.tmpl for Unix. chezmoi runs this
+# via the [interpreters.ps1] command set in .chezmoi.toml.tmpl. Re-runs automatically
+# whenever this file's rendered content changes. tmux / sheldon / TPM are Unix-only
+# and intentionally skipped here.
+$ErrorActionPreference = 'Stop'
+
+# --- env every later step + the PowerShell profile rely on (persisted for the user) ---
+$LocalBin = Join-Path $HOME '.local\bin'
+New-Item -ItemType Directory -Force -Path $LocalBin | Out-Null
+$XdgConfig = Join-Path $HOME '.config'
+
+function Add-UserPath([string]$Dir) {
+  $current = [Environment]::GetEnvironmentVariable('Path', 'User')
+  if ($current -notlike "*$Dir*") {
+    [Environment]::SetEnvironmentVariable('Path', "$Dir;$current", 'User')
+  }
+  if ($env:Path -notlike "*$Dir*") { $env:Path = "$Dir;$env:Path" }
+}
+
+# ~/.local/bin holds chezmoi (the one-liner installs it there) + other self-installed
+# tools. It is NOT on PATH by default on Windows, so persist it.
+Add-UserPath $LocalBin
+
+# XDG_CONFIG_HOME so mise (and other XDG-aware tools) read ~/.config/mise/conf.d —
+# the SAME manifests used on macOS/Linux. Without this mise looks in %APPDATA%.
+[Environment]::SetEnvironmentVariable('XDG_CONFIG_HOME', $XdgConfig, 'User')
+$env:XDG_CONFIG_HOME = $XdgConfig
+
+# MISE_GLOBAL_CONFIG_FILE: send `mise use -g` to an unmanaged per-machine file instead
+# of the chezmoi-tracked conf.d/*.toml (which apply would otherwise revert).
+$MiseGlobal = Join-Path $XdgConfig 'mise\config.toml'
+[Environment]::SetEnvironmentVariable('MISE_GLOBAL_CONFIG_FILE', $MiseGlobal, 'User')
+$env:MISE_GLOBAL_CONFIG_FILE = $MiseGlobal
+
+# KOMOREBI_CONFIG_HOME so komorebi reads ~/.config/komorebi (under the same tree as
+# everything else) instead of dropping komorebi.json in the home root.
+$KomorebiHome = Join-Path $XdgConfig 'komorebi'
+[Environment]::SetEnvironmentVariable('KOMOREBI_CONFIG_HOME', $KomorebiHome, 'User')
+$env:KOMOREBI_CONFIG_HOME = $KomorebiHome
+
+# --- scoop (package manager) — installs per-user; must NOT run elevated ---
+if (-not (Get-Command scoop -ErrorAction SilentlyContinue)) {
+  Invoke-RestMethod -Uri 'https://get.scoop.sh' | Invoke-Expression
+  $env:Path = "$env:USERPROFILE\scoop\shims;$env:Path"
+}
+
+# git: scoop needs it for buckets/updates. pwsh: PowerShell 7, the shell the managed
+# profile targets (this bootstrap itself runs under Windows PowerShell 5.1). Install
+# only what's missing. (curl ships with Windows 10+, so nothing to do there.)
+if (-not (Get-Command git  -ErrorAction SilentlyContinue)) { scoop install git }
+if (-not (Get-Command pwsh -ErrorAction SilentlyContinue)) { scoop install pwsh }
+
+# --- mise (runtimes + CLI tools, cross-platform — drives the tools/develop profiles) ---
+if (-not (Get-Command mise -ErrorAction SilentlyContinue)) {
+  scoop install mise
+}
+
+# --- install tools/runtimes declared in ~/.config/mise/conf.d/*.toml ---
+mise install --yes
+
+{{ if .wm -}}
+# --- Windows tiling window manager (komorebi + whkd + yasb) — the `wm` profile,
+#     analogue of the macOS yabai/skhd block. These live in scoop's extras bucket. ---
+$buckets = scoop bucket list 2>$null | Out-String
+if ($buckets -notmatch 'extras') { scoop bucket add extras }
+scoop install komorebi whkd yasb
+Write-Host "[wm] komorebi/whkd/yasb installed. Start the WM with: komorebic start --whkd"
+Write-Host "[wm] Run yasb once (or add it to startup) to launch the status bar."
+{{ end -}}
+
+# --- wire the chezmoi-managed profile into the real $PROFILE for BOTH PowerShell 7
+#     and Windows PowerShell 5.1. GetFolderPath('MyDocuments') is OneDrive-aware, so
+#     this is correct even when Documents is redirected. Idempotent: only adds the
+#     dot-source line once. ---
+$Managed = Join-Path $XdgConfig 'powershell\profile.ps1'
+$Docs = [Environment]::GetFolderPath('MyDocuments')
+$ProfilePaths = @(
+  (Join-Path $Docs 'PowerShell\Microsoft.PowerShell_profile.ps1'),        # PowerShell 7
+  (Join-Path $Docs 'WindowsPowerShell\Microsoft.PowerShell_profile.ps1')  # Windows PowerShell 5.1
+)
+$ShimLine = ". '$Managed'"
+foreach ($profilePath in $ProfilePaths) {
+  New-Item -ItemType Directory -Force -Path (Split-Path $profilePath) | Out-Null
+  if (-not (Test-Path $profilePath) -or
+      -not (Select-String -Path $profilePath -SimpleMatch $Managed -Quiet)) {
+    Add-Content -Path $profilePath -Value $ShimLine
+  }
+}

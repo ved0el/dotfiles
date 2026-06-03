@@ -1,12 +1,25 @@
 {{- $tools   := promptBoolOnce . "tools"   "Install productivity tools (ex: bat, fd, ripgrep, etc)" true -}}
 {{- $develop := promptBoolOnce . "develop" "Install development tools (ex: nodejs, golang, python, etc)" false -}}
-{{- $tmux    := promptBoolOnce . "tmux"    "Install tmux + plugins (and manage ~/.tmux.conf)" true -}}
-{{- $wm := false -}}
+{{- $tmux := false -}}
+{{- $wm   := false -}}
+{{- if ne .chezmoi.os "windows" -}}
+{{-   $tmux = promptBoolOnce . "tmux" "Install tmux + plugins (and manage ~/.tmux.conf)" true -}}
+{{- end -}}
 {{- if eq .chezmoi.os "darwin" -}}
 {{-   $wm = promptBoolOnce . "wm" "Install the macOS window manager (yabai + skhd) and its config" false -}}
+{{- else if eq .chezmoi.os "windows" -}}
+{{-   $wm = promptBoolOnce . "wm" "Install the Windows window manager (komorebi + whkd + yasb) and its config" false -}}
 {{- end -}}
 [data]
     tools   = {{ $tools }}
     develop = {{ $develop }}
     tmux    = {{ $tmux }}
     wm      = {{ $wm }}
+{{ if eq .chezmoi.os "windows" }}
+# Windows: run the .ps1 bootstrap under Windows PowerShell (always present on a fresh
+# box — the bootstrap then installs pwsh 7 for daily use). -ExecutionPolicy Bypass so a
+# Restricted default policy can't block chezmoi's generated temp script.
+[interpreters.ps1]
+    command = "powershell"
+    args = ["-NoLogo", "-NoProfile", "-ExecutionPolicy", "Bypass"]
+{{ end }}

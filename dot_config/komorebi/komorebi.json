@@ -1,0 +1,102 @@
+{
+  "$schema": "https://raw.githubusercontent.com/LGUG2Z/komorebi/v0.1.35/schema.json",
+  "app_specific_configuration_path": "$Env:KOMOREBI_CONFIG_HOME/applications.json",
+  "window_hiding_behaviour": "Cloak",
+  "cross_monitor_move_behaviour": "Insert",
+  "default_workspace_padding": 4,
+  "default_container_padding": 4,
+  "border": true,
+  "border_width": 2,
+  "border_offset": 0,
+  "border_style": "System",
+  "border_colours": {
+    "single": "#42a5f5",
+    "stack": "#00a542",
+    "monocle": "#ff3399",
+    "unfocused": "#808080"
+  },
+  "stackbar": {
+    "height": 40,
+    "mode": "OnStack",
+    "tabs": {
+      "width": 300
+    }
+  },
+  "display_index_preferences": {
+    "0": "GSM77A1-7&368db785&3&UID516",
+    "1": "ENC2785-7&368db785&3&UID520"
+  },
+  "monitors": [
+    {
+      "workspaces": [
+        {
+          "name": "I",
+          "layout": "UltrawideVerticalStack"
+        },
+        {
+          "name": "II",
+          "layout": "BSP"
+        }
+      ]
+    },
+    {
+      "workspaces": [
+        {
+          "name": "1",
+          "layout": "Rows"
+        }
+      ]
+    }
+  ],
+  "manage_rules": [
+    {
+      "kind": "Exe",
+      "id": "Zalo.exe",
+      "matching_strategy": "Equals"
+    }
+  ],
+  "ignore_rules": [
+    {
+      "kind": "Title",
+      "id": "Counter-Strike 2",
+      "matching_strategy": "Equals"
+    },
+
+    {
+      "kind": "Title",
+      "id": "Bitwarden",
+      "matching_strategy": "Contains"
+    },
+    {
+      "kind": "Exe",
+      "id": "bash.exe",
+      "matching_strategy": "Equals"
+    },
+    {
+      "kind": "Exe",
+      "id": "cmd.exe",
+      "matching_strategy": "Equals"
+    },
+    {
+      "kind": "Exe",
+      "id": "powershell.exe",
+      "matching_strategy": "Equals"
+    },
+    {
+      "kind": "Exe",
+      "id": "git-bash.exe",
+      "matching_strategy": "Equals"
+    },
+    { "kind": "Title", "id": "Metamask", "matching_strategy": "Contains" },
+    {
+      "kind": "Title",
+      "id": "Desktop Media Player",
+      "matching_strategy": "Contains"
+    },
+    {
+      "kind": "Class",
+      "id": "Tauri Window",
+      "matching_strategy": "Contains"
+    }
+  ]
+}

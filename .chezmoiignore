@@ -2,9 +2,40 @@
 README.md
 CLAUDE.md
 
+# Machine-local mise config — `mise use -g` writes here (MISE_GLOBAL_CONFIG_FILE).
+# Never managed by chezmoi, so per-machine tool pins stay untracked + survive apply.
+.config/mise/config.toml
+
+# Bootstrap script: ship exactly one per platform family. The other would fail to
+# execute (a .sh can't run on Windows; a .ps1 is meaningless on Unix).
+{{ if eq .chezmoi.os "windows" }}
+install-packages.sh
+{{ else }}
+install-packages.ps1
+{{ end }}
+
+# OS split for shell config. Windows uses the PowerShell profile; Unix uses the zsh
+# stack (zsh/sheldon/p10k/nano) + tmux. Each side ignores the other's files.
+{{ if eq .chezmoi.os "windows" }}
+.zshrc
+.p10k.zsh
+.nanorc
+.config/zsh
+.config/sheldon
+.local/bin/tmux-sessionizer
+{{ else }}
+.config/powershell
+.config/mise/conf.d/windows.toml
+{{ end }}
+
 {{ if or (ne .chezmoi.os "darwin") (not .wm) }}
 .config/skhd
 .config/yabai
+{{ end }}
+{{ if or (ne .chezmoi.os "windows") (not .wm) }}
+.config/whkd
+.config/komorebi
+.config/yasb
 {{ end }}
 {{ if not .tmux }}
 .tmux.conf
