@@ -26,13 +26,14 @@ foreach ($wm in 'komorebi','whkd','yasb') {
 if (-not $env:EDITOR) { $env:EDITOR = 'vim' }
 
 # ── mise — static env injection, NOT `mise activate` (runs before tool blocks) ──────
-# On Windows the `mise activate` chpwd hook corrupts the environment on every `cd`,
-# which breaks shim-routed calls — e.g. zoxide's `z` fails with "cannot find binary
-# path" after the first directory change. `mise env` injects the tool PATH + env once,
-# so tools resolve to their real install binaries (fast, hook-free, reliable).
-# Trade-off: no per-directory version switching — fine for an all-global tool set.
+# `mise activate`'s chpwd hook corrupts the env on every cd on Windows (zoxide `z` then
+# fails with "cannot find binary path"), so inject the tool PATH/env once instead.
+# `--cd $HOME`: mise only emits the install dirs when CWD is inside the home tree, so a
+# shell that starts at a drive root (Windows Terminal's startingDirectory = F:\) would
+# otherwise get an empty injection and fall back to the flaky shims. --cd doesn't move
+# the shell. Trade-off: no per-directory version switching — fine for an all-global set.
 if (Get-Command mise -ErrorAction SilentlyContinue) {
-  $miseEnv = mise env -s pwsh 2>$null | Out-String
+  $miseEnv = mise --cd $HOME env -s pwsh 2>$null | Out-String
   if ($miseEnv) { Invoke-Expression $miseEnv }
 }
 
