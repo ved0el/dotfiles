@@ -16,10 +16,14 @@
     tmux    = {{ $tmux }}
     wm      = {{ $wm }}
 {{ if eq .chezmoi.os "windows" }}
-# Windows: run the .ps1 bootstrap under Windows PowerShell (always present on a fresh
-# box — the bootstrap then installs pwsh 7 for daily use). -ExecutionPolicy Bypass so a
-# Restricted default policy can't block chezmoi's generated temp script.
+# Windows: run the .ps1 bootstrap via pwsh 7 if available, else Windows PowerShell 5.1.
+# Resolved to an ABSOLUTE path at init so it works even when neither is on PATH (otherwise
+# chezmoi errors: exec "powershell": executable file not found in %PATH%). 5.1 always exists
+# at %SystemRoot%\System32\...; the bootstrap installs pwsh for later runs to prefer.
+# -ExecutionPolicy Bypass so a Restricted default policy can't block the generated script.
+{{- $ps := printf "%s\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" (env "SystemRoot") }}
+{{- if lookPath "pwsh" }}{{ $ps = lookPath "pwsh" }}{{ end }}
 [interpreters.ps1]
-    command = "powershell"
+    command = '{{ $ps }}'
     args = ["-NoLogo", "-NoProfile", "-ExecutionPolicy", "Bypass"]
 {{ end }}
