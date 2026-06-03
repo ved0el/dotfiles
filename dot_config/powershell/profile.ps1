@@ -14,9 +14,14 @@ if (-not $env:XDG_CONFIG_HOME) { $env:XDG_CONFIG_HOME = Join-Path $HOME '.config
 if (-not $env:MISE_GLOBAL_CONFIG_FILE) {
   $env:MISE_GLOBAL_CONFIG_FILE = Join-Path $env:XDG_CONFIG_HOME 'mise\config.toml'
 }
-# KOMOREBI_CONFIG_HOME so komorebi (wm profile) reads ~/.config/komorebi.
-if (-not $env:KOMOREBI_CONFIG_HOME) {
-  $env:KOMOREBI_CONFIG_HOME = Join-Path $env:XDG_CONFIG_HOME 'komorebi'
+# WM config homes (wm profile): komorebi/whkd/yasb read ~/.config/<tool>. komorebi
+# defaults to ~/komorebi.json and whkd to ~/.config/whkdrc, so these are needed. The
+# bootstrap persists them (User scope) for startup launches; this covers the session.
+foreach ($wm in 'komorebi','whkd','yasb') {
+  $var = $wm.ToUpper() + '_CONFIG_HOME'
+  if (-not (Get-Item "env:$var" -ErrorAction SilentlyContinue)) {
+    Set-Item "env:$var" (Join-Path $env:XDG_CONFIG_HOME $wm)
+  }
 }
 if (-not $env:EDITOR) { $env:EDITOR = 'vim' }
 

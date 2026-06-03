@@ -45,8 +45,11 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
   Edit the managed file, not `$PROFILE`.
 - **Window manager** (`wm` profile): scoop installs `komorebi whkd yasb` (extras bucket);
   configs `dot_config/{whkd,komorebi,yasb}` apply only on Windows+wm (gated like skhd/yabai).
-  `KOMOREBI_CONFIG_HOME=~/.config/komorebi`. yasb's `config.yaml.tmpl` is templated — user
-  paths use `{{ .chezmoi.homeDir | replace "/" "\\" }}` (NEVER hardcode the username).
+  `KOMOREBI_CONFIG_HOME`/`WHKD_CONFIG_HOME`/`YASB_CONFIG_HOME` → `~/.config/<tool>`, persisted
+  (User scope) by the bootstrap because these apps launch at startup, outside any shell
+  profile — komorebi else defaults to `~/komorebi.json`, whkd to `~/.config/whkdrc`.
+  yasb's `config.yaml.tmpl` is templated — user paths use
+  `{{ .chezmoi.homeDir | replace "/" "\\" }}` (NEVER hardcode the username).
 - Skipped on Windows: tmux, sheldon, p10k, nano.
 
 ## Tools split

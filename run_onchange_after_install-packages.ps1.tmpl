@@ -33,11 +33,16 @@ $MiseGlobal = Join-Path $XdgConfig 'mise\config.toml'
 [Environment]::SetEnvironmentVariable('MISE_GLOBAL_CONFIG_FILE', $MiseGlobal, 'User')
 $env:MISE_GLOBAL_CONFIG_FILE = $MiseGlobal
 
-# KOMOREBI_CONFIG_HOME so komorebi reads ~/.config/komorebi (under the same tree as
-# everything else) instead of dropping komorebi.json in the home root.
-$KomorebiHome = Join-Path $XdgConfig 'komorebi'
-[Environment]::SetEnvironmentVariable('KOMOREBI_CONFIG_HOME', $KomorebiHome, 'User')
-$env:KOMOREBI_CONFIG_HOME = $KomorebiHome
+# Window-manager config homes — point komorebi/whkd/yasb at ~/.config/<tool>. These
+# MUST be persisted (User scope): the WM apps launch at startup, outside any shell
+# profile. komorebi defaults to ~/komorebi.json and whkd to ~/.config/whkdrc, so without
+# these the chezmoi-managed configs under ~/.config/<tool> are not read.
+foreach ($wm in 'komorebi','whkd','yasb') {
+  $home_ = Join-Path $XdgConfig $wm
+  $var = $wm.ToUpper() + '_CONFIG_HOME'
+  [Environment]::SetEnvironmentVariable($var, $home_, 'User')
+  Set-Item "env:$var" $home_
+}
 
 # --- scoop (package manager) — installs per-user; must NOT run elevated ---
 if (-not (Get-Command scoop -ErrorAction SilentlyContinue)) {
