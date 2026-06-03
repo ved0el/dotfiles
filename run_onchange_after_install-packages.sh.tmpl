@@ -46,7 +46,14 @@ command -v mise >/dev/null 2>&1 || \
 # --- tmux plugins via TPM (only when tmux is installed) ---
 [ -d "$HOME/.tmux/plugins/tpm" ] || \
   git clone --depth 1 https://github.com/tmux-plugins/tpm "$HOME/.tmux/plugins/tpm"
-"$HOME/.tmux/plugins/tpm/bin/install_plugins"
+# install_plugins reads the @plugin list from a running server that has sourced the
+# config — so start one and source ~/.tmux.conf first (start-server reuses an existing
+# server, so this won't disturb live sessions). Never abort the bootstrap over plugins:
+# worst case, finish with `prefix + I` inside tmux.
+tmux start-server 2>/dev/null || true
+tmux source-file "$HOME/.tmux.conf" 2>/dev/null || true
+"$HOME/.tmux/plugins/tpm/bin/install_plugins" 2>/dev/null || \
+  echo "[tmux] plugin install skipped — run 'prefix + I' inside tmux to finish"
 {{ end -}}
 
 # --- install tools/runtimes declared in ~/.config/mise/conf.d/*.toml, lock sheldon ---
