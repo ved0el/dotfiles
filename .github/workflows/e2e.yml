@@ -24,8 +24,10 @@ jobs:
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - name: Init config from this commit (renders .chezmoi.toml.tmpl with defaults)
         run: chezmoi init --source "$PWD" --promptDefaults --no-tty
-      - name: Bootstrap script renders cleanly
-        run: chezmoi execute-template --source "$PWD" < run_onchange_after_install-packages.sh.tmpl
+      - name: Bootstrap scripts render cleanly (sh + ps1)
+        run: |
+          chezmoi execute-template --source "$PWD" < run_onchange_after_install-packages.sh.tmpl
+          chezmoi execute-template --source "$PWD" < run_onchange_after_install-packages.ps1.tmpl
       - name: Dry-run apply (no changes made)
         run: chezmoi apply --dry-run --source "$PWD"
 
@@ -50,3 +52,24 @@ jobs:
         run: chezmoi init --apply --source "$PWD" --promptDefaults --no-tty
       - name: Verify $HOME matches the repo
         run: chezmoi verify --source "$PWD"
+
+  # End-to-end on Windows: scoop + mise bootstrap on a clean runner (fresh-machine test).
+  e2e-windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - name: Install chezmoi
+        shell: pwsh
+        run: |
+          $bin = Join-Path $HOME '.local\bin'
+          New-Item -ItemType Directory -Force -Path $bin | Out-Null
+          iex "&{$(irm 'https://get.chezmoi.io/ps1')} -b '$bin'"
+          Add-Content -Path $env:GITHUB_PATH -Value $bin
+      - name: Fresh install (chezmoi init --apply from this commit)
+        # --promptDefaults => tools=true, develop=false. tmux/wm are Windows-skipped.
+        shell: pwsh
+        run: chezmoi init --apply --source "$env:GITHUB_WORKSPACE" --promptDefaults --no-tty
+      - name: Verify $HOME matches the repo
+        shell: pwsh
+        run: chezmoi verify --source "$env:GITHUB_WORKSPACE"
