@@ -1,14 +1,15 @@
 #!/usr/bin/env zsh
 # Managed by chezmoi — edit with `chezmoi edit ~/.zshrc`, then `chezmoi apply`.
 #
-# Thin loader: every concern is a numbered module in ~/.config/zsh/conf.d/, sourced
-# in order. Load order matters — 00-instant-prompt must stay first; 90-theme/
-# 95-local stay last; 15-helpers (cache_eval) before 40-sheldon/60-mise. The tools
-# profile ships 75-tools.zsh (gated). Each module self-gates on `command -v` so it
-# only configures tools that are actually installed.
-# (N-.) = nullglob + follow symlinks + regular files only: a dangling symlink
-# (e.g. a stale leftover from an old dotfile manager) is skipped instead of
-# being sourced, which would print an error and break p10k's instant prompt.
+# Thin loader: every concern is a numbered module in ~/.config/zsh/conf.d/, sourced in order.
+# Each module self-gates on `command -v` so it only configures tools that are actually installed.
+
+#!/usr/bin/env zsh
+# powerlevel10k instant prompt — MUST load first, before anything that outputs.
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
 for _f in "${XDG_CONFIG_HOME:-$HOME/.config}"/zsh/conf.d/*.zsh(N-.); do
   source "$_f"
 done
