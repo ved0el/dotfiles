@@ -22,7 +22,9 @@ if (-not $env:EDITOR) { $env:EDITOR = 'vim' }
 
 # ── mise (runtime / CLI-tool version manager) — before tool blocks so shims exist ──
 if (Get-Command mise -ErrorAction SilentlyContinue) {
-  mise activate pwsh | Out-String | Invoke-Expression
+  # mise uses the shell-name `pwsh` (NOT `powershell`).
+  $init = mise activate pwsh 2>$null | Out-String
+  if ($init) { Invoke-Expression $init }
 }
 
 # ── chezmoi (dotfiles manager) aliases ────────────────────────────────────────────
@@ -74,17 +76,21 @@ if (Get-Command fzf -ErrorAction SilentlyContinue) {
 # ── zoxide (smart cd; defines z/zi and shadows cd) ──────────────────────────────────
 if (Get-Command zoxide -ErrorAction SilentlyContinue) {
   $env:_ZO_DOCTOR = '0'
-  zoxide init pwsh | Out-String | Invoke-Expression
+  # zoxide uses the shell-name `powershell` (NOT `pwsh`).
+  $init = zoxide init powershell 2>$null | Out-String
+  if ($init) { Invoke-Expression $init }
 }
 
 # ── gh (GitHub CLI) completion ──────────────────────────────────────────────────────
 if (Get-Command gh -ErrorAction SilentlyContinue) {
-  gh completion -s powershell | Out-String | Invoke-Expression
+  $init = gh completion -s powershell 2>$null | Out-String
+  if ($init) { Invoke-Expression $init }
 }
 
 # ── starship (prompt; Windows uses it where Unix uses powerlevel10k) ──────────────────
 if (Get-Command starship -ErrorAction SilentlyContinue) {
-  starship init powershell | Out-String | Invoke-Expression
+  $init = starship init powershell 2>$null | Out-String
+  if ($init) { Invoke-Expression $init }
 }
 
 # ── machine-local overrides — sourced last, never synced ────────────────────────────
