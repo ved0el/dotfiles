@@ -4,16 +4,19 @@
 # instead of "latest" if you want reproducibility.
 [tools]
 bat = "latest"
-bottom = "latest"   # system monitor (binary: `btm`) — replaces btop; aqua prebuilt
+bottom = "latest"
 delta = "latest"
-# aqua backend = prebuilt binary on every OS. The registry default (cargo:eza) compiles
-# from source and has no Windows-friendly build — hence "mise can't use eza directly".
-"aqua:eza-community/eza" = "latest"
+# eza: plain registry tool on macOS/Linux. Windows uses the aqua prebuilt binary
+# (conf.d/windows.toml) because the registry default is cargo:eza — a source build
+# with no Windows-friendly binary.
+{{ if ne .chezmoi.os "windows" -}}
+eza = "latest"
+{{ end -}}
 fd = "latest"
 fzf = "latest"
 gh = "latest"
 jq = "latest"
 ripgrep = "latest"
-sd = "latest"       # intuitive find-and-replace (a friendlier sed); aqua prebuilt
+sd = "latest"
 yq = "latest"
 zoxide = "latest"

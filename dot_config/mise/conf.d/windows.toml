@@ -8,3 +8,4 @@
 # machine here instead.
 [tools]
 "aqua:starship/starship" = "latest"  # shell prompt (Unix uses powerlevel10k)
+"aqua:eza-community/eza" = "latest"   # eza prebuilt binary (macOS/Linux use plain `eza`)
