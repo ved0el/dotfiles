@@ -29,6 +29,12 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
   the diff; grep config paths like `^diff --git a/.config/...` to judge actual file application.
 - `chezmoi managed | grep X` / `chezmoi ignored` — confirm what applies vs is excluded.
 
+## Before committing
+- ALWAYS update docs in the same commit as the change they describe:
+  - `README.md` — anything user-facing (setup, usage, profiles, commands).
+  - `CLAUDE.md` (this file) — naming conventions, profiles, tools split, workflow, gotchas.
+- A commit that changes behavior, profiles, naming, or the bootstrap MUST NOT leave the docs stale.
+
 ## Gotchas
 - chezmoi **copies** files (not symlinks). Migrating from a symlink manager replaces the link with a real copy.
 - `~/.config/chezmoi/chezmoi.toml` (from `init`) OVERRIDES `.chezmoidata.yaml`.

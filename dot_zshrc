@@ -6,7 +6,10 @@
 # 95-local stay last; 15-helpers (cache_eval) before 40-sheldon/60-mise. The tools
 # profile ships 75-tools.zsh (gated). Each module self-gates on `command -v` so it
 # only configures tools that are actually installed.
-for _f in "${XDG_CONFIG_HOME:-$HOME/.config}"/zsh/conf.d/*.zsh(N); do
+# (N-.) = nullglob + follow symlinks + regular files only: a dangling symlink
+# (e.g. a stale leftover from an old dotfile manager) is skipped instead of
+# being sourced, which would print an error and break p10k's instant prompt.
+for _f in "${XDG_CONFIG_HOME:-$HOME/.config}"/zsh/conf.d/*.zsh(N-.); do
   source "$_f"
 done
 unset _f
