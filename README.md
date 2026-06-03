@@ -57,7 +57,7 @@ macOS/Linux:
   (`bat`, `fd`, `ripgrep`, …) still comes from **mise** using the same
   `conf.d/{tools,develop}.toml` manifests.
 - **Shell:** a managed `~/.config/powershell/profile.ps1` mirrors the zsh config
-  (mise activation, eza/zoxide/fzf wiring, chezmoi aliases). The bootstrap dot-sources
+  (mise env injection, eza/zoxide/fzf wiring, chezmoi aliases). The bootstrap dot-sources
   it from your real `$PROFILE` for both PowerShell 7 and Windows PowerShell 5.1, so it
   survives OneDrive-redirected Documents.
 - **`XDG_CONFIG_HOME`** is set to `~/.config` so mise and friends read the same config

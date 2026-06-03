@@ -25,11 +25,15 @@ foreach ($wm in 'komorebi','whkd','yasb') {
 }
 if (-not $env:EDITOR) { $env:EDITOR = 'vim' }
 
-# ── mise (runtime / CLI-tool version manager) — before tool blocks so shims exist ──
+# ── mise — static env injection, NOT `mise activate` (runs before tool blocks) ──────
+# On Windows the `mise activate` chpwd hook corrupts the environment on every `cd`,
+# which breaks shim-routed calls — e.g. zoxide's `z` fails with "cannot find binary
+# path" after the first directory change. `mise env` injects the tool PATH + env once,
+# so tools resolve to their real install binaries (fast, hook-free, reliable).
+# Trade-off: no per-directory version switching — fine for an all-global tool set.
 if (Get-Command mise -ErrorAction SilentlyContinue) {
-  # mise uses the shell-name `pwsh` (NOT `powershell`).
-  $init = mise activate pwsh 2>$null | Out-String
-  if ($init) { Invoke-Expression $init }
+  $miseEnv = mise env -s pwsh 2>$null | Out-String
+  if ($miseEnv) { Invoke-Expression $miseEnv }
 }
 
 # ── chezmoi (dotfiles manager) aliases ────────────────────────────────────────────
