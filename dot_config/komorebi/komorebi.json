@@ -55,17 +55,38 @@
       "matching_strategy": "Equals"
     }
   ],
+  "floating_applications": [
+    {
+      "kind": "Title",
+      "id": "Picture to picture",
+      "matching_strategy": "Equals"
+    },
+    {
+      "kind": "Title",
+      "id": "Meet",
+      "matching_strategy": "StartsWith"
+    },
+    {
+      "kind": "Title",
+      "id": "Bitwarden",
+      "matching_strategy": "StartsWith"
+    },
+    {
+      "kind": "Title",
+      "id": "Metamask",
+      "matching_strategy": "StartsWith"
+    },
+    {
+      "kind": "Title",
+      "id": "Desktop Media Player",
+      "matching_strategy": "Contains"
+    }
+  ],
   "ignore_rules": [
     {
       "kind": "Title",
       "id": "Counter-Strike 2",
       "matching_strategy": "Equals"
-    },
-
-    {
-      "kind": "Title",
-      "id": "Bitwarden",
-      "matching_strategy": "Contains"
     },
     {
       "kind": "Exe",
@@ -87,11 +108,10 @@
       "id": "git-bash.exe",
       "matching_strategy": "Equals"
     },
-    { "kind": "Title", "id": "Metamask", "matching_strategy": "Contains" },
     {
-      "kind": "Title",
-      "id": "Desktop Media Player",
-      "matching_strategy": "Contains"
+      "kind": "Exe",
+      "id": "pwsh.exe",
+      "matching_strategy": "Equals"
     },
     {
       "kind": "Class",
