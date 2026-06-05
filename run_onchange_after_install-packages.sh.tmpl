@@ -80,5 +80,7 @@ sed -n "s/^[[:space:]]*set[^@]*@plugin[[:space:]]*['\"]\([^'\"]*\)['\"].*/\1/p" 
 {{ end -}}
 
 # --- install tools/runtimes declared in ~/.config/mise/conf.d/*.toml, lock sheldon ---
-mise install --yes
+# --cd "$HOME": mise only auto-discovers the global conf.d/*.toml when CWD is inside the home
+# tree; chezmoi may run this script from elsewhere, so anchor it at $HOME or nothing installs.
+mise --cd "$HOME" install --yes
 sheldon lock --update

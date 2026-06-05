@@ -9,11 +9,16 @@ $LocalBin = Join-Path $HOME '.local\bin'
 if ($env:Path -notlike "*$LocalBin*") { $env:Path = "$LocalBin;$env:Path" }
 # XDG_CONFIG_HOME so mise/zoxide/etc. read ~/.config (the same tree as macOS/Linux).
 if (-not $env:XDG_CONFIG_HOME) { $env:XDG_CONFIG_HOME = Join-Path $HOME '.config' }
-# Machine-local mise config: `mise use -g` writes here, not into the chezmoi-managed
-# conf.d/*.toml (this file is chezmoi-ignored, so per-machine pins stay untracked).
-if (-not $env:MISE_GLOBAL_CONFIG_FILE) {
-  $env:MISE_GLOBAL_CONFIG_FILE = Join-Path $env:XDG_CONFIG_HOME 'mise\config.toml'
-}
+# Actively CLEAR MISE_GLOBAL_CONFIG_FILE / MISE_CONFIG_DIR (never set them). mise's default
+# global config is already ~/.config/mise/config.toml (chezmoi-ignored, so `mise use -g` pins
+# stay untracked there). Setting MISE_GLOBAL_CONFIG_FILE is redundant AND makes mise stop
+# auto-discovering the global config DIRECTORY (the conf.d/*.toml tool manifests) whenever the
+# shell's CWD is outside $HOME (e.g. a terminal whose start directory is a drive root) —
+# `mise ls` then shows no tools. We unset rather than just skip so a shell launched from a
+# parent that still carries a stale value (an older session, before the persisted User var was
+# cleared) self-heals.
+Remove-Item env:MISE_GLOBAL_CONFIG_FILE -ErrorAction SilentlyContinue
+Remove-Item env:MISE_CONFIG_DIR -ErrorAction SilentlyContinue
 # WM config homes (wm profile): komorebi/whkd/yasb read ~/.config/<tool>. komorebi
 # defaults to ~/komorebi.json and whkd to ~/.config/whkdrc, so these are needed. The
 # bootstrap persists them (User scope) for startup launches; this covers the session.
@@ -29,8 +34,8 @@ if (-not $env:EDITOR) { $env:EDITOR = 'vim' }
 # `mise activate`'s chpwd hook corrupts the env on every cd on Windows (zoxide `z` then
 # fails with "cannot find binary path"), so inject the tool PATH/env once instead.
 # `--cd $HOME`: mise only emits the install dirs when CWD is inside the home tree, so a
-# shell that starts at a drive root (Windows Terminal's startingDirectory = F:\) would
-# otherwise get an empty injection and fall back to the flaky shims. --cd doesn't move
+# shell that starts at a drive root (a terminal whose startingDirectory is outside $HOME)
+# would otherwise get an empty injection and fall back to the flaky shims. --cd doesn't move
 # the shell. Trade-off: no per-directory version switching — fine for an all-global set.
 if (Get-Command mise -ErrorAction SilentlyContinue) {
   $miseEnv = mise --cd $HOME env -s pwsh 2>$null | Out-String

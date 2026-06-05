@@ -5,7 +5,11 @@ export EDITOR="${EDITOR:-vim}"
 # PowerShell profile) so configs live under ~/.config identically everywhere — and
 # mise/zoxide/etc. read the same tree instead of an OS-specific default.
 export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
-# Machine-local mise config: `mise use -g` writes here, NOT into the chezmoi-managed
-# conf.d/*.toml. This file is chezmoi-ignored, so per-machine tool pins stay untracked.
-export MISE_GLOBAL_CONFIG_FILE="${MISE_GLOBAL_CONFIG_FILE:-$XDG_CONFIG_HOME/mise/config.toml}"
+# Actively UNSET MISE_GLOBAL_CONFIG_FILE / MISE_CONFIG_DIR (never set them). mise's default
+# global config is already $XDG_CONFIG_HOME/mise/config.toml (chezmoi-ignored, so `mise use -g`
+# pins stay untracked there). Setting MISE_GLOBAL_CONFIG_FILE is redundant AND makes mise stop
+# auto-discovering the global config DIRECTORY (the conf.d/*.toml tool manifests) when CWD is
+# outside $HOME — `mise ls` then reports no tools. Unset (not just skip) so a shell inheriting
+# a stale value from an older session self-heals.
+unset MISE_GLOBAL_CONFIG_FILE MISE_CONFIG_DIR
 [[ ":$PATH:" == *":$HOME/.local/bin:"* ]] || export PATH="$HOME/.local/bin:$PATH"

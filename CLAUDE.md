@@ -36,9 +36,10 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
 - **scoop** is the PM (per-user, never elevated): `git`, `pwsh`, `mise`. CLI tools still
   come from **mise** (same `conf.d/*.toml` as Unix — one list).
 - **`XDG_CONFIG_HOME=~/.config`** is persisted (user env) by the bootstrap + set in the
-  profile, so mise reads `~/.config/mise/conf.d` (it would otherwise use `%APPDATA%`).
-  Exported on every platform — Unix sets it in `zsh/conf.d/10-env.zsh` — so configs live
-  under `~/.config` identically everywhere.
+  profile so XDG-aware tools read `~/.config` (mise's config dir resolves to `~/.config/mise`).
+  Exported on every platform — Unix sets it in `zsh/conf.d/10-env.zsh` — so configs live under
+  `~/.config` identically everywhere. (Do NOT set `MISE_GLOBAL_CONFIG_FILE` — it breaks conf.d
+  outside `$HOME`; see the mise machine-local section below.)
 - **PowerShell profile**: managed at `dot_config/powershell/profile.ps1`
   (→ `~/.config/powershell/profile.ps1`). The bootstrap dot-sources it from the real
   `$PROFILE` (both pwsh 7 and WinPS 5.1 paths, via OneDrive-aware `GetFolderPath`).
@@ -64,11 +65,24 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
   `eza` (registry default is `cargo:eza` — source build, no Windows binary).
 
 ## mise machine-local config (un-tracked)
-- `MISE_GLOBAL_CONFIG_FILE` → `~/.config/mise/config.toml` (set in `zsh/conf.d/10-env.zsh`,
-  the PowerShell profile, and the Windows bootstrap). `mise use -g` writes THERE.
-- `.config/mise/config.toml` is in `.chezmoiignore` → chezmoi never manages it, so ad-hoc
-  per-machine pins survive `apply`. NEVER let `mise use -g` land in a tracked `conf.d/*.toml`
-  (it makes `apply` prompt "changed since chezmoi last wrote it" and reverts the pin).
+- **NEVER set `MISE_GLOBAL_CONFIG_FILE`.** mise's default global config is already
+  `~/.config/mise/config.toml`, so setting it is redundant — and it actively breaks `conf.d`:
+  with it set, mise stops auto-discovering the global config DIRECTORY (the `conf.d/*.toml`
+  tool manifests) whenever a shell's CWD is outside `$HOME` (e.g. a terminal whose start
+  directory is a drive root). Symptom: `mise ls` shows tools with a blank config source —
+  only `config.toml` is read. Proven by toggling the var from a dir outside `$HOME`. Leave it
+  unset everywhere; the Windows bootstrap also CLEARS any stale User-scope value so old boxes
+  heal. The profile/zsh env actively `unset` it too, so shells inheriting a stale value heal.
+  (`MISE_CONFIG_DIR` is likewise unnecessary — mise resolves the config dir to `~/.config/mise`
+  on its own. Don't reintroduce either var to "pin" conf.d; pinning is what caused the bug.)
+- `.config/mise/config.toml` is in `.chezmoiignore` → chezmoi never manages it, and `mise use
+  -g` writes there by DEFAULT (no env var needed), so ad-hoc per-machine pins survive `apply`.
+  NEVER let `mise use -g` land in a tracked `conf.d/*.toml` (it makes `apply` prompt "changed
+  since chezmoi last wrote it" and reverts the pin).
+- mise only auto-discovers the global `conf.d/*.toml` when CWD is inside `$HOME`; the bootstraps
+  therefore run `mise --cd $HOME install` so a fresh-machine install isn't blank when chezmoi
+  runs the script from elsewhere. The PowerShell profile already injects tools via
+  `mise --cd $HOME env`, so tools work in every shell regardless of its start directory.
 
 ## Verify before apply
 - `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .tmux }}|{{ .wm }}'` — resolved profile data.
@@ -96,3 +110,16 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
 - chezmoi **copies** files (not symlinks). Migrating from a symlink manager replaces the link with a real copy.
 - `~/.config/chezmoi/chezmoi.toml` (from `init`) OVERRIDES `.chezmoidata.yaml`.
 - `apply` does NOT re-prompt profiles — edit the config or re-run `init`.
+- **Setting an env var to a tool's OWN DEFAULT is not a harmless no-op — don't do it "for
+  explicitness".** A tool that auto-discovers config by walking/scanning a directory often
+  switches to single-file / narrowed mode the moment you hand it an explicit path. That was
+  this repo's `MISE_GLOBAL_CONFIG_FILE` bug: pointing it at mise's own default
+  `~/.config/mise/config.toml` silently disabled `conf.d` auto-discovery outside `$HOME`. If
+  the value equals the default, DELETE the assignment — rely on the default and only override
+  when you genuinely need a non-default. Prefer adding a guard/`unset` over re-asserting.
+- **Reproduce context-sensitive bugs in the ACTUAL failing context, and verify env fixes in a
+  FRESH process tree.** This bug only appeared when CWD was outside `$HOME` (terminals start at
+  a drive root); testing from the repo dir (inside `$HOME`) hid it and produced a wrong first
+  diagnosis. And a child shell inherits the parent's stale env — a "fix" can look broken (var
+  still set) or look fixed (var still good) purely from inheritance. Launch a clean shell, cd
+  to the real failing dir, and check the variable's value, before concluding anything.

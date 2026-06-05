@@ -27,11 +27,18 @@ Add-UserPath $LocalBin
 [Environment]::SetEnvironmentVariable('XDG_CONFIG_HOME', $XdgConfig, 'User')
 $env:XDG_CONFIG_HOME = $XdgConfig
 
-# MISE_GLOBAL_CONFIG_FILE: send `mise use -g` to an unmanaged per-machine file instead
-# of the chezmoi-tracked conf.d/*.toml (which apply would otherwise revert).
-$MiseGlobal = Join-Path $XdgConfig 'mise\config.toml'
-[Environment]::SetEnvironmentVariable('MISE_GLOBAL_CONFIG_FILE', $MiseGlobal, 'User')
-$env:MISE_GLOBAL_CONFIG_FILE = $MiseGlobal
+# NOTE: deliberately DO NOT persist MISE_GLOBAL_CONFIG_FILE. mise's default global config is
+# already ~/.config/mise/config.toml (chezmoi-ignored, so `mise use -g` pins stay untracked
+# there), so setting it is redundant — and it makes mise stop auto-discovering the global
+# config DIRECTORY (the conf.d/*.toml tool manifests) when a process runs with CWD outside
+# $HOME (Windows Terminal starts at the user's working drive), so `mise ls` shows no tools.
+# Earlier revisions set it; clear any stale User-scope value so upgrades self-heal.
+if ([Environment]::GetEnvironmentVariable('MISE_GLOBAL_CONFIG_FILE', 'User')) {
+  [Environment]::SetEnvironmentVariable('MISE_GLOBAL_CONFIG_FILE', $null, 'User')
+}
+if ([Environment]::GetEnvironmentVariable('MISE_CONFIG_DIR', 'User')) {
+  [Environment]::SetEnvironmentVariable('MISE_CONFIG_DIR', $null, 'User')
+}
 
 # Window-manager config homes — point komorebi/whkd/yasb at ~/.config/<tool>. These
 # MUST be persisted (User scope): the WM apps launch at startup, outside any shell
@@ -62,7 +69,9 @@ if (-not (Get-Command mise -ErrorAction SilentlyContinue)) {
 }
 
 # --- install tools/runtimes declared in ~/.config/mise/conf.d/*.toml ---
-mise install --yes
+# --cd $HOME: mise only auto-discovers the global conf.d/*.toml when CWD is inside the home
+# tree; chezmoi may run this script from elsewhere, so anchor it at $HOME or nothing installs.
+mise --cd $HOME install --yes
 
 {{ if .wm -}}
 # --- Windows tiling window manager (komorebi + whkd + yasb) — the `wm` profile,
