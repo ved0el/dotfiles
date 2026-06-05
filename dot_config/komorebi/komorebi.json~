@@ -58,8 +58,8 @@
   "floating_applications": [
     {
       "kind": "Title",
-      "id": "Picture",
-      "matching_strategy": "StartsWith"
+      "id": "Picture to picture",
+      "matching_strategy": "Equals"
     },
     {
       "kind": "Title",
