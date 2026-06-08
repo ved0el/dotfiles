@@ -55,6 +55,11 @@ if (Get-Command chezmoi -ErrorAction SilentlyContinue) {
 
 # ── eza (ls replacement) ──────────────────────────────────────────────────────────
 if (Get-Command eza -ErrorAction SilentlyContinue) {
+  # PowerShell resolves ALIASES before FUNCTIONS, so the shipped `ls`→Get-ChildItem
+  # alias shadows the function below and `ls` keeps the built-in output. Drop the alias
+  # so `ls` runs eza. (la/ll/lt/lm/... have no built-in alias; `tree` is an .exe, which a
+  # function already outranks.) -Force clears the read-only flag set on some PS builds.
+  Remove-Item Alias:ls -Force -ErrorAction SilentlyContinue
   function ls  { eza --group-directories-first --icons=auto @args }
   function la  { eza --group-directories-first --icons=auto -a @args }
   function ll  { eza --group-directories-first --icons=auto -l --git --time-style=relative @args }

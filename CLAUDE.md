@@ -107,6 +107,13 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
   A "plugin install" is just a clone into `~/.tmux/plugins/<name>`, so the bootstrap parses
   `@plugin` lines and clones them. After upgrading tmux, `tmux kill-server` (or relog) to
   drop a stale old-version server.
+- **PowerShell resolves ALIASES before FUNCTIONS.** A `function ls { eza … }` in the profile
+  is silently shadowed by the shipped `ls`→Get-ChildItem alias (so `ls` keeps built-in output
+  even though the function exists). The eza block therefore `Remove-Item Alias:ls -Force` before
+  defining the function. Only `ls` collides with a built-in alias (la/ll/lt/lm/… don't; `tree`
+  is an .exe, which a function already outranks). zsh is unaffected — it uses `alias ls=…`, not
+  a function. If you add a new eza/tool function whose name is also a default PS alias, drop the
+  alias too. (`Get-Command ls` showing `CommandType: Alias` instead of `Function` = the bug.)
 - chezmoi **copies** files (not symlinks). Migrating from a symlink manager replaces the link with a real copy.
 - `~/.config/chezmoi/chezmoi.toml` (from `init`) OVERRIDES `.chezmoidata.yaml`.
 - `apply` does NOT re-prompt profiles — edit the config or re-run `init`.
