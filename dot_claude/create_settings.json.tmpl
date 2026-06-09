@@ -21,7 +21,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "bash $HOME/.claude/statusline.sh"
+    "command": "{{ if eq .chezmoi.os "windows" }}pwsh -NoLogo -NoProfile -File {{ .chezmoi.homeDir }}/.claude/statusline.ps1{{ else }}bash $HOME/.claude/statusline.sh{{ end }}"
   },
   "enabledPlugins": {
     "claude-code-setup@claude-plugins-official": true,

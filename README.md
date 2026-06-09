@@ -109,7 +109,7 @@ file that contains keys or tokens.
 ```
 dot_zshrc, dot_tmux.conf, dot_p10k.zsh        # ~/.zshrc, ~/.tmux.conf, ~/.p10k.zsh  (Unix)
 dot_config/powershell/profile.ps1             # ~/.config/powershell/profile.ps1     (Windows)
-dot_claude/                                   # ~/.claude/
+dot_claude/                                   # ~/.claude/ (statusline.sh on Unix, statusline.ps1 on Windows; settings seeded once)
 dot_config/                                   # ~/.config/  (gated per profile + OS)
 .chezmoi.toml.tmpl                            # profile prompts + per-OS data/interpreters
 .chezmoiignore                                # which files apply on this machine

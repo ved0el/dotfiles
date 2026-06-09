@@ -51,7 +51,8 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
   profile — komorebi else defaults to `~/komorebi.json`, whkd to `~/.config/whkdrc`.
   yasb's `config.yaml.tmpl` is templated — user paths use
   `{{ .chezmoi.homeDir | replace "/" "\\" }}` (NEVER hardcode the username).
-- Skipped on Windows: tmux, sheldon, p10k, nano.
+- Skipped on Windows: tmux, sheldon, p10k, nano, `.claude/statusline.sh` (Windows uses
+  `.claude/statusline.ps1` instead — see the statusline-flash gotcha).
 
 ## Tools split
 - CLI tools + language runtimes → **mise** (`dot_config/mise/conf.d/{tools,develop}.toml`),
@@ -131,6 +132,27 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
   still cd's literally for real paths (`cd ..`, `cd C:\x`, `cd .\sub`); it only jumps when the
   arg isn't an existing dir. `-Force` is required to override the built-in read-only
   `cd`→Set-Location alias; `-Option AllScope` follows it into nested scopes.
+- **Claude Code statusline: Git Bash flashes a console window on Windows; use the PowerShell
+  port.** Claude renders the statusLine on every UI update by launching its `command` as a
+  native child (verified: the spawned process has MSYS `PPID=1`, i.e. parented by node, NOT an
+  outer `bash -c` — so it's the statusline's own shell). MSYS/Cygwin `bash.exe` calls
+  `AllocConsole()` when its stdio is piped, which BYPASSES Node's `windowsHide` flag — so Git
+  Bash (and its `jq`/`awk`/`tail` children) flash a console each render, while native console
+  apps (pwsh, node, git) spawned the same way stay hidden. Fix: a pure-PowerShell statusline
+  (`dot_claude/statusline.ps1`) so Windows launches ONE hidden `pwsh.exe`. `dot_claude/
+  executable_statusline.sh` stays the macOS/Linux version; keep the two in sync. They're OS-gated
+  in `.chezmoiignore` (`.sh` ignored on Windows, `.ps1` on Unix). The statusLine command is
+  templated per-OS in `dot_claude/create_settings.json.tmpl` (pwsh on Windows, bash on Unix).
+  Bonus: the bash script's `echo -e` mangles Windows backslash paths (`\0` in `C:\Users\0x130`
+  → NUL), so line 1 was already broken on Windows; the PS port fixes it.
+- **`~/.claude/settings.json` is a `create_` template, NOT a normal managed file.** Claude Code
+  REWRITES settings.json constantly (enabling/disabling plugins, effort level, marketplaces), so
+  a regular managed file drifts and `chezmoi apply` would clobber live plugin toggles. `create_`
+  means chezmoi seeds it once on a fresh machine and then never touches it — Claude owns it
+  thereafter. Consequence: editing `dot_claude/create_settings.json.tmpl` does NOT propagate to a
+  machine where the file already exists (e.g. changing the statusLine command); update the live
+  `~/.claude/settings.json` directly there too. The seed deliberately omits machine-specific bits
+  (extra LSP plugins, local-path marketplaces) so it stays generic across machines.
 - chezmoi **copies** files (not symlinks). Migrating from a symlink manager replaces the link with a real copy.
 - `~/.config/chezmoi/chezmoi.toml` (from `init`) OVERRIDES `.chezmoidata.yaml`.
 - `apply` does NOT re-prompt profiles — edit the config or re-run `init`.

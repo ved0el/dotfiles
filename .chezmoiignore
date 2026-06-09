@@ -23,9 +23,11 @@ install-packages.ps1
 .config/zsh
 .config/sheldon
 .local/bin/tmux-sessionizer
+.claude/statusline.sh
 {{ else }}
 .config/powershell
 .config/mise/conf.d/windows.toml
+.claude/statusline.ps1
 {{ end }}
 
 {{ if or (ne .chezmoi.os "darwin") (not .wm) }}
