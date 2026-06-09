@@ -93,14 +93,6 @@ if (Get-Command fzf -ErrorAction SilentlyContinue) {
   }
 }
 
-# ── zoxide (smart cd; defines z/zi and shadows cd) ──────────────────────────────────
-if (Get-Command zoxide -ErrorAction SilentlyContinue) {
-  $env:_ZO_DOCTOR = '0'
-  # zoxide uses the shell-name `powershell` (NOT `pwsh`).
-  $init = zoxide init powershell 2>$null | Out-String
-  if ($init) { Invoke-Expression $init }
-}
-
 # ── gh (GitHub CLI) completion ──────────────────────────────────────────────────────
 if (Get-Command gh -ErrorAction SilentlyContinue) {
   $init = gh completion -s powershell 2>$null | Out-String
@@ -110,6 +102,18 @@ if (Get-Command gh -ErrorAction SilentlyContinue) {
 # ── starship (prompt; Windows uses it where Unix uses powerlevel10k) ──────────────────
 if (Get-Command starship -ErrorAction SilentlyContinue) {
   $init = starship init powershell 2>$null | Out-String
+  if ($init) { Invoke-Expression $init }
+}
+
+# ── zoxide (smart cd; defines z/zi) — MUST be initialized AFTER starship ─────────────
+# zoxide records visited dirs via a hook that WRAPS the current `prompt` function. starship
+# REPLACES `prompt`, so if zoxide inits first, starship clobbers the hook and no directory
+# is ever recorded (`z foo` → "not found"). Initializing zoxide last makes it wrap starship's
+# prompt, so the prompt renders AND every cd gets tracked.
+if (Get-Command zoxide -ErrorAction SilentlyContinue) {
+  $env:_ZO_DOCTOR = '0'
+  # zoxide uses the shell-name `powershell` (NOT `pwsh`).
+  $init = zoxide init powershell 2>$null | Out-String
   if ($init) { Invoke-Expression $init }
 }
 

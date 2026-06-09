@@ -114,6 +114,18 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
   is an .exe, which a function already outranks). zsh is unaffected — it uses `alias ls=…`, not
   a function. If you add a new eza/tool function whose name is also a default PS alias, drop the
   alias too. (`Get-Command ls` showing `CommandType: Alias` instead of `Function` = the bug.)
+- **zoxide must init AFTER starship in the PowerShell profile.** zoxide does NOT shadow `cd` —
+  it records visited dirs via a hook that WRAPS the existing `prompt` function (capturing it
+  once, guarded by `$__zoxide_hooked`). starship REPLACES `prompt` wholesale, so if zoxide inits
+  first, starship clobbers the hook and NO directory is ever recorded → `z foo` says "not found"
+  while the DB silently freezes (stale entries still resolve, new dirs never appear). Order:
+  gh → starship → zoxide (zoxide last among prompt-touching inits). Symptom check:
+  `(\$function:prompt) -match '__zoxide_hook'` must be True in a real shell; `zoxide query -l`
+  missing a dir you just visited = the bug. NOTE when testing: `pwsh -Command` already auto-loads
+  the profile once, so an extra `. $PROFILE` double-loads it — the second starship init replaces
+  the prompt and zoxide's once-only guard skips re-wrapping, giving a false negative. Test in a
+  single-load shell. (zsh is unaffected — `zoxide init zsh` uses a `precmd` hook array, not a
+  single wrapped function, so order vs starship/p10k doesn't matter the same way.)
 - chezmoi **copies** files (not symlinks). Migrating from a symlink manager replaces the link with a real copy.
 - `~/.config/chezmoi/chezmoi.toml` (from `init`) OVERRIDES `.chezmoidata.yaml`.
 - `apply` does NOT re-prompt profiles — edit the config or re-run `init`.
