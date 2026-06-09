@@ -124,8 +124,13 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
   missing a dir you just visited = the bug. NOTE when testing: `pwsh -Command` already auto-loads
   the profile once, so an extra `. $PROFILE` double-loads it — the second starship init replaces
   the prompt and zoxide's once-only guard skips re-wrapping, giving a false negative. Test in a
-  single-load shell. (zsh is unaffected — `zoxide init zsh` uses a `precmd` hook array, not a
-  single wrapped function, so order vs starship/p10k doesn't matter the same way.)
+  single-load shell. (zsh is unaffected — `zoxide init zsh` uses a `chpwd`/`precmd` hook ARRAY,
+  not a single wrapped function, so order vs starship/p10k doesn't matter the same way.)
+  The profile also `Set-Alias cd __zoxide_z` (+ `cdi`→`__zoxide_zi`) to mirror the zsh
+  `alias cd="z"`/`alias cdi="zi"`, so `cd <keyword>` fuzzy-jumps on every platform. `__zoxide_z`
+  still cd's literally for real paths (`cd ..`, `cd C:\x`, `cd .\sub`); it only jumps when the
+  arg isn't an existing dir. `-Force` is required to override the built-in read-only
+  `cd`→Set-Location alias; `-Option AllScope` follows it into nested scopes.
 - chezmoi **copies** files (not symlinks). Migrating from a symlink manager replaces the link with a real copy.
 - `~/.config/chezmoi/chezmoi.toml` (from `init`) OVERRIDES `.chezmoidata.yaml`.
 - `apply` does NOT re-prompt profiles — edit the config or re-run `init`.

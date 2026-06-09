@@ -105,7 +105,7 @@ if (Get-Command starship -ErrorAction SilentlyContinue) {
   if ($init) { Invoke-Expression $init }
 }
 
-# ── zoxide (smart cd; defines z/zi) — MUST be initialized AFTER starship ─────────────
+# ── zoxide (smart cd; defines z/zi, also maps cd/cdi) — MUST init AFTER starship ─────
 # zoxide records visited dirs via a hook that WRAPS the current `prompt` function. starship
 # REPLACES `prompt`, so if zoxide inits first, starship clobbers the hook and no directory
 # is ever recorded (`z foo` → "not found"). Initializing zoxide last makes it wrap starship's
@@ -115,6 +115,13 @@ if (Get-Command zoxide -ErrorAction SilentlyContinue) {
   # zoxide uses the shell-name `powershell` (NOT `pwsh`).
   $init = zoxide init powershell 2>$null | Out-String
   if ($init) { Invoke-Expression $init }
+  # Mirror the zsh `alias cd="z"` / `alias cdi="zi"` so `cd <keyword>` jumps via zoxide
+  # (the zsh conf.d does the same). __zoxide_z still cd's literally when the arg is a real
+  # path (cd .., cd C:\, cd .\sub), and only fuzzy-jumps when it isn't — so nothing breaks.
+  # -Force overrides the built-in read-only `cd`→Set-Location alias; AllScope follows the
+  # built-in into nested scopes/functions.
+  Set-Alias -Name cd  -Value __zoxide_z  -Option AllScope -Scope Global -Force
+  Set-Alias -Name cdi -Value __zoxide_zi -Option AllScope -Scope Global -Force
 }
 
 # ── machine-local overrides — sourced last, never synced ────────────────────────────
