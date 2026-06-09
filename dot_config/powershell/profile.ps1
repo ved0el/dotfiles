@@ -28,7 +28,10 @@ foreach ($wm in 'komorebi','whkd','yasb') {
     Set-Item "env:$var" (Join-Path $env:XDG_CONFIG_HOME $wm)
   }
 }
-if (-not $env:EDITOR) { $env:EDITOR = 'vim' }
+if (-not $env:EDITOR) { $env:EDITOR = 'micro' }
+# micro: force 24-bit truecolor so the catppuccin-mocha colorscheme renders with
+# its true palette instead of the 256-color approximation.
+if (-not $env:MICRO_TRUECOLOR) { $env:MICRO_TRUECOLOR = '1' }
 
 # ── mise — static env injection, NOT `mise activate` (runs before tool blocks) ──────
 # `mise activate`'s chpwd hook corrupts the env on every cd on Windows (zoxide `z` then
@@ -85,8 +88,27 @@ if (Get-Command rg -ErrorAction SilentlyContinue) {
 # ── fzf — env defaults; key-bindings need the PSFzf module (loaded if present) ──────
 if (Get-Command fzf -ErrorAction SilentlyContinue) {
   $env:FZF_DEFAULT_COMMAND = 'fd --type f'
-  $env:FZF_DEFAULT_OPTS    = '--height 75% --multi --reverse --margin=0,1 --prompt="❯ "'
+  # Layout + preview UX mirrored from the zsh config (these opts are fzf-level, not
+  # shell-specific) + catppuccin-mocha palette synced with the micro editor theme.
+  #   ctrl-/  cycle preview (large → hidden → default) · ctrl-f/-b page preview
+  #   shift-down/-up scroll preview a line · alt-down/-up jump to bottom/top
+  $env:FZF_DEFAULT_OPTS    = @(
+    '--height=80% --min-height=20 --multi --layout=reverse --cycle'
+    '--border=rounded --margin=0,1 --info=inline-right --scrollbar="█│" --separator="─"'
+    '--prompt="❯ " --pointer="▶" --marker="✚"'
+    '--preview-window="right,60%,border-left,wrap,<90(down,60%,border-top)"'
+    '--bind="ctrl-/:change-preview-window(down,75%,border-top|hidden|)"'
+    '--bind="ctrl-f:preview-page-down,ctrl-b:preview-page-up"'
+    '--bind="shift-down:preview-down,shift-up:preview-up"'
+    '--bind="alt-down:preview-bottom,alt-up:preview-top"'
+    '--color bg+:#313244,bg:#1e1e2e,spinner:#f5e0dc,hl:#ff5189'
+    '--color fg:#cdd6f4,header:#f38ba8,info:#cba6f7,pointer:#ff5189'
+    '--color marker:#ff5189,fg+:#cdd6f4,prompt:#cba6f7,hl+:#ff5189'
+    '--color selected-bg:#45475a,border:#313244,label:#cdd6f4'
+  ) -join ' '
+  $env:FZF_CTRL_R_OPTS     = '--no-preview'
   $env:FZF_CTRL_T_COMMAND  = "rg --files --hidden --follow --glob '!.git/*'"
+  $env:FZF_CTRL_T_OPTS     = '--preview "bat --style=numbers --color=always --line-range=:500 {}"'
   if (Get-Module -ListAvailable -Name PSFzf) {
     Import-Module PSFzf
     Set-PsFzfOption -PSReadlineChordProvider 'Ctrl+t' -PSReadlineChordReverseHistory 'Ctrl+r'

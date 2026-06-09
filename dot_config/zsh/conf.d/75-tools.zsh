@@ -43,19 +43,35 @@ command -v rg &>/dev/null &&
 # ── fzf (before zoxide so _ZO_FZF_OPTS can inherit FZF defaults) ──────────────
 if command -v fzf &>/dev/null; then
   export FZF_DEFAULT_COMMAND="fd --type f"
-  export FZF_DEFAULT_OPTS="--height 75% --multi --reverse --margin=0,1 \
-    --bind ctrl-f:page-down,ctrl-b:page-up,ctrl-/:toggle-preview \
-    --bind pgdn:preview-page-down,pgup:preview-page-up \
-    --marker='✚' --pointer='▶' --prompt='❯ ' --no-separator --scrollbar='█' \
-    --color bg+:#262626,fg+:#dadada,hl:#f09479,hl+:#f09479 \
-    --color border:#303030,info:#cfcfb0,header:#80a0ff,spinner:#36c692 \
-    --color prompt:#87afff,pointer:#ff5189,marker:#f09479"
+  # Layout + preview UX. Preview sits right at 60% with a wrapped, scrollable pane,
+  # and flips below the list on narrow terminals (<90 cols) so it never gets crushed.
+  # Preview controls:
+  #   ctrl-/      cycle preview: large (down 75%) → hidden → default (right 60%)
+  #   ctrl-f/-b   page the preview down / up
+  #   shift-↓/-↑  scroll the preview one line
+  #   alt-↓/-↑    jump the preview to bottom / top
+  # Query-editing keys (ctrl-u/-w/-a/-e) keep their fzf defaults — none are stolen.
+  export FZF_DEFAULT_OPTS="--height=80% --min-height=20 --multi --layout=reverse --cycle \
+    --border=rounded --margin=0,1 --info=inline-right --scrollbar='█│' --separator='─' \
+    --prompt='❯ ' --pointer='▶' --marker='✚' \
+    --preview-window='right,60%,border-left,wrap,<90(down,60%,border-top)' \
+    --bind='ctrl-/:change-preview-window(down,75%,border-top|hidden|)' \
+    --bind='ctrl-f:preview-page-down,ctrl-b:preview-page-up' \
+    --bind='shift-down:preview-down,shift-up:preview-up' \
+    --bind='alt-down:preview-bottom,alt-up:preview-top' \
+    --color bg+:#313244,bg:#1e1e2e,spinner:#f5e0dc,hl:#ff5189 \
+    --color fg:#cdd6f4,header:#f38ba8,info:#cba6f7,pointer:#ff5189 \
+    --color marker:#ff5189,fg+:#cdd6f4,prompt:#cba6f7,hl+:#ff5189 \
+    --color selected-bg:#45475a,border:#313244,label:#cdd6f4"
+  # History search: no preview (the command line is the whole content).
   export FZF_CTRL_R_OPTS="--no-preview"
+  # File widget (ctrl-t): syntax-highlighted preview, line numbers, first 500 lines.
   export FZF_CTRL_T_COMMAND="rg --files --hidden --follow --glob '!.git/*'"
-  export FZF_CTRL_T_OPTS="--preview 'bat --line-range :100 {}'"
+  export FZF_CTRL_T_OPTS="--preview 'bat --style=numbers --color=always --line-range=:500 {}'"
+  # Dir widget (alt-c): a colored, icon'd tree two levels deep.
   export FZF_ALT_C_COMMAND="fd --type d"
   if command -v eza &>/dev/null; then
-    export FZF_ALT_C_OPTS="--preview 'eza --tree --level 2 --group-directories-first {}'"
+    export FZF_ALT_C_OPTS="--preview 'eza --tree --level=2 --color=always --icons=always --group-directories-first {}'"
   fi
 
   # Keybindings AFTER env vars so they inherit them.

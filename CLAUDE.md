@@ -51,7 +51,7 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
   profile — komorebi else defaults to `~/komorebi.json`, whkd to `~/.config/whkdrc`.
   yasb's `config.yaml.tmpl` is templated — user paths use
   `{{ .chezmoi.homeDir | replace "/" "\\" }}` (NEVER hardcode the username).
-- Skipped on Windows: tmux, sheldon, p10k, nano, `.claude/statusline.sh` (Windows uses
+- Skipped on Windows: tmux, sheldon, p10k, `.claude/statusline.sh` (Windows uses
   `.claude/statusline.ps1` instead — see the statusline-flash gotcha).
 
 ## Tools split

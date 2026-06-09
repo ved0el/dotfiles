@@ -33,8 +33,8 @@ Profiles are toggled per machine at `init` time (stored in
 
 | Profile     | When                 | Contents                                                                                       |
 | ----------- | -------------------- | ---------------------------------------------------------------------------------------------- |
-| **base**    | always               | zsh (+ powerlevel10k, sheldon), tmux (+ TPM plugins), mise, nano, Claude config; `git`, `tmux` |
-| **tools**   | prompt (default on)  | mise tool set (bat, eza, fd, ripgrep, bottom, sd, fzf, …) + zsh/pwsh aliases (incl. `tree`→eza) |
+| **base**    | always               | zsh (+ powerlevel10k, sheldon), tmux (+ TPM plugins), mise, Claude config; `git`, `tmux`        |
+| **tools**   | prompt (default on)  | mise tool set (bat, eza, fd, ripgrep, bottom, sd, fzf, micro, …) + zsh/pwsh aliases (incl. `tree`→eza) |
 | **develop** | prompt (default off) | language runtimes via mise (`conf.d/develop.toml`)                                             |
 | **macos**   | auto (Darwin only)   | mole (cleanup CLI); yabai + skhd via **wm**                                                     |
 | **windows** | auto (Windows only)  | scoop + mise + PowerShell profile; tmux/zsh/sheldon skipped                                     |
@@ -65,7 +65,7 @@ macOS/Linux:
 - **Window manager** (`wm` profile, default off): scoop installs `komorebi`, `whkd`, and
   `yasb` — the Windows counterpart of macOS yabai/skhd. whkd/komorebi configs are managed
   under `~/.config`; start it with `komorebic start --whkd`.
-- **Skipped:** tmux, sheldon, powerlevel10k, nano.
+- **Skipped:** tmux, sheldon, powerlevel10k.
 
 mise installs the tool set with `--yes`; pin or trim `conf.d/tools.toml` if a tool
 lacks a Windows build. Cross-platform tools use prebuilt backends (e.g.

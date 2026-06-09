@@ -15,11 +15,10 @@ install-packages.ps1
 {{ end }}
 
 # OS split for shell config. Windows uses the PowerShell profile; Unix uses the zsh
-# stack (zsh/sheldon/p10k/nano) + tmux. Each side ignores the other's files.
+# stack (zsh/sheldon/p10k) + tmux. Each side ignores the other's files.
 {{ if eq .chezmoi.os "windows" }}
 .zshrc
 .p10k.zsh
-.nanorc
 .config/zsh
 .config/sheldon
 .local/bin/tmux-sessionizer
@@ -45,6 +44,7 @@ install-packages.ps1
 {{ if not .tools }}
 .config/bat
 .config/fd
+.config/micro
 .config/ripgrep
 .config/zsh/conf.d/75-tools.zsh
 .config/mise/conf.d/tools.toml

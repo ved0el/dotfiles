@@ -1,6 +1,9 @@
 #!/usr/bin/env zsh
 # environment — keep PATH set before sheldon/mise (they live in ~/.local/bin).
-export EDITOR="${EDITOR:-vim}"
+export EDITOR="${EDITOR:-micro}"
+# micro: force 24-bit truecolor so the catppuccin-mocha colorscheme renders with
+# its true palette instead of the 256-color approximation.
+export MICRO_TRUECOLOR=1
 # XDG_CONFIG_HOME explicit on every platform (Windows sets it in the bootstrap +
 # PowerShell profile) so configs live under ~/.config identically everywhere — and
 # mise/zoxide/etc. read the same tree instead of an OS-specific default.

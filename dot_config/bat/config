@@ -2,7 +2,7 @@
 # ── Theme ─────────────────────────────────────────────────────────────────────
 # Built-in dark theme that pairs well with most terminal colour schemes.
 # Run `bat --list-themes` to see all options; `bat --theme=<name> <file>` to preview.
---theme="Dracula"
+--theme="Catppuccin Mocha"
 
 # ── Display style ─────────────────────────────────────────────────────────────
 # numbers       — line numbers in the gutter

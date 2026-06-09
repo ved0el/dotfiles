@@ -16,6 +16,11 @@ fd = "latest"
 fzf = "latest"
 gh = "latest"
 jq = "latest"
+# micro: terminal editor (replaces nano). Pin the aqua prebuilt binary — the registry
+# default builds from source and has no cross-platform binary; aqua ships one per OS
+# (incl. Windows), so the same line works everywhere. Backend prefix goes in the KEY
+# (like eza/starship in windows.toml), NOT the version value.
+"aqua:micro-editor/micro" = "latest"
 ripgrep = "latest"
 sd = "latest"
 yq = "latest"
