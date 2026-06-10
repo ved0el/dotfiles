@@ -4,7 +4,7 @@
 # =============================================================================
 # Line 1  WHERE:    📁 cwd  🔀 branch[✱] [↑↓]  +adds −dels  🌳 worktree
 # Line 2  ENGINE:   🤖 model  🎚️ effort  🎯 cache-hit%  🧠 used%
-# Line 3  STATUS:   💵 cost  ⏱️ duration  🚦 5h X% (2pm)  🚦 7d Y% (Mon 9am)  👤 agent
+# Line 3  STATUS:   💵 cost  ⏱️ duration  🚦 5h X% (14:50)  🚦 7d Y% (Mon 09:05)  👤 agent
 # =============================================================================
 
 input=$(cat)
@@ -130,9 +130,9 @@ fmt_reset() {
 	today=$(date +%Y%m%d)
 	that_day=$(fmt_epoch "$epoch" +%Y%m%d)
 	if [ "$today" = "$that_day" ]; then
-		fmt_epoch "$epoch" "+%-I%p" | tr A-Z a-z
+		fmt_epoch "$epoch" "+%H:%M"
 	else
-		fmt_epoch "$epoch" "+%a %-I%p" | sed -E 's/AM$/am/; s/PM$/pm/'
+		fmt_epoch "$epoch" "+%a %H:%M"
 	fi
 }
 

@@ -9,7 +9,7 @@
 #
 # Line 1  WHERE:    📁 cwd  🔀 branch[✱] [↑↓]  +adds −dels  🌳 worktree
 # Line 2  ENGINE:   🤖 model  🎚️ effort  🎯 cache-hit%  🧠 used%
-# Line 3  STATUS:   💵 cost  ⏱️ duration  🚦 5h X% (2pm)  🚦 7d Y% (Mon 9am)  👤 agent
+# Line 3  STATUS:   💵 cost  ⏱️ duration  🚦 5h X% (14:50)  🚦 7d Y% (Mon 09:05)  👤 agent
 # =============================================================================
 
 [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
@@ -92,7 +92,7 @@ function Short-Path([string]$p) {
     return $p
 }
 
-# Epoch (s/ms) or ISO-8601 -> "2pm" if today, else "Mon 9am".
+# Epoch (s/ms) or ISO-8601 -> "14:50" if today, else "Mon 09:05".
 function Fmt-Reset($ts) {
     if (-not $ts) { return '' }
     $s = "$ts"; $dt = $null
@@ -107,9 +107,9 @@ function Fmt-Reset($ts) {
     if (-not $dt) { return '' }
     $inv = [Globalization.CultureInfo]::InvariantCulture
     if ($dt.Date -eq (Get-Date).Date) {
-        return $dt.ToString('htt', $inv).ToLower()
+        return $dt.ToString('HH:mm', $inv)
     }
-    return ($dt.ToString('ddd htt', $inv) -replace 'AM$', 'am' -replace 'PM$', 'pm')
+    return $dt.ToString('ddd HH:mm', $inv)
 }
 
 function Fmt-Rl([string]$label, $pct, $reset) {
