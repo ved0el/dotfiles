@@ -3,7 +3,7 @@
 # Claude Code 3-line statusline — vibe-coding edition
 # =============================================================================
 # Line 1  WHERE:    📁 cwd  🔀 branch[✱] [↑↓]  +adds −dels  🌳 worktree
-# Line 2  ENGINE:   🤖 model  🎚️ effort  🎯 cache-hit%  🧠 used%
+# Line 2  ENGINE:   🪪 account  🤖 model  🎚️ effort  🎯 cache-hit%  🧠 used%
 # Line 3  STATUS:   💵 cost  ⏱️ duration  🚦 5h X% (14:50)  🚦 7d Y% (Mon 09:05)  👤 agent
 # =============================================================================
 
@@ -24,6 +24,14 @@ MODEL=$(J '.model.display_name')
 DIR=$(J '.workspace.current_dir // .cwd')
 AGENT=$(J '.agent.name')
 WORKTREE=$(J '.worktree.name // .workspace.git_worktree')
+
+# Logged-in Claude account — not in the statusline payload, so read it from the
+# CLI config (~/.claude.json → .oauthAccount.emailAddress). jq parses it in ~15ms.
+ACCOUNT=""
+[ -f "$HOME/.claude.json" ] &&
+	ACCOUNT=$(jq -r '.oauthAccount.emailAddress // empty' "$HOME/.claude.json" 2>/dev/null)
+# Mask for shoulder-surfing / screenshots: keep the first 3 chars, hide the rest.
+[ -n "$ACCOUNT" ] && ACCOUNT="${ACCOUNT:0:3}***"
 
 EFFORT=$(J '.effort.level')
 [ -z "$EFFORT" ] && [ -f "$SETTINGS" ] &&
@@ -84,6 +92,7 @@ ICON_TIME="⏱️"
 ICON_LIMIT="🚦"
 ICON_AGENT="👤"
 ICON_TREE="🌳"
+ICON_ACCOUNT="🪪"
 
 # --- Helpers -----------------------------------------------------------------
 short_path() {
@@ -223,8 +232,9 @@ LINE1="${C}${ICON_DIR} ${DIR_SHORT}${X}${GIT_PART}"
 [ -n "$EDITS" ] && LINE1+=" ${EDITS}"
 [ -n "$WORKTREE" ] && LINE1+=" ${BM}${ICON_TREE} ${WORKTREE}${X}"
 
-# --- LINE 2: ENGINE (model · effort · cache · ctx) ---------------------------
+# --- LINE 2: ENGINE (account · model · effort · cache · ctx) ------------------
 LINE2="${BC}${ICON_MODEL} ${MODEL}${X}"
+[ -n "$ACCOUNT" ] && LINE2="${M}${ICON_ACCOUNT} ${ACCOUNT}${X} ${LINE2}"
 [ -n "$EFFORT" ] && LINE2+=" ${ICON_EFFORT} ${EFFORT_C}${EFFORT}${X}"
 if [ -n "$CACHE_HIT" ]; then
 	# High hit rate is good — invert the usual thresholds so green = ≥80%.

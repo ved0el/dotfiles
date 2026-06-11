@@ -8,7 +8,7 @@
 # in sync. See the "statusline flash" gotcha in CLAUDE.md.
 #
 # Line 1  WHERE:    📁 cwd  🔀 branch[✱] [↑↓]  +adds −dels  🌳 worktree
-# Line 2  ENGINE:   🤖 model  🎚️ effort  🎯 cache-hit%  🧠 used%
+# Line 2  ENGINE:   🪪 account  🤖 model  🎚️ effort  🎯 cache-hit%  🧠 used%
 # Line 3  STATUS:   💵 cost  ⏱️ duration  🚦 5h X% (14:50)  🚦 7d Y% (Mon 09:05)  👤 agent
 # =============================================================================
 
@@ -23,6 +23,18 @@ $MODEL    = $J.model.display_name
 $DIR      = if ($J.workspace.current_dir) { $J.workspace.current_dir } else { $J.cwd }
 $AGENT    = $J.agent.name
 $WORKTREE = if ($J.worktree.name) { $J.worktree.name } else { $J.workspace.git_worktree }
+
+# Logged-in Claude account — not in the statusline payload, so read it from the
+# CLI config (~/.claude.json → oauthAccount.emailAddress). Select-String -List
+# stops at the first (only) match so a large config file isn't fully parsed.
+$ACCOUNT = $null
+$claudeCfg = Join-Path $HOME '.claude.json'
+if (Test-Path $claudeCfg) {
+    $m = Select-String -Path $claudeCfg -Pattern '"emailAddress":\s*"([^"]+)"' -List
+    if ($m) { $ACCOUNT = $m.Matches[0].Groups[1].Value }
+}
+# Mask for shoulder-surfing / screenshots: keep the first 3 chars, hide the rest.
+if ($ACCOUNT) { $ACCOUNT = $ACCOUNT.Substring(0, [Math]::Min(3, $ACCOUNT.Length)) + '***' }
 
 $EFFORT = $J.effort.level
 if (-not $EFFORT) {
@@ -74,7 +86,7 @@ $BR = "$e[1;31m"; $BY = "$e[1;33m"; $BM = "$e[1;35m"; $BC = "$e[1;36m"
 # --- Icons (swap to taste; keep in sync with statusline.sh) -------------------
 $ICON_DIR = "📁"; $ICON_GIT = "🔀"; $ICON_MODEL = "🤖"; $ICON_EFFORT = "🎚️"
 $ICON_CACHE = "🎯"; $ICON_CTX = "🧠"; $ICON_COST = "💵"; $ICON_TIME = "⏱️"
-$ICON_LIMIT = "🚦"; $ICON_AGENT = "👤"; $ICON_TREE = "🌳"
+$ICON_LIMIT = "🚦"; $ICON_AGENT = "👤"; $ICON_TREE = "🌳"; $ICON_ACCOUNT = "🪪"
 
 # --- Helpers -----------------------------------------------------------------
 function Pct-Color([int]$v, [int]$hi, [int]$mid) {
@@ -177,8 +189,9 @@ $LINE1 = "$C$ICON_DIR $(Short-Path $DIR)$X$GIT_PART"
 if ($EDITS)    { $LINE1 += " $EDITS" }
 if ($WORKTREE) { $LINE1 += " $BM$ICON_TREE $WORKTREE$X" }
 
-# --- LINE 2: ENGINE (model · effort · cache · ctx) ---------------------------
+# --- LINE 2: ENGINE (account · model · effort · cache · ctx) ------------------
 $LINE2 = "$BC$ICON_MODEL $MODEL$X"
+if ($ACCOUNT) { $LINE2 = "$M$ICON_ACCOUNT $ACCOUNT$X " + $LINE2 }
 if ($EFFORT) { $LINE2 += " $ICON_EFFORT $EFFORT_C$EFFORT$X" }
 if ($null -ne $CACHE_HIT) {
     # High hit rate is good — invert thresholds so green = ≥80%.
