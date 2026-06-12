@@ -81,7 +81,10 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
   (identity/signing stay machine-local), gated `{{ if .tools }}`. `git config --global X` won't
   show included values without `--includes`, but real `git diff`/`log` follow the include fine.
   Both vivid + delta configs are tools-profile gated in `.chezmoiignore` (`.config/vivid`,
-  `.config/git`). fzf-tab was removed from sheldon; completion is now native `menu select`.
+  `.config/git`). Completion uses fzf-tab (sheldon plugin, deferred) — it REQUIRES
+  `zstyle ':completion:*' menu no` (never `menu select`); its `:fzf-tab:*` zstyles + eza/bat
+  previews live in `50-completions.zsh` and inherit the catppuccin `FZF_DEFAULT_OPTS` via
+  `use-fzf-default-opts`.
 
 ## mise machine-local config (un-tracked)
 - **NEVER set `MISE_GLOBAL_CONFIG_FILE`.** mise's default global config is already
