@@ -1,79 +1,88 @@
 .shell pwsh
 
-# Reload whkd configuration
-# alt + o                 : taskkill /f /im whkd.exe && start /b whkd # if shell is cmd
-alt + o                 : taskkill /f /im whkd.exe; Start-Process whkd -WindowStyle hidden # if shell is pwsh / powershell
-alt + ctrl + o         : komorebic stop --whkd; komorebic start --whkd;
+# =============================================================================
+# whkd — komorebi hotkeys (Windows)
+# =============================================================================
+# Kept in lockstep with the macOS skhd/yabai config (dot_config/skhd/skhdrc).
+# Shared mnemonic scheme:
+#   alt        = focus      (window direction + workspace)
+#   alt+ctrl   = move       (window in tile + send to workspace)
+#   ctrl+alt p/n, win+shift = monitor (focus / throw window)
+#   oem_4 / oem_6 = [ / ]   = prev/next   ·   numbers = direct jump
+# Monitor binds differ from macOS by necessity (Win+arrow=Snap, Win+P=Projection),
+# so they're machine-specific. komorebi workspaces are 0-indexed.
+# =============================================================================
 
-# App shortcuts - these require shell to be pwsh / powershell
-# The apps will be focused if open, or launched if not open
-# alt + f                 : if ($wshell.AppActivate('Firefox') -eq $False) { start firefox }
-# alt + b                 : if ($wshell.AppActivate('Chrome') -eq $False) { start chrome }
+# Reload whkd configuration / restart komorebi
+alt + o                 : taskkill /f /im whkd.exe; Start-Process whkd -WindowStyle hidden
+alt + ctrl + o          : komorebic stop --whkd; komorebic start --whkd;
 
+# --- Close / minimize -------------------------------------------------------
 alt + q                 : komorebic close
 alt + m                 : komorebic minimize
 
-# Focus windows
+# --- Focus windows ----------------------------------------------------------
 alt + a                 : komorebic focus left
 alt + s                 : komorebic focus down
 alt + w                 : komorebic focus up
 alt + d                 : komorebic focus right
 
-# Move windows
-alt + ctrl + left         : komorebic move left
-alt + ctrl + down         : komorebic move down
-alt + ctrl + up           : komorebic move up
-alt + ctrl + right        : komorebic move right
+# --- Move windows in tile ---------------------------------------------------
+alt + ctrl + left       : komorebic move left
+alt + ctrl + down       : komorebic move down
+alt + ctrl + up         : komorebic move up
+alt + ctrl + right      : komorebic move right
 
-# Stack windows
-alt + j         : komorebic stack left
-alt + k         : komorebic stack down
-alt + i         : komorebic stack up
-alt + l         : komorebic stack right
-alt + oem_1     : komorebic unstack # oem_1 is ;
-alt + n         : komorebic cycle-stack previous # oem_4 is [
-alt + p         : komorebic cycle-stack next # oem_6 is ]
+# --- Stack windows ----------------------------------------------------------
+alt + j                 : komorebic stack left
+alt + k                 : komorebic stack down
+alt + i                 : komorebic stack up
+alt + l                 : komorebic stack right
+alt + oem_1             : komorebic unstack            # oem_1 is ;
+alt + n                 : komorebic cycle-stack previous
+alt + p                 : komorebic cycle-stack next
 
-# Resize
+# --- Resize -----------------------------------------------------------------
 alt + oem_plus          : komorebic resize-axis horizontal increase
 alt + oem_minus         : komorebic resize-axis horizontal decrease
 alt + shift + oem_plus  : komorebic resize-axis vertical increase
 alt + shift + oem_minus : komorebic resize-axis vertical decrease
 
-# Manipulate windows
-win + t                 : komorebic toggle-float
-win + f                 : komorebic toggle-monocle
+# --- Manipulate windows (moved off win+t / win+f for a clean alt-leader) ----
+alt + t                 : komorebic toggle-float
+alt + f                 : komorebic toggle-monocle
 
-# Window manager options
-alt + ctrl + r          : komorebic retile
-
-alt + ctrl + p          : komorebic toggle-pause
-
-# Layouts
+# --- Layouts ----------------------------------------------------------------
 alt + x                 : komorebic flip-layout horizontal
 alt + y                 : komorebic flip-layout vertical
 
-# Workspaces
+# --- Window manager options -------------------------------------------------
+alt + ctrl + r          : komorebic retile
+alt + ctrl + p          : komorebic toggle-pause
+
+# --- Workspaces: hybrid — jump 1-3 + cycle (oem_4=[  oem_6=]) ---------------
 alt + 1                 : komorebic focus-workspace 0
 alt + 2                 : komorebic focus-workspace 1
 alt + 3                 : komorebic focus-workspace 2
-alt + 4                 : komorebic focus-workspace 3
-alt + 5                 : komorebic focus-workspace 4
-alt + 6                 : komorebic focus-workspace 5
-alt + 7                 : komorebic focus-workspace 6
-alt + 8                 : komorebic focus-workspace 7
+alt + oem_4             : komorebic cycle-workspace previous
+alt + oem_6             : komorebic cycle-workspace next
 
-# Move windows across workspaces
-alt + ctrl + 1         : komorebic move-to-workspace 0
-alt + ctrl + 2         : komorebic move-to-workspace 1
-alt + ctrl + 3         : komorebic move-to-workspace 2
-alt + ctrl + 4         : komorebic move-to-workspace 3
-alt + ctrl + 5         : komorebic move-to-workspace 4
-alt + ctrl + 6         : komorebic move-to-workspace 5
-alt + ctrl + 7         : komorebic move-to-workspace 6
-alt + ctrl + 8         : komorebic move-to-workspace 7
+# --- Send window across workspaces ------------------------------------------
+alt + ctrl + 1          : komorebic move-to-workspace 0
+alt + ctrl + 2          : komorebic move-to-workspace 1
+alt + ctrl + 3          : komorebic move-to-workspace 2
+alt + ctrl + oem_4      : komorebic cycle-move-to-workspace previous
+alt + ctrl + oem_6      : komorebic cycle-move-to-workspace next
 
-# Move between monitors
-ctrl + shift + 1      : komorebic move-to-monitor 0
-ctrl + shift + 2      : komorebic move-to-monitor 1
-ctrl + shift + 3      : komorebic move-to-monitor 2
+# --- Monitors (3 displays) --------------------------------------------------
+# Focus monitor prev/next.
+ctrl + alt + p          : komorebic cycle-monitor previous
+ctrl + alt + n          : komorebic cycle-monitor next
+# Throw window to the monitor on the left/right and follow — daily driver.
+# win+shift+arrow mirrors the native Windows "move window to next monitor" gesture.
+win + shift + left      : komorebic cycle-move-to-monitor previous
+win + shift + right     : komorebic cycle-move-to-monitor next
+# Numbered move-to-monitor kept as a conflict-free fallback for 3 screens.
+ctrl + shift + 1        : komorebic move-to-monitor 0
+ctrl + shift + 2        : komorebic move-to-monitor 1
+ctrl + shift + 3        : komorebic move-to-monitor 2

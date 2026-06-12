@@ -117,6 +117,15 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
   NOTE: `#(…)` jobs are async — a one-shot `tmux display-message -p '#(…)'` returns EMPTY the
   first time (the job hasn't finished), so test the script directly or via `tmux run-shell`,
   not display-message. The live status bar re-evaluates and caches, so it always populates.
+- **The two tiling-WM keymaps are kept in sync — edit them as a pair.** `dot_config/skhd/skhdrc`
+  (macOS/yabai) and `dot_config/whkd/whkdrc` (Windows/komorebi) share one mnemonic scheme
+  (`alt`=focus, `alt+ctrl`=move, `[`/`]`=prev/next, numbers=jump) so muscle memory carries
+  across machines. A change to one almost always needs the mirror change in the other; both
+  files' headers document the scheme. Deliberate per-OS divergences (don't "fix" them to match):
+  monitor-move is `⌃⌘←/→` on macOS but `win+shift+←/→` on Windows (Win+arrow=Snap, Win+P=
+  Projection are reserved); macOS adds `⌥\`` recent-workspace, balance, sticky/pip (no komorebi
+  verb). **yabai Space (workspace) binds need SIP partially disabled + the scripting addition** —
+  with SIP on they silently no-op while every other bind still works (Accessibility only).
 - **PowerShell resolves ALIASES before FUNCTIONS.** A `function ls { eza … }` in the profile
   is silently shadowed by the shipped `ls`→Get-ChildItem alias (so `ls` keeps built-in output
   even though the function exists). The eza block therefore `Remove-Item Alias:ls -Force` before
