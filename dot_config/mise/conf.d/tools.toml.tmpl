@@ -22,6 +22,11 @@ jq = "latest"
 # (like eza/starship in windows.toml), NOT the version value.
 "aqua:micro-editor/micro" = "latest"
 ripgrep = "latest"
+# rtk (rtk-ai/rtk): AI-agent command toolkit, single Rust binary. The github backend
+# pulls the prebuilt GitHub release binary (macOS/Linux/Windows) instead of a cargo
+# source build. Its Claude Code hook is set up by the bootstrap (`rtk init -g`).
+# Backend prefix goes in the KEY, like eza/micro.
+"github:rtk-ai/rtk" = "latest"
 sd = "latest"
 yq = "latest"
 zoxide = "latest"

@@ -73,6 +73,11 @@ if (-not (Get-Command mise -ErrorAction SilentlyContinue)) {
 # tree; chezmoi may run this script from elsewhere, so anchor it at $HOME or nothing installs.
 mise --cd $HOME install --yes
 
+# rtk (rtk-ai/rtk) — install its Claude Code command-rewrite hook globally. --auto-patch
+# edits ~/.claude/settings.json without prompting, keeping this bootstrap non-interactive;
+# it's idempotent so re-runs are safe.
+try { mise --cd $HOME exec -- rtk init -g --auto-patch } catch { }
+
 {{ if .wm -}}
 # --- Windows tiling window manager (komorebi + whkd + yasb) — the `wm` profile,
 #     analogue of the macOS yabai/skhd block. These live in scoop's extras bucket. ---

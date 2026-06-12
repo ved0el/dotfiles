@@ -83,4 +83,11 @@ sed -n "s/^[[:space:]]*set[^@]*@plugin[[:space:]]*['\"]\([^'\"]*\)['\"].*/\1/p" 
 # --cd "$HOME": mise only auto-discovers the global conf.d/*.toml when CWD is inside the home
 # tree; chezmoi may run this script from elsewhere, so anchor it at $HOME or nothing installs.
 mise --cd "$HOME" install --yes
+
+# rtk (rtk-ai/rtk) — install its Claude Code command-rewrite hook globally. --auto-patch
+# edits ~/.claude/settings.json without prompting, keeping this bootstrap non-interactive;
+# it's idempotent so re-runs are safe, and `|| true` keeps a hiccup from aborting setup.
+command -v rtk >/dev/null 2>&1 && rtk init -g --auto-patch || \
+  mise --cd "$HOME" exec -- rtk init -g --auto-patch || true
+
 sheldon lock --update

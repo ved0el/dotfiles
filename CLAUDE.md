@@ -64,6 +64,12 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
 - Windows base → **scoop** (`git pwsh mise`) in the `.ps1` bootstrap.
 - Prefer prebuilt backends for cross-platform tools: `"aqua:eza-community/eza"`, not bare
   `eza` (registry default is `cargo:eza` — source build, no Windows binary).
+- **`rtk` (rtk-ai/rtk) uses the mise `github:` backend** (`github:rtk-ai/rtk` — prebuilt release
+  binary; the older `ubi:` backend works but mise deprecated it). Beyond install, the bootstrap
+  runs `rtk init -g --auto-patch` to register rtk's Claude Code command-rewrite hook globally.
+  `--auto-patch` is REQUIRED: it patches `~/.claude/settings.json` without prompting, so the
+  non-interactive bootstrap doesn't hang. It's idempotent ("hook already present" on re-run) and
+  writes machine-local `~/.claude/RTK.md` + a hook entry that chezmoi does NOT manage.
 
 ## mise machine-local config (un-tracked)
 - **NEVER set `MISE_GLOBAL_CONFIG_FILE`.** mise's default global config is already
