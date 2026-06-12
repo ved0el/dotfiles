@@ -22,6 +22,7 @@ install-packages.ps1
 .config/zsh
 .config/sheldon
 .local/bin/tmux-sessionizer
+.local/bin/tmux-user
 .claude/statusline.sh
 {{ else }}
 .config/powershell

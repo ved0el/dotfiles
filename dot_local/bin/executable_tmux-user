@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Print the username of the *foreground* process running in a tmux pane's tty.
+#
+# Why not just `whoami`? tmux runs status-bar `#(...)` commands as the user that
+# started the tmux SERVER, not the user inside the pane. So after `sudo -i`,
+# `su -`, etc., `whoami` keeps showing the original login while the pane is
+# actually root. This script inspects the pane's tty instead, so the status bar
+# tracks the live user and updates the moment you switch.
+#
+# Usage (in .tmux.conf):  #(~/.local/bin/tmux-user '#{pane_tty}')
+set -u
+
+tty="${1:-}"
+# No tty given → best effort: the server's user.
+[ -z "$tty" ] && { whoami; exit 0; }
+
+# tmux passes the full device path (/dev/ttys003, /dev/pts/3); `ps -t` wants the
+# short form on macOS and accepts either on Linux, so strip the /dev/ prefix.
+tty="${tty#/dev/}"
+
+# A process in the foreground process group carries '+' in its STAT field on both
+# BSD ps (macOS) and GNU ps (Linux). The first such process on the tty is the
+# foreground leader — report its owner. Fall back to whoami if nothing matches.
+ps -t "$tty" -o user=,stat= 2>/dev/null |
+	awk '$2 ~ /\+/ { print $1; found = 1; exit } END { exit !found }' ||
+	whoami

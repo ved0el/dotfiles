@@ -108,6 +108,15 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
   A "plugin install" is just a clone into `~/.tmux/plugins/<name>`, so the bootstrap parses
   `@plugin` lines and clones them. After upgrading tmux, `tmux kill-server` (or relog) to
   drop a stale old-version server.
+- **tmux status-bar `#(…)` runs as the SERVER's user, not the pane's.** So the old
+  `status-left … #(whoami)` froze on the login that started the server and never tracked
+  `sudo -i`/`su -`. Fix: `~/.local/bin/tmux-user` (`executable_tmux-user`, tmux-only — ignored
+  on Windows like `tmux-sessionizer`) takes `#{pane_tty}` and reports the owner of the tty's
+  FOREGROUND process group (the first proc with `+` in STAT — works on BSD/macOS + GNU/Linux),
+  so the bar switches to `root` the moment you elevate. `status-interval 1` refreshes it.
+  NOTE: `#(…)` jobs are async — a one-shot `tmux display-message -p '#(…)'` returns EMPTY the
+  first time (the job hasn't finished), so test the script directly or via `tmux run-shell`,
+  not display-message. The live status bar re-evaluates and caches, so it always populates.
 - **PowerShell resolves ALIASES before FUNCTIONS.** A `function ls { eza … }` in the profile
   is silently shadowed by the shipped `ls`→Get-ChildItem alias (so `ls` keeps built-in output
   even though the function exists). The eza block therefore `Remove-Item Alias:ls -Force` before
