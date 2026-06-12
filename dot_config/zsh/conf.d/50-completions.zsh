@@ -9,3 +9,9 @@ else
 fi
 { [[ -s "$_zcompdump" && (! -s "$_zcompdump.zwc" || "$_zcompdump" -nt "$_zcompdump.zwc") ]] && zcompile "$_zcompdump"; } &!
 unset _zcompdump
+
+# Native menu completion (fzf-tab removed): arrow-key selectable, case-insensitive.
+# Coloring comes from list-colors, set in 75-tools.zsh after vivid exports LS_COLORS
+# (zstyles are read at completion time, so module order doesn't matter here).
+zstyle ':completion:*' menu select
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'

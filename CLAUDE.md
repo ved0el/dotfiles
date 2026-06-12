@@ -70,6 +70,18 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
   `--auto-patch` is REQUIRED: it patches `~/.claude/settings.json` without prompting, so the
   non-interactive bootstrap doesn't hang. It's idempotent ("hook already present" on re-run) and
   writes machine-local `~/.claude/RTK.md` + a hook entry that chezmoi does NOT manage.
+- **`vivid` generates `LS_COLORS`; `delta` is wired into git via an include, NOT a managed
+  `~/.gitconfig`.** vivid uses the mise `github:` backend (prebuilt). Its theme is the full
+  upstream catppuccin-mocha with `red`→repo accent `#ff5189` (`dot_config/vivid/themes/
+  catppuccin-mocha-red.yml`; vivid needs a COMPLETE theme — a minimal override errors). zsh
+  (`75-tools.zsh`) caches `vivid generate` to `$ZSH_CACHE_DIR/ls_colors` (regenerated when the
+  theme changes) and feeds it to completion via `list-colors` (read at completion time, so it
+  works despite running after compinit). delta config lives in tracked `dot_config/git/
+  delta.gitconfig`; the bootstrap adds an idempotent `include.path` to the UNMANAGED `~/.gitconfig`
+  (identity/signing stay machine-local), gated `{{ if .tools }}`. `git config --global X` won't
+  show included values without `--includes`, but real `git diff`/`log` follow the include fine.
+  Both vivid + delta configs are tools-profile gated in `.chezmoiignore` (`.config/vivid`,
+  `.config/git`). fzf-tab was removed from sheldon; completion is now native `menu select`.
 
 ## mise machine-local config (un-tracked)
 - **NEVER set `MISE_GLOBAL_CONFIG_FILE`.** mise's default global config is already

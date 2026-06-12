@@ -31,6 +31,22 @@ if command -v eza &>/dev/null; then
   unset _e
 fi
 
+# ── vivid (LS_COLORS) ─────────────────────────────────────────────────────────
+# Generate LS_COLORS from the custom catppuccin-mocha theme (red → repo accent
+# #ff5189). Cached + regenerated only when the theme file changes (vivid is ~10ms),
+# mirroring the sheldon/compinit caching idiom. zsh completion lists reuse it via
+# list-colors, read at completion time so module order vs compinit is irrelevant.
+if command -v vivid &>/dev/null; then
+  _vivid_theme="${XDG_CONFIG_HOME:-$HOME/.config}/vivid/themes/catppuccin-mocha-red.yml"
+  _vivid_cache="$ZSH_CACHE_DIR/ls_colors"
+  if [[ ! -r "$_vivid_cache" || "$_vivid_theme" -nt "$_vivid_cache" ]]; then
+    vivid generate "$_vivid_theme" >| "$_vivid_cache" 2>/dev/null
+  fi
+  export LS_COLORS="$(<"$_vivid_cache")"
+  zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+  unset _vivid_theme _vivid_cache
+fi
+
 # ── fd ───────────────────────────────────────────────────────────────────────
 # --follow: cross symlinks. --hidden: include dotfiles (exclusions live in
 # config/fd/ignore so they stay version-controlled out of this env var).
@@ -102,4 +118,5 @@ if command -v gh &>/dev/null; then
 fi
 
 # Tools needing no shell integration (pure binaries): jq, yq, btop, tree.
-# delta is configured via git (set `core.pager = delta` in your ~/.gitconfig).
+# delta is wired into git via dot_config/git/delta.gitconfig (included from
+# ~/.gitconfig by the bootstrap) — no shell integration needed here.

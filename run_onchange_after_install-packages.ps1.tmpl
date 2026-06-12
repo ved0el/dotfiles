@@ -78,6 +78,16 @@ mise --cd $HOME install --yes
 # it's idempotent so re-runs are safe.
 try { mise --cd $HOME exec -- rtk init -g --auto-patch } catch { }
 
+{{ if .tools -}}
+# delta: wire git via include.path (idempotent); identity stays in the unmanaged config.
+if (Get-Command git -ErrorAction SilentlyContinue) {
+  $deltaInc = Join-Path $HOME '.config/git/delta.gitconfig'
+  if (((git config --global --get-all include.path) 2>$null) -notcontains $deltaInc) {
+    git config --global --add include.path $deltaInc
+  }
+}
+{{ end -}}
+
 {{ if .wm -}}
 # --- Windows tiling window manager (komorebi + whkd + yasb) — the `wm` profile,
 #     analogue of the macOS yabai/skhd block. These live in scoop's extras bucket. ---

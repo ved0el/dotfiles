@@ -45,8 +45,10 @@ install-packages.ps1
 {{ if not .tools }}
 .config/bat
 .config/fd
+.config/git
 .config/micro
 .config/ripgrep
+.config/vivid
 .config/zsh/conf.d/75-tools.zsh
 .config/mise/conf.d/tools.toml
 {{ end }}

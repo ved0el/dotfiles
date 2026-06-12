@@ -34,7 +34,7 @@ Profiles are toggled per machine at `init` time (stored in
 | Profile     | When                 | Contents                                                                                       |
 | ----------- | -------------------- | ---------------------------------------------------------------------------------------------- |
 | **base**    | always               | zsh (+ powerlevel10k, sheldon), tmux (+ TPM plugins), mise, Claude config; `git`, `tmux`        |
-| **tools**   | prompt (default on)  | mise tool set (bat, eza, fd, ripgrep, bottom, sd, fzf, micro, rtk, …) + zsh/pwsh aliases (incl. `tree`→eza) |
+| **tools**   | prompt (default on)  | mise tool set (bat, eza, fd, ripgrep, bottom, sd, fzf, micro, rtk, vivid, …) + zsh/pwsh aliases (incl. `tree`→eza); delta wired into git |
 | **develop** | prompt (default off) | language runtimes via mise (`conf.d/develop.toml`)                                             |
 | **macos**   | auto (Darwin only)   | mole (cleanup CLI); yabai + skhd via **wm**                                                     |
 | **windows** | auto (Windows only)  | scoop + mise + PowerShell profile; tmux/zsh/sheldon skipped                                     |

@@ -90,4 +90,15 @@ mise --cd "$HOME" install --yes
 command -v rtk >/dev/null 2>&1 && rtk init -g --auto-patch || \
   mise --cd "$HOME" exec -- rtk init -g --auto-patch || true
 
+{{ if .tools -}}
+# delta: point git at the tracked delta config via include.path (idempotent), leaving
+# ~/.gitconfig's identity/signing untouched. Only when the tools profile (delta) is on.
+if command -v git >/dev/null 2>&1; then
+  _delta_inc="${XDG_CONFIG_HOME:-$HOME/.config}/git/delta.gitconfig"
+  git config --global --get-all include.path 2>/dev/null | grep -qxF "$_delta_inc" \
+    || git config --global --add include.path "$_delta_inc"
+  unset _delta_inc
+fi
+{{ end -}}
+
 sheldon lock --update

@@ -33,11 +33,6 @@ github = "zsh-users/zsh-completions"
 # Loaded immediately (not deferred) so fpath is set before compinit runs
 hooks.pre = "fpath+=(${0:A:h}/src)"
 
-[plugins.fzf-tab]
-github = "Aloxaf/fzf-tab"
-apply = ["defer"]
-# Deferred, so it loads after ~/.zshrc runs compinit (fzf-tab requires compinit first).
-
 # =============================================================================
 # UI Enhancement Plugins (Deferred)
 # =============================================================================
