@@ -59,10 +59,11 @@ command -v rg &>/dev/null &&
 # ── fzf (before zoxide so _ZO_FZF_OPTS can inherit FZF defaults) ──────────────
 if command -v fzf &>/dev/null; then
   export FZF_DEFAULT_COMMAND="fd --type f"
-  # Layout + preview UX. Preview sits right at 60% with a wrapped, scrollable pane,
-  # and flips below the list on narrow terminals (<90 cols) so it never gets crushed.
+  # Layout + preview UX. Preview sits right at 75% with a wrapped, scrollable pane,
+  # and only flips below the list on very narrow terminals (<60 cols) where a side
+  # pane would crush the list.
   # Preview controls:
-  #   ctrl-/      cycle preview: large (down 75%) → hidden → default (right 60%)
+  #   ctrl-/      cycle preview: large (down 75%) → hidden → default (right 75%)
   #   ctrl-f/-b   page the preview down / up
   #   shift-↓/-↑  scroll the preview one line
   #   alt-↓/-↑    jump the preview to bottom / top
@@ -70,7 +71,7 @@ if command -v fzf &>/dev/null; then
   export FZF_DEFAULT_OPTS="--height=80% --min-height=20 --multi --layout=reverse --cycle \
     --border=rounded --margin=0,1 --info=inline-right --scrollbar='█│' --separator='─' \
     --prompt='❯ ' --pointer='▶' --marker='✚' \
-    --preview-window='right,60%,border-left,wrap,<90(down,60%,border-top)' \
+    --preview-window='right,75%,border-left,wrap,<60(down,75%,border-top)' \
     --bind='ctrl-/:change-preview-window(down,75%,border-top|hidden|)' \
     --bind='ctrl-f:preview-page-down,ctrl-b:preview-page-up' \
     --bind='shift-down:preview-down,shift-up:preview-up' \

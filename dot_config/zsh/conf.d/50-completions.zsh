@@ -20,6 +20,11 @@ zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'   # case-insensitive
 zstyle ':completion:*:descriptions' format '[%d]'           # group headers in the picker
 zstyle ':completion:*' group-name ''
 zstyle ':fzf-tab:*' use-fzf-default-opts yes
+# Force a tall window even when a completion has only 1-2 candidates. fzf-tab sizes
+# height to min(max(candidates, fzf-min-height), LINES*2/3); the default min of 0
+# collapses the picker — and its right-side preview — to a single line. A large min
+# pins it to the 2/3-screen cap so previews get full height (like ctrl-r/ctrl-t).
+zstyle ':fzf-tab:*' fzf-min-height 100
 zstyle ':fzf-tab:*' switch-group '<' '>'                    # < / > cycle completion groups
 # Directory previews (cd + zoxide jump): a one-level eza tree.
 zstyle ':fzf-tab:complete:cd:*'         fzf-preview 'eza --tree --level=1 --color=always --icons=always $realpath'
