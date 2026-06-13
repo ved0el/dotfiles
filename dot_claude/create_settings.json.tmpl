@@ -5,19 +5,28 @@
   },
   "permissions": {
     "allow": [
-      "Bash(ls:*)",
-      "Bash(tree:*)",
-      "Bash(npx:*)",
-      "Bash(pnpx:*)",
-      "Bash(pnpm:*)",
-      "Bash(nvm use:*)",
-      "Bash(printf:*)",
-      "Bash(head:*)",
-      "Bash(git:*)",
-      "Bash(wc:*)",
-      "Bash(find:*)"
-    ],
-    "defaultMode": "auto"
+      "mcp__codegraph__codegraph_explore",
+      "mcp__codegraph__codegraph_search",
+      "mcp__codegraph__codegraph_node",
+      "mcp__codegraph__codegraph_callers",
+      "mcp__codegraph__codegraph_callees",
+      "mcp__codegraph__codegraph_impact",
+      "mcp__codegraph__codegraph_files",
+      "mcp__codegraph__codegraph_status"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "rtk hook claude"
+          }
+        ]
+      }
+    ]
   },
   "statusLine": {
     "type": "command",
@@ -28,8 +37,6 @@
     "claude-md-management@claude-plugins-official": true,
     "claude-mem@thedotmack": true,
     "context7@claude-plugins-official": true,
-    "ecc@everything-claude-code": true,
-    "superpowers@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
     "frontend-design@claude-plugins-official": true,
     "code-review@claude-plugins-official": true,
@@ -38,14 +45,19 @@
     "ralph-loop@claude-plugins-official": true,
     "security-guidance@claude-plugins-official": true,
     "commit-commands@claude-plugins-official": true,
-    "github@claude-plugins-official": true,
-    "understand-anything@understand-anything": true
+    "understand-anything@understand-anything": true,
+    "last30days@last30days-skill": true,
+    "vercel@claude-plugins-official": true,
+    "supabase@claude-plugins-official": true,
+    "ecc@ecc": true,
+    "ui-ux-pro-max@ui-ux-pro-max-skill": true,
+    "superpowers@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
-    "everything-claude-code": {
+    "ecc": {
       "source": {
         "source": "git",
-        "url": "https://github.com/affaan-m/everything-claude-code.git"
+        "url": "https://github.com/affaan-m/ECC.git"
       },
       "autoUpdate": true
     },
@@ -69,7 +81,15 @@
         "repo": "Lum1104/Understand-Anything"
       },
       "autoUpdate": true
+    },
+    "last30days-skill": {
+      "source": {
+        "source": "github",
+        "repo": "mvanhorn/last30days-skill"
+      },
+      "autoUpdate": true
     }
   },
-  "agentPushNotifEnabled": false
+  "agentPushNotifEnabled": false,
+  "defaultMode": "auto"
 }
