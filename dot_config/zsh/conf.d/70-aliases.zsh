@@ -10,5 +10,6 @@ if command -v chezmoi >/dev/null 2>&1; then
   alias czu='chezmoi update'       # git pull, then apply
   alias czd='chezmoi diff'         # show what apply would change
   alias czs='chezmoi status'       # short per-file status
+  alias czra='chezmoi re-add'      # capture $HOME edits back into the source repo
   alias czcd='chezmoi cd'          # cd into the source repo (to commit/push)
 fi

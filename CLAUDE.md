@@ -191,7 +191,13 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
   thereafter. Consequence: editing `dot_claude/create_settings.json.tmpl` does NOT propagate to a
   machine where the file already exists (e.g. changing the statusLine command); update the live
   `~/.claude/settings.json` directly there too. The seed deliberately omits machine-specific bits
-  (extra LSP plugins, local-path marketplaces) so it stays generic across machines.
+  (extra LSP plugins, local-path marketplaces) so it stays generic across machines. Because it's
+  `create_`, `chezmoi status` NEVER reports settings.json drift — that's by design, not a bug
+  (do NOT "fix" it by switching to symlink mode: Claude saves atomically via rename, which would
+  replace any symlink with a real file on the first write, and the 6 `.tmpl` files can't be
+  symlinked anyway). All OTHER managed files DO show drift in `chezmoi status`; an interactive zsh
+  nudge (`zsh/conf.d/80-chezmoi-drift.zsh`) warns once per shell when any drifted, and `czra`
+  (`chezmoi re-add`) captures `$HOME` edits back into the source.
 - chezmoi **copies** files (not symlinks). Migrating from a symlink manager replaces the link with a real copy.
 - `~/.config/chezmoi/chezmoi.toml` (from `init`) OVERRIDES `.chezmoidata.yaml`.
 - `apply` does NOT re-prompt profiles — edit the config or re-run `init`.
