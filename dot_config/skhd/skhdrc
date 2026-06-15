@@ -69,11 +69,15 @@ alt - 0x1E       : yabai -m space --focus next          # ]  cycle workspace nex
 alt - 0x32       : yabai -m space --focus recent        # `  jump to recent (macOS-only)
 
 # --- Send window across workspaces (whkd: alt+ctrl+1..3, alt+ctrl+[ / ]) ----
-ctrl + alt - 1   : yabai -m window --space 1
-ctrl + alt - 2   : yabai -m window --space 2
-ctrl + alt - 3   : yabai -m window --space 3
-ctrl + alt - 0x21 : yabai -m window --space prev        # [  send to workspace prev
-ctrl + alt - 0x1E : yabai -m window --space next        # ]  send to workspace next
+# Numbered 1-3 SEND + FOLLOW the window and bring the mouse with it: temporarily flip
+# mouse_follows_focus on around `--space N --focus` (move to space N + focus there, which
+# triggers the cursor jump), then restore the global default (off) so plain focus binds
+# don't move the mouse. `;` (not &&) guarantees the reset even if there's no window.
+ctrl + alt - 1   : yabai -m config mouse_follows_focus on; yabai -m window --space 1 --focus; yabai -m config mouse_follows_focus off
+ctrl + alt - 2   : yabai -m config mouse_follows_focus on; yabai -m window --space 2 --focus; yabai -m config mouse_follows_focus off
+ctrl + alt - 3   : yabai -m config mouse_follows_focus on; yabai -m window --space 3 --focus; yabai -m config mouse_follows_focus off
+ctrl + alt - 0x21 : yabai -m window --space prev        # [  send to workspace prev (stay)
+ctrl + alt - 0x1E : yabai -m window --space next        # ]  send to workspace next (stay)
 
 # --- Monitors (3 displays) --------------------------------------------------
 # Focus monitor prev/next. (Windows uses ctrl+alt p/n; macOS ⌘⌥ to dodge browser ⌘⌥←/→.)
