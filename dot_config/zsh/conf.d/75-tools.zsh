@@ -104,8 +104,14 @@ if command -v zoxide &>/dev/null; then
   # which trips zoxide's order check. Functionality is unaffected.
   export _ZO_DOCTOR=0
   eval "$(zoxide init zsh)"
-  alias cd="z"
-  alias cdi="zi"
+  # cd→z only OUTSIDE Claude Code's tool shell. Inside it (CLAUDECODE=1, non-interactive),
+  # a `cd <badpath>` would route through zoxide and leak "zoxide: no match found" into the
+  # command's piped output — corrupting rtk's JSON rewrites and grep/JSON pipelines. Keep the
+  # real `cd` builtin there; humans outside Claude still get zoxide jumps.
+  if [[ -z "$CLAUDECODE" ]]; then
+    alias cd="z"
+    alias cdi="zi"
+  fi
   if command -v eza &>/dev/null; then
     export _ZO_FZF_OPTS="--preview 'eza -al --tree --level 1 --group-directories-first \
       --header --no-user --no-time --no-filesize --no-permissions {2..}' \

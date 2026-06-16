@@ -5,6 +5,17 @@
   },
   "permissions": {
     "allow": [
+      "Bash(ls:*)",
+      "Bash(tree:*)",
+      "Bash(npx:*)",
+      "Bash(pnpx:*)",
+      "Bash(pnpm:*)",
+      "Bash(nvm use:*)",
+      "Bash(printf:*)",
+      "Bash(head:*)",
+      "Bash(git:*)",
+      "Bash(wc:*)",
+      "Bash(find:*)",
       "mcp__codegraph__codegraph_explore",
       "mcp__codegraph__codegraph_search",
       "mcp__codegraph__codegraph_node",
@@ -15,6 +26,8 @@
       "mcp__codegraph__codegraph_status"
     ]
   },
+  "model": "auto",
+  "defaultMode": "auto",
   "hooks": {
     "PreToolUse": [
       {
@@ -37,21 +50,22 @@
     "claude-md-management@claude-plugins-official": true,
     "claude-mem@thedotmack": true,
     "context7@claude-plugins-official": true,
+    "ecc@ecc": true,
+    "superpowers@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
     "frontend-design@claude-plugins-official": true,
     "code-review@claude-plugins-official": true,
-    "code-simplifier@claude-plugins-official": true,
     "skill-creator@claude-plugins-official": true,
     "ralph-loop@claude-plugins-official": true,
     "security-guidance@claude-plugins-official": true,
     "commit-commands@claude-plugins-official": true,
     "understand-anything@understand-anything": true,
+    "andrej-karpathy-skills@karpathy-skills": true,
     "last30days@last30days-skill": true,
-    "vercel@claude-plugins-official": true,
-    "supabase@claude-plugins-official": true,
-    "ecc@ecc": true,
+    "figma@claude-plugins-official": true,
+    "ponytail@ponytail": true,
     "ui-ux-pro-max@ui-ux-pro-max-skill": true,
-    "superpowers@claude-plugins-official": true
+    "code-simplifier@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "ecc": {
@@ -82,14 +96,29 @@
       },
       "autoUpdate": true
     },
+    "karpathy-skills": {
+      "source": {
+        "source": "github",
+        "repo": "forrestchang/andrej-karpathy-skills"
+      },
+      "autoUpdate": true
+    },
     "last30days-skill": {
       "source": {
         "source": "github",
         "repo": "mvanhorn/last30days-skill"
       },
       "autoUpdate": true
+    },
+    "ponytail": {
+      "source": {
+        "source": "github",
+        "repo": "DietrichGebert/ponytail"
+      },
+      "autoUpdate": true
     }
   },
   "agentPushNotifEnabled": false,
-  "defaultMode": "auto"
+  "hasCompletedOnboarding": true,
+  "terminalProgressBarEnabled": false
 }

@@ -171,6 +171,12 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
   still cd's literally for real paths (`cd ..`, `cd C:\x`, `cd .\sub`); it only jumps when the
   arg isn't an existing dir. `-Force` is required to override the built-in read-only
   `cd`→Set-Location alias; `-Option AllScope` follows it into nested scopes.
+  **The `cd`→zoxide alias is guarded by `CLAUDECODE` on BOTH shells** (`[[ -z "$CLAUDECODE" ]]`
+  in zsh, `-not $env:CLAUDECODE` in pwsh): inside Claude Code's tool shell (CLAUDECODE=1) a
+  `cd <badpath>` would route through zoxide and leak `zoxide: no match found` into the command's
+  piped output, corrupting rtk's JSON rewrites and grep/JSON pipelines. The real `cd` builtin is
+  kept there; humans outside Claude still get zoxide jumps. (rtk's hook is NOT the culprit — it
+  passes `cd` through untouched; the alias was.)
 - **Claude Code statusline: Git Bash flashes a console window on Windows; use the PowerShell
   port.** Claude renders the statusLine on every UI update by launching its `command` as a
   native child (verified: the spawned process has MSYS `PPID=1`, i.e. parented by node, NOT an

@@ -142,8 +142,13 @@ if (Get-Command zoxide -ErrorAction SilentlyContinue) {
   # path (cd .., cd C:\, cd .\sub), and only fuzzy-jumps when it isn't — so nothing breaks.
   # -Force overrides the built-in read-only `cd`→Set-Location alias; AllScope follows the
   # built-in into nested scopes/functions.
-  Set-Alias -Name cd  -Value __zoxide_z  -Option AllScope -Scope Global -Force
-  Set-Alias -Name cdi -Value __zoxide_zi -Option AllScope -Scope Global -Force
+  # Skip inside Claude Code's tool shell (CLAUDECODE=1): there a `cd <badpath>` routes to
+  # zoxide and leaks "zoxide: no match found" into piped output, corrupting rtk/grep/JSON
+  # pipelines. Keep the real `cd` there; humans outside Claude still get zoxide jumps.
+  if (-not $env:CLAUDECODE) {
+    Set-Alias -Name cd  -Value __zoxide_z  -Option AllScope -Scope Global -Force
+    Set-Alias -Name cdi -Value __zoxide_zi -Option AllScope -Scope Global -Force
+  }
 }
 
 # ── machine-local overrides — sourced last, never synced ────────────────────────────
