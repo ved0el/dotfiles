@@ -187,23 +187,35 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
   (`dot_claude/statusline.ps1`) so Windows launches ONE hidden `pwsh.exe`. `dot_claude/
   executable_statusline.sh` stays the macOS/Linux version; keep the two in sync. They're OS-gated
   in `.chezmoiignore` (`.sh` ignored on Windows, `.ps1` on Unix). The statusLine command is
-  templated per-OS in `dot_claude/create_settings.json.tmpl` (pwsh on Windows, bash on Unix).
+  templated per-OS in `dot_claude/modify_settings.json.tmpl` (pwsh on Windows, bash on Unix).
   Bonus: the bash script's `echo -e` mangles Windows backslash paths (`\0` in `C:\Users\0x130`
   → NUL), so line 1 was already broken on Windows; the PS port fixes it.
-- **`~/.claude/settings.json` is a `create_` template, NOT a normal managed file.** Claude Code
-  REWRITES settings.json constantly (enabling/disabling plugins, effort level, marketplaces), so
-  a regular managed file drifts and `chezmoi apply` would clobber live plugin toggles. `create_`
-  means chezmoi seeds it once on a fresh machine and then never touches it — Claude owns it
-  thereafter. Consequence: editing `dot_claude/create_settings.json.tmpl` does NOT propagate to a
-  machine where the file already exists (e.g. changing the statusLine command); update the live
-  `~/.claude/settings.json` directly there too. The seed deliberately omits machine-specific bits
-  (extra LSP plugins, local-path marketplaces) so it stays generic across machines. Because it's
-  `create_`, `chezmoi status` NEVER reports settings.json drift — that's by design, not a bug
-  (do NOT "fix" it by switching to symlink mode: Claude saves atomically via rename, which would
-  replace any symlink with a real file on the first write, and the 6 `.tmpl` files can't be
-  symlinked anyway). All OTHER managed files DO show drift in `chezmoi status`; an interactive zsh
-  nudge (`zsh/conf.d/80-chezmoi-drift.zsh`) warns once per shell when any drifted, and `czra`
-  (`chezmoi re-add`) captures `$HOME` edits back into the source.
+- **`~/.claude/settings.json` is a `modify_` MERGE template — it SYNCS across machines but never
+  clobbers machine-local keys.** Claude rewrites settings.json constantly (plugin toggles,
+  marketplaces, ad-hoc approved commands, `effortLevel`), so it can't be a plain managed file
+  (apply would wipe live toggles) nor a `create_` seed (changes never propagate). Instead
+  `dot_claude/modify_settings.json.tmpl` is a chezmoi modify-template. On apply it reads the LIVE
+  file via `include .chezmoi.targetFile` (which still holds the current contents at render time —
+  v2.70 exposes NO `.chezmoi.stdin`, so don't reach for it), then:
+  - **FORCES the shared keys** from the template: `env`, `model`, `defaultMode`, `hooks`,
+    per-OS `statusLine`, `skillListingBudgetFraction`, `agentPushNotifEnabled`,
+    `hasCompletedOnboarding`, `terminalProgressBarEnabled`.
+  - **UNIONS** a baseline (common Bash allows + codegraph MCP) into `permissions.allow` (deduped).
+  - **PRESERVES every other live key** verbatim (deepCopy of the current file) — so
+    `enabledPlugins`, `extraKnownMarketplaces`, per-machine approved commands, and any unknown
+    future keys survive `cza`/`czu`.
+  Sync loop: change a SHARED key by editing the template (`cze`), push, then `czu` elsewhere —
+  do NOT edit the live file for a forced key (its value reverts on the next apply), and `czra`
+  does NOT capture into a modify-template. Machine-local keys are simply left alone and never
+  enter git. Two v2.70 gotchas baked into the file: (1) the `chezmoi:modify-template` marker must
+  be a LITERAL first line, NOT a `{{/* */}}` comment — chezmoi detects it in the rendered output,
+  and a comment gets stripped before detection (→ it execs the JSON as a script: "exec format
+  error"); (2) the last setup line ends with `}}` (not `-}}`) so one newline separates the marker
+  from the JSON, else the marker merges with the opening `{` and chezmoi strips both → invalid
+  JSON. Test with `chezmoi cat ~/.claude/settings.json` (renders against the live file without
+  writing). Unlike the old `create_` form, settings.json NOW appears in `chezmoi status`/`czd` and
+  trips the `80-chezmoi-drift.zsh` nudge — intended. Do NOT switch to symlink mode: Claude saves
+  atomically via rename (replacing any symlink) and the `.tmpl` can't be symlinked.
 - chezmoi **copies** files (not symlinks). Migrating from a symlink manager replaces the link with a real copy.
 - `~/.config/chezmoi/chezmoi.toml` (from `init`) OVERRIDES `.chezmoidata.yaml`.
 - `apply` does NOT re-prompt profiles — edit the config or re-run `init`.
