@@ -90,6 +90,11 @@ mise --cd "$HOME" install --yes
 command -v rtk >/dev/null 2>&1 && rtk init -g --auto-patch || \
   mise --cd "$HOME" exec -- rtk init -g --auto-patch || true
 
+# caveman (JuliusBrussee/caveman) — Claude Code caveman skill/hooks. Upstream installer
+# is idempotent; || true keeps a network hiccup from aborting the bootstrap.
+command -v curl >/dev/null 2>&1 && \
+  curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh | bash || true
+
 {{ if .tools -}}
 # delta: point git at the tracked delta config via include.path (idempotent), leaving
 # ~/.gitconfig's identity/signing untouched. Only when the tools profile (delta) is on.

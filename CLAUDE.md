@@ -69,7 +69,10 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
   runs `rtk init -g --auto-patch` to register rtk's Claude Code command-rewrite hook globally.
   `--auto-patch` is REQUIRED: it patches `~/.claude/settings.json` without prompting, so the
   non-interactive bootstrap doesn't hang. It's idempotent ("hook already present" on re-run) and
-  writes machine-local `~/.claude/RTK.md` + a hook entry that chezmoi does NOT manage.
+  writes machine-local `~/.claude/RTK.md`. The rtk PreToolUse hook now also ships in the managed
+  `dot_claude/settings.json`, so the run finds it already present — `--auto-patch` mainly handles
+  RTK.md + acts as a safety net. The bootstrap also runs caveman's upstream installer (curl|bash
+  on Unix, irm|iex on Windows) right after rtk; both are Claude Code tooling.
 - **`vivid` generates `LS_COLORS`; `delta` is wired into git via an include, NOT a managed
   `~/.gitconfig`.** vivid uses the mise `github:` backend (prebuilt). Its theme is the full
   upstream catppuccin-mocha with `red`→repo accent `#ff5189` (`dot_config/vivid/themes/
@@ -186,36 +189,29 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
   apps (pwsh, node, git) spawned the same way stay hidden. Fix: a pure-PowerShell statusline
   (`dot_claude/statusline.ps1`) so Windows launches ONE hidden `pwsh.exe`. `dot_claude/
   executable_statusline.sh` stays the macOS/Linux version; keep the two in sync. They're OS-gated
-  in `.chezmoiignore` (`.sh` ignored on Windows, `.ps1` on Unix). The statusLine command is
-  templated per-OS in `dot_claude/modify_settings.json.tmpl` (pwsh on Windows, bash on Unix).
+  in `.chezmoiignore` (`.sh` ignored on Windows, `.ps1` on Unix). **`dot_claude/settings.json`
+  is now a PLAIN managed file (no template), so its `statusLine.command` is hardcoded to the
+  Unix `bash $HOME/.claude/statusline.sh`** — a plain file can't branch per-OS the way the old
+  `modify_settings.json.tmpl` did. On Windows this points at the wrong script; if you apply on
+  Windows, override `statusLine` to `pwsh -NoLogo -NoProfile -File <home>/.claude/statusline.ps1`
+  machine-locally (or re-introduce a thin per-OS template just for that key).
   Bonus: the bash script's `echo -e` mangles Windows backslash paths (`\0` in `C:\Users\0x130`
   → NUL), so line 1 was already broken on Windows; the PS port fixes it.
-- **`~/.claude/settings.json` is a `modify_` MERGE template — it SYNCS across machines but never
-  clobbers machine-local keys.** Claude rewrites settings.json constantly (plugin toggles,
-  marketplaces, ad-hoc approved commands, `effortLevel`), so it can't be a plain managed file
-  (apply would wipe live toggles) nor a `create_` seed (changes never propagate). Instead
-  `dot_claude/modify_settings.json.tmpl` is a chezmoi modify-template. On apply it reads the LIVE
-  file via `include .chezmoi.targetFile` (which still holds the current contents at render time —
-  v2.70 exposes NO `.chezmoi.stdin`, so don't reach for it), then:
-  - **FORCES the shared keys** from the template: `env`, `model`, `defaultMode`, `hooks`,
-    per-OS `statusLine`, `skillListingBudgetFraction`, `agentPushNotifEnabled`,
-    `hasCompletedOnboarding`, `terminalProgressBarEnabled`.
-  - **UNIONS** a baseline (common Bash allows + codegraph MCP) into `permissions.allow` (deduped).
-  - **PRESERVES every other live key** verbatim (deepCopy of the current file) — so
-    `enabledPlugins`, `extraKnownMarketplaces`, per-machine approved commands, and any unknown
-    future keys survive `cza`/`czu`.
-  Sync loop: change a SHARED key by editing the template (`cze`), push, then `czu` elsewhere —
-  do NOT edit the live file for a forced key (its value reverts on the next apply), and `czra`
-  does NOT capture into a modify-template. Machine-local keys are simply left alone and never
-  enter git. Two v2.70 gotchas baked into the file: (1) the `chezmoi:modify-template` marker must
-  be a LITERAL first line, NOT a `{{/* */}}` comment — chezmoi detects it in the rendered output,
-  and a comment gets stripped before detection (→ it execs the JSON as a script: "exec format
-  error"); (2) the last setup line ends with `}}` (not `-}}`) so one newline separates the marker
-  from the JSON, else the marker merges with the opening `{` and chezmoi strips both → invalid
-  JSON. Test with `chezmoi cat ~/.claude/settings.json` (renders against the live file without
-  writing). Unlike the old `create_` form, settings.json NOW appears in `chezmoi status`/`czd` and
-  trips the `80-chezmoi-drift.zsh` nudge — intended. Do NOT switch to symlink mode: Claude saves
-  atomically via rename (replacing any symlink) and the `.tmpl` can't be symlinked.
+- **`~/.claude/settings.json` is a PLAIN managed file (`dot_claude/settings.json`) — chezmoi
+  fully owns it, `apply` overwrites the live file.** Replaced the old `modify_settings.json.tmpl`
+  merge-template (dropped for simplicity + `czra` round-trip; the template could not be captured
+  by `czra`). Tradeoffs of going plain, know them:
+  - **`apply` CLOBBERS live machine-local keys.** Claude rewrites settings.json constantly (plugin
+    toggles, marketplaces, ad-hoc approved commands) — those edits revert on the next `apply`
+    unless captured. To keep a live change, run `czra` (chezmoi re-add) — which now WORKS because
+    it's a plain file — then commit. This is the whole reason for the switch: edit live → `czra` →
+    push, instead of editing a template by hand.
+  - The tracked file holds the curated shared state: `env`, `model`, `defaultMode`, `hooks`
+    (rtk), `statusLine` (Unix — see the statusline gotcha above for Windows), `permissions.allow`
+    (Bash baseline + codegraph MCP), `enabledPlugins`, `extraKnownMarketplaces`, the booleans.
+  - Appears in `chezmoi status`/`czd` and trips the `80-chezmoi-drift.zsh` nudge whenever Claude
+    touches it — expected; `czra` to absorb, or `czd` to see what changed.
+  - Do NOT switch to symlink mode: Claude saves atomically via rename, replacing any symlink.
 - chezmoi **copies** files (not symlinks). Migrating from a symlink manager replaces the link with a real copy.
 - `~/.config/chezmoi/chezmoi.toml` (from `init`) OVERRIDES `.chezmoidata.yaml`.
 - `apply` does NOT re-prompt profiles — edit the config or re-run `init`.

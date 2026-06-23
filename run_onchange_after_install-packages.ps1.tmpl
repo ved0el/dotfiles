@@ -78,6 +78,9 @@ mise --cd $HOME install --yes
 # it's idempotent so re-runs are safe.
 try { mise --cd $HOME exec -- rtk init -g --auto-patch } catch { }
 
+# caveman (JuliusBrussee/caveman) — Claude Code caveman skill/hooks. Idempotent installer.
+try { irm https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.ps1 | iex } catch { }
+
 {{ if .tools -}}
 # delta: wire git via include.path (idempotent); identity stays in the unmanaged config.
 if (Get-Command git -ErrorAction SilentlyContinue) {
