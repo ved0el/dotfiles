@@ -44,6 +44,9 @@ yabai -m config                                 \
     window_gap                   6              \
     auto_balance                 off
 
-
+# window rules (title regex; manage=off floats, manage=on forces tiling)
+yabai -m rule --add title='^Bitwarden' manage=off   # float
+yabai -m rule --add title='VPN'        manage=off   # float (anywhere in title)
+yabai -m rule --add title='^Meet'      manage=on    # tile
 
 echo "yabai configuration loaded.."
