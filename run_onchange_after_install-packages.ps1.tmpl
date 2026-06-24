@@ -78,8 +78,12 @@ mise --cd $HOME install --yes
 # it's idempotent so re-runs are safe.
 try { mise --cd $HOME exec -- rtk init -g --auto-patch } catch { }
 
-# caveman (JuliusBrussee/caveman) — Claude Code caveman skill/hooks. Idempotent installer.
-try { irm https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.ps1 | iex } catch { }
+# Claude Code plugin marketplaces — clone newly-declared marketplaces and update the rest.
+# Reads ~/.claude/settings.json (chezmoi-managed) for the declared set; plugins ship inside
+# their marketplace repos, so this refreshes plugin code too. The fingerprint re-runs this
+# script whenever the declared marketplaces change.
+# marketplaces fingerprint: {{ include "dot_claude/settings.json" | fromJson | dig "extraKnownMarketplaces" dict | toJson | sha256sum }}
+if (Get-Command claude -ErrorAction SilentlyContinue) { try { claude plugin marketplace update } catch { } }
 
 {{ if .tools -}}
 # delta: wire git via include.path (idempotent); identity stays in the unmanaged config.

@@ -62,8 +62,7 @@
     "chrome-devtools-mcp@claude-plugins-official": true,
     "understand-anything@understand-anything": true,
     "last30days@last30days-skill": true,
-    "document-skills@anthropic-agent-skills": true,
-    "caveman@caveman": true
+    "document-skills@anthropic-agent-skills": true
   },
   "extraKnownMarketplaces": {
     "ecc": {
@@ -97,12 +96,6 @@
       "source": {
         "source": "github",
         "repo": "anthropics/skills"
-      }
-    },
-    "caveman": {
-      "source": {
-        "source": "github",
-        "repo": "JuliusBrussee/caveman"
       }
     }
   },

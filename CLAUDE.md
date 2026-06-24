@@ -71,8 +71,18 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
   non-interactive bootstrap doesn't hang. It's idempotent ("hook already present" on re-run) and
   writes machine-local `~/.claude/RTK.md`. The rtk PreToolUse hook now also ships in the managed
   `dot_claude/settings.json`, so the run finds it already present — `--auto-patch` mainly handles
-  RTK.md + acts as a safety net. The bootstrap also runs caveman's upstream installer (curl|bash
-  on Unix, irm|iex on Windows) right after rtk; both are Claude Code tooling.
+  RTK.md + acts as a safety net.
+- **Claude plugin marketplaces are cloned/updated by the bootstrap via `claude plugin
+  marketplace update`.** That command reads the chezmoi-managed `dot_claude/settings.json`
+  `extraKnownMarketplaces`, so that file is the single source of truth — no duplicate list in
+  the script. Plugins ship inside their marketplace repos, so updating the marketplaces also
+  refreshes plugin code; `enabledPlugins` just toggles them. The bootstrap line carries a
+  `# marketplaces fingerprint:` comment (sha256 of the `extraKnownMarketplaces` slice via
+  `fromJson`), so the run_onchange script re-fires on the next `cza` whenever you add/remove a
+  marketplace — newly-declared ones get cloned, not just the existing ones pulled. Add a
+  marketplace by editing `extraKnownMarketplaces` (or `czra` to capture Claude's live edit),
+  then `cza`. Gated `|| true` / `try/catch` so a network blip or a not-yet-installed `claude`
+  never aborts setup.
 - **`vivid` generates `LS_COLORS`; `delta` is wired into git via an include, NOT a managed
   `~/.gitconfig`.** vivid uses the mise `github:` backend (prebuilt). Its theme is the full
   upstream catppuccin-mocha with `red`→repo accent `#ff5189` (`dot_config/vivid/themes/
