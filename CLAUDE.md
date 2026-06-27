@@ -219,6 +219,12 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
   - The tracked file holds the curated shared state: `env`, `model`, `defaultMode`, `hooks`
     (rtk), `statusLine` (Unix — see the statusline gotcha above for Windows), `permissions.allow`
     (Bash baseline + codegraph MCP), `enabledPlugins`, `extraKnownMarketplaces`, the booleans.
+  - **GateGuard tuning (`env`):** ECC's fact-forcing gate has 3 sub-gates. We drop the two
+    high-friction ones and keep the safety one — the per-file Edit/Write gate is disabled via
+    `ECC_DISABLED_HOOKS` (`pre:edit-write:gateguard-fact-force`) and the once-per-session routine
+    bash gate via `GATEGUARD_BASH_ROUTINE_DISABLED=1`. The **destructive-bash gate**
+    (`rm -rf`/`git reset --hard`/`push --force`, hook `pre:bash:gateguard-fact-force`) is KEPT —
+    cheap data-loss insurance. Use `ECC_GATEGUARD=off` only to kill all gates for a one-off session.
   - Appears in `chezmoi status`/`czd` and trips the `80-chezmoi-drift.zsh` nudge whenever Claude
     touches it — expected; `czra` to absorb, or `czd` to see what changed.
   - Do NOT switch to symlink mode: Claude saves atomically via rename, replacing any symlink.
