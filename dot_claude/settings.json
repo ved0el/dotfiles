@@ -25,7 +25,8 @@
       "mcp__codegraph__codegraph_impact",
       "mcp__codegraph__codegraph_files",
       "mcp__codegraph__codegraph_status"
-    ]
+    ],
+    "defaultMode": "auto"
   },
   "hooks": {
     "PreToolUse": [
@@ -98,12 +99,13 @@
       }
     }
   },
+  "fastMode": true,
   "awaySummaryEnabled": false,
   "tui": "fullscreen",
   "editorMode": "normal",
   "terminalProgressBarEnabled": false,
+  "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": false,
-  "model": "default",
   "defaultMode": "auto",
   "hasCompletedOnboarding": true
 }
