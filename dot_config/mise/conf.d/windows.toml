@@ -3,7 +3,7 @@
 # only make sense on Windows (e.g. a prompt, since Unix uses powerlevel10k).
 #
 # Ad-hoc, machine-specific additions go in ~/.config/mise/config.toml — that file is
-# NOT managed by chezmoi, and MISE_GLOBAL_CONFIG_FILE points `mise use -g` at it, so
+# NOT managed by chezmoi, and `mise use -g` writes there by default, so
 # experiments never pollute these tracked files. Put tools you want on EVERY Windows
 # machine here instead.
 [tools]
