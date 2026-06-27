@@ -1,10 +1,9 @@
 {
   "skillListingBudgetFraction": 0.025,
   "env": {
-    "ECC_DISABLED_HOOKS": "pre:config-protection,pre:edit-write:gateguard-fact-force"
+    "ECC_DISABLED_HOOKS": "pre:config-protection,pre:edit-write:gateguard-fact-force",
+    "PONYTAIL_DEFAULT_MODE": "ultra"
   },
-  "model": "auto",
-  "defaultMode": "auto",
   "permissions": {
     "allow": [
       "Bash(ls:*)",
@@ -104,5 +103,6 @@
   "editorMode": "normal",
   "terminalProgressBarEnabled": false,
   "agentPushNotifEnabled": false,
+  "defaultMode": "auto",
   "hasCompletedOnboarding": true
 }
