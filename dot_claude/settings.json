@@ -1,7 +1,7 @@
 {
   "skillListingBudgetFraction": 0.025,
   "env": {
-    "ECC_DISABLED_HOOKS": "pre:config-protection,pre:edit-write:gateguard-fact-force",
+    "ECC_DISABLED_HOOKS": "pre:config-protection",
     "PONYTAIL_DEFAULT_MODE": "ultra"
   },
   "permissions": {
@@ -103,6 +103,7 @@
   "editorMode": "normal",
   "terminalProgressBarEnabled": false,
   "agentPushNotifEnabled": false,
+  "model": "default",
   "defaultMode": "auto",
   "hasCompletedOnboarding": true
 }
