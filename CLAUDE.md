@@ -199,25 +199,25 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
   apps (pwsh, node, git) spawned the same way stay hidden. Fix: a pure-PowerShell statusline
   (`dot_claude/statusline.ps1`) so Windows launches ONE hidden `pwsh.exe`. `dot_claude/
   executable_statusline.sh` stays the macOS/Linux version; keep the two in sync. They're OS-gated
-  in `.chezmoiignore` (`.sh` ignored on Windows, `.ps1` on Unix). **`dot_claude/settings.json`
-  is now a PLAIN managed file (no template), so its `statusLine.command` is hardcoded to the
-  Unix `bash $HOME/.claude/statusline.sh`** — a plain file can't branch per-OS the way the old
-  `modify_settings.json.tmpl` did. On Windows this points at the wrong script; if you apply on
-  Windows, override `statusLine` to `pwsh -NoLogo -NoProfile -File <home>/.claude/statusline.ps1`
-  machine-locally (or re-introduce a thin per-OS template just for that key).
+  in `.chezmoiignore` (`.sh` ignored on Windows, `.ps1` on Unix). `dot_claude/settings.json.tmpl`
+  branches `statusLine.command` per-OS — `pwsh -NoLogo -NoProfile -File {{ .chezmoi.homeDir }}/
+  .claude/statusline.ps1` on Windows, `bash $HOME/.claude/statusline.sh` on Unix — so a CLEAN
+  install gets a working statusline on either platform, no machine-local override. (A plain,
+  non-templated settings.json can't do this: one hardcoded command is always wrong on one OS —
+  that was the clean-install-Windows bug.)
   Bonus: the bash script's `echo -e` mangles Windows backslash paths (`\0` in `C:\Users\0x130`
   → NUL), so line 1 was already broken on Windows; the PS port fixes it.
-- **`~/.claude/settings.json` is a PLAIN managed file (`dot_claude/settings.json`) — chezmoi
-  fully owns it, `apply` overwrites the live file.** Replaced the old `modify_settings.json.tmpl`
-  merge-template (dropped for simplicity + `czra` round-trip; the template could not be captured
-  by `czra`). Tradeoffs of going plain, know them:
+- **`~/.claude/settings.json` is a fully-managed template (`dot_claude/settings.json.tmpl`) —
+  chezmoi owns it, `apply` overwrites the live file.** It is a template ONLY so `statusLine` can
+  branch per-OS (Windows needs pwsh, not bash — see the statusline gotcha above); every other key
+  is static. Tradeoffs of full management, know them:
   - **`apply` CLOBBERS live machine-local keys.** Claude rewrites settings.json constantly (plugin
     toggles, marketplaces, ad-hoc approved commands) — those edits revert on the next `apply`
-    unless captured. To keep a live change, run `czra` (chezmoi re-add) — which now WORKS because
-    it's a plain file — then commit. This is the whole reason for the switch: edit live → `czra` →
-    push, instead of editing a template by hand.
+    unless captured. Because it's a `.tmpl`, `czra` (chezmoi re-add) does NOT cleanly round-trip
+    (it would overwrite the `{{ }}` with literal JSON) — capture a live plugin/marketplace change
+    by hand-editing the `enabledPlugins`/`extraKnownMarketplaces` blocks in the template, then commit.
   - The tracked file holds the curated shared state: `env`, `model`, `defaultMode`, `hooks`
-    (rtk), `statusLine` (Unix — see the statusline gotcha above for Windows), `permissions.allow`
+    (rtk), `statusLine` (per-OS via the template), `permissions.allow`
     (Bash baseline + codegraph MCP), `enabledPlugins`, `extraKnownMarketplaces`, the booleans.
   - **GateGuard tuning (`env`):** ECC's fact-forcing gate has 3 sub-gates. We drop the two
     high-friction ones and keep the safety one — the per-file Edit/Write gate is disabled via
