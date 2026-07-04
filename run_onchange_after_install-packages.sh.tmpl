@@ -96,7 +96,7 @@ command -v rtk >/dev/null 2>&1 && rtk init -g --auto-patch || \
 # marketplace repos, so this refreshes plugin code too. Idempotent; || true so a network
 # blip or a not-yet-installed claude never aborts the bootstrap. The fingerprint below
 # re-runs this script whenever the declared marketplaces change.
-# marketplaces fingerprint: {{ include "dot_claude/settings.json" | fromJson | dig "extraKnownMarketplaces" dict | toJson | sha256sum }}
+# settings fingerprint (incl. extraKnownMarketplaces): {{ include "dot_claude/settings.json.tmpl" | sha256sum }}
 command -v claude >/dev/null 2>&1 && claude plugin marketplace update || true
 
 {{ if .tools -}}
