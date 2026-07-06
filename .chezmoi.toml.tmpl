@@ -26,4 +26,7 @@
 [interpreters.ps1]
     command = '{{ $ps }}'
     args = ["-NoLogo", "-NoProfile", "-ExecutionPolicy", "Bypass"]
+# `chezmoi cd` opens pwsh (or WinPS 5.1 fallback) instead of the default cmd.exe.
+[cd]
+    command = '{{ $ps }}'
 {{ end }}
