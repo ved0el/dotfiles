@@ -1,9 +1,5 @@
 {
-  "skillListingBudgetFraction": 0.025,
   "env": {
-    "ECC_GATEGUARD": "off",
-    "ECC_HOOK_PROFILE": "standard",
-    "ECC_DISABLED_HOOKS": "pre:config-protection,pre:edit-write:gateguard-fact-force",
     "PONYTAIL_DEFAULT_MODE": "ultra"
   },
   "permissions": {
@@ -50,9 +46,7 @@
     "command": "{{ if eq .chezmoi.os "windows" }}pwsh -NoLogo -NoProfile -File {{ .chezmoi.homeDir }}/.claude/statusline.ps1{{ else }}bash $HOME/.claude/statusline.sh{{ end }}"
   },
   "enabledPlugins": {
-    "ecc@ecc": true,
     "claude-mem@thedotmack": true,
-    "ui-ux-pro-max@ui-ux-pro-max-skill": true,
     "ponytail@ponytail": true,
     "frontend-design@claude-plugins-official": true,
     "superpowers@claude-plugins-official": true,
@@ -62,30 +56,16 @@
     "security-guidance@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
     "claude-code-setup@claude-plugins-official": true,
-    "commit-commands@claude-plugins-official": true,
-    "chrome-devtools-mcp@claude-plugins-official": true,
-    "understand-anything@understand-anything": true,
     "last30days@last30days-skill": true,
-    "document-skills@anthropic-agent-skills": true
+    "document-skills@anthropic-agent-skills": true,
+    "playwright@claude-plugins-official": true,
+    "chrome-devtools-mcp@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
-    "ecc": {
-      "source": {
-        "source": "github",
-        "repo": "affaan-m/ECC"
-      },
-      "autoUpdate": true
-    },
     "ponytail": {
       "source": {
         "source": "github",
         "repo": "DietrichGebert/ponytail"
-      }
-    },
-    "understand-anything": {
-      "source": {
-        "source": "github",
-        "repo": "Egonex-AI/Understand-Anything"
       },
       "autoUpdate": true
     },
@@ -103,9 +83,11 @@
       }
     }
   },
+  "advisorModel": "opus",
   "awaySummaryEnabled": false,
   "tui": "fullscreen",
   "editorMode": "normal",
+  "autoScrollEnabled": true,
   "terminalProgressBarEnabled": false,
   "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true,
