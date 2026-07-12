@@ -83,6 +83,14 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
   marketplace by editing `extraKnownMarketplaces` (or `czra` to capture Claude's live edit),
   then `cza`. Gated `|| true` / `try/catch` so a network blip or a not-yet-installed `claude`
   never aborts setup.
+- **`claude-mem` (`thedotmack` marketplace) is fully plugin-managed — the bootstrap needs NO
+  claude-mem install step.** Its own plugin `Setup` hook (`version-check.js`) version-checks and
+  installs/updates the runtime per session, and its data lives in `~/.claude-mem/` (SQLite DB +
+  chroma vectors + `settings.json`/`.env`), which `cza` never touches. So the whole integration
+  is just the `enabledPlugins` toggle + the `thedotmack` entry in `extraKnownMarketplaces`; the
+  marketplace-update line `git pull`s the plugin code — it never reinstalls or wipes the local
+  memory DB. Do NOT add `npx claude-mem install` to the bootstrap: that's the non-plugin install
+  path and would double-register hooks against the plugin's own.
 - **`vivid` generates `LS_COLORS`; `delta` is wired into git via an include, NOT a managed
   `~/.gitconfig`.** vivid uses the mise `github:` backend (prebuilt). Its theme is the full
   upstream catppuccin-mocha with `red`→repo accent `#ff5189` (`dot_config/vivid/themes/

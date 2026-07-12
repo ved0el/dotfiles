@@ -100,7 +100,11 @@ if (Get-Command git -ErrorAction SilentlyContinue) {
 #     analogue of the macOS yabai/skhd block. These live in scoop's extras bucket. ---
 $buckets = scoop bucket list 2>$null | Out-String
 if ($buckets -notmatch 'extras') { scoop bucket add extras }
-scoop install komorebi whkd yasb
+# Install only what's missing so a re-run (cza) doesn't reinstall/upgrade each time.
+$installed = scoop list 2>$null | Out-String
+foreach ($app in 'komorebi','whkd','yasb') {
+  if ($installed -notmatch "(?im)^\s*$app\b") { scoop install $app }
+}
 Write-Host "[wm] komorebi/whkd/yasb installed. Start the WM with: komorebic start --whkd"
 Write-Host "[wm] Run yasb once (or add it to startup) to launch the status bar."
 {{ end -}}

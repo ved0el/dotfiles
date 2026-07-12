@@ -16,8 +16,10 @@ command -v curl >/dev/null 2>&1 || brew install curl
 # mole — macOS cleanup/optimization CLI (macOS only).
 command -v mole >/dev/null 2>&1 || brew install mole
 {{ if .wm }}
-# macOS window manager (yabai + skhd) from the upstream tap.
-brew install koekeishiya/formulae/yabai koekeishiya/formulae/skhd
+# macOS window manager (yabai + skhd) from the upstream tap — install only what's missing
+# so a re-run (cza after any fingerprint change) doesn't reinstall/upgrade them each time.
+command -v yabai >/dev/null 2>&1 || brew install koekeishiya/formulae/yabai
+command -v skhd  >/dev/null 2>&1 || brew install koekeishiya/formulae/skhd
 skhd --start-service || true
 echo "[wm] yabai installed — run 'yabai --start-service' (needs SIP setup; see the yabai wiki)"
 {{ end }}
