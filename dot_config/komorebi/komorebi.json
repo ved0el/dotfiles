@@ -117,6 +117,21 @@
       "kind": "Class",
       "id": "Tauri Window",
       "matching_strategy": "Contains"
+    },
+    {
+      "kind": "Exe",
+      "id": "PalworldSaveTools.exe",
+      "matching_strategy": "Equals"
+    },
+    {
+      "kind": "Exe",
+      "id": "PSP.exe",
+      "matching_strategy": "Equals"
+    },
+    {
+      "kind": "Title",
+      "id": "Bitwarden",
+      "matching_strategy": "StartsWith"
     }
   ]
 }
