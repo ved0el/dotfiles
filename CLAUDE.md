@@ -49,6 +49,14 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
   `KOMOREBI_CONFIG_HOME`/`WHKD_CONFIG_HOME`/`YASB_CONFIG_HOME` → `~/.config/<tool>`, persisted
   (User scope) by the bootstrap because these apps launch at startup, outside any shell
   profile — komorebi else defaults to `~/komorebi.json`, whkd to `~/.config/whkdrc`.
+  The bootstrap also runs `komorebic enable-autostart --whkd --config <path>` — this is what
+  makes komorebi actually TILE at login; without it komorebi never launches (installing the
+  binary is not enough). It writes ONE canonical `komorebi.lnk` to `shell:startup`; do NOT
+  hand-make a second startup entry (e.g. a `komorebi.vbs` running `komorebic start --whkd`) —
+  two `start` entries race at login and leave komorebi dead. yasb autostarts via its own
+  installer. NOTE: komorebi will fight any other tiling WM running concurrently (e.g. Seelen
+  UI / seelen-ui.exe) — if you keep Seelen for its dock, turn OFF Seelen's own window manager
+  in Seelen settings or neither tiles cleanly.
   yasb's `config.yaml.tmpl` is templated — user paths use
   `{{ .chezmoi.homeDir | replace "/" "\\" }}` (NEVER hardcode the username).
 - Skipped on Windows: tmux, sheldon, p10k, `.claude/statusline.sh` (Windows uses

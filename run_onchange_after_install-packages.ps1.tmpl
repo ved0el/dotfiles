@@ -121,7 +121,14 @@ $installed = scoop list 2>$null | Out-String
 foreach ($app in 'komorebi','whkd','yasb') {
   if ($installed -notmatch "(?im)^\s*$app\b") { scoop install $app }
 }
-Write-Host "[wm] komorebi/whkd/yasb installed. Start the WM with: komorebic start --whkd"
+# Register komorebi to autostart at login. Without this komorebi never launches on boot
+# (nothing tiles). enable-autostart writes ONE canonical komorebi.lnk to shell:startup that
+# starts komorebi + whkd (hotkeys) with the explicit managed config; it's idempotent so a
+# re-run just regenerates the same shortcut. yasb autostarts separately (its own installer).
+if (Get-Command komorebic -ErrorAction SilentlyContinue) {
+  komorebic enable-autostart --whkd --config (Join-Path $XdgConfig 'komorebi\komorebi.json')
+}
+Write-Host "[wm] komorebi/whkd installed and set to autostart at login."
 Write-Host "[wm] Run yasb once (or add it to startup) to launch the status bar."
 {{ end -}}
 

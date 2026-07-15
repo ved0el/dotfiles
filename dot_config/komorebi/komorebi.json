@@ -63,11 +63,6 @@
     },
     {
       "kind": "Title",
-      "id": "Bitwarden",
-      "matching_strategy": "StartsWith"
-    },
-    {
-      "kind": "Title",
       "id": "Metamask",
       "matching_strategy": "StartsWith"
     },
@@ -117,6 +112,16 @@
       "kind": "Class",
       "id": "Tauri Window",
       "matching_strategy": "Contains"
+    },
+    {
+      "kind": "Exe",
+      "id": "Palworld-Win64-Shipping.exe",
+      "matching_strategy": "Equals"
+    },
+    {
+      "kind": "Title",
+      "id": "Bitwarden",
+      "matching_strategy": "Equals"
     }
   ]
 }
