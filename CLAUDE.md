@@ -49,14 +49,22 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
   `KOMOREBI_CONFIG_HOME`/`WHKD_CONFIG_HOME`/`YASB_CONFIG_HOME` → `~/.config/<tool>`, persisted
   (User scope) by the bootstrap because these apps launch at startup, outside any shell
   profile — komorebi else defaults to `~/komorebi.json`, whkd to `~/.config/whkdrc`.
-  The bootstrap also runs `komorebic enable-autostart --whkd --config <path>` — this is what
-  makes komorebi actually TILE at login; without it komorebi never launches (installing the
-  binary is not enough). It writes ONE canonical `komorebi.lnk` to `shell:startup`; do NOT
-  hand-make a second startup entry (e.g. a `komorebi.vbs` running `komorebic start --whkd`) —
-  two `start` entries race at login and leave komorebi dead. yasb autostarts via its own
-  installer. NOTE: komorebi will fight any other tiling WM running concurrently (e.g. Seelen
-  UI / seelen-ui.exe) — if you keep Seelen for its dock, turn OFF Seelen's own window manager
-  in Seelen settings or neither tiles cleanly.
+  **komorebi autostart is a scheduled task, NOT `komorebic enable-autostart`/a shell:startup
+  shortcut.** Root cause those don't work: at login the environment has no scoop shims on PATH,
+  so `komorebic start` (which internally does `Start-Process komorebi.exe`) can't find
+  komorebi.exe and komorebi never launches — nothing tiles (reproduce: strip `<scoop>\shims`
+  from PATH → komorebi won't start). The bootstrap instead registers a logon scheduled task
+  ('komorebi') that runs the managed launcher `dot_config/komorebi/autostart.ps1`. The launcher
+  takes `-ShimsDir` (resolved at registration via `Split-Path (Get-Command komorebic).Source`
+  while PATH is intact — scoop can live anywhere, e.g. D:\scoop, and doesn't set `$env:SCOOP`),
+  prepends it to PATH, waits ~10s for the session to settle, then starts komorebi+whkd retrying
+  until it sticks. It's launched by **System32 `powershell.exe`** (WinPS 5.1) because the
+  scoop-shimmed `pwsh` isn't on the task PATH either. The bootstrap also deletes any legacy
+  `komorebi.lnk` in `shell:startup` so it can't race the task; do NOT re-add a shell:startup
+  shortcut or a `komorebi.vbs`. yasb autostarts via its own installer. NOTE: komorebi will
+  fight any other tiling WM running concurrently (e.g. Seelen UI / seelen-ui.exe) — if you keep
+  Seelen for its dock, turn OFF Seelen's own window manager in Seelen settings (this box already
+  has `@seelen/window-manager": enabled:false`) or neither tiles cleanly.
   yasb's `config.yaml.tmpl` is templated — user paths use
   `{{ .chezmoi.homeDir | replace "/" "\\" }}` (NEVER hardcode the username).
 - Skipped on Windows: tmux, sheldon, p10k, `.claude/statusline.sh` (Windows uses

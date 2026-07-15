@@ -121,14 +121,32 @@ $installed = scoop list 2>$null | Out-String
 foreach ($app in 'komorebi','whkd','yasb') {
   if ($installed -notmatch "(?im)^\s*$app\b") { scoop install $app }
 }
-# Register komorebi to autostart at login. Without this komorebi never launches on boot
-# (nothing tiles). enable-autostart writes ONE canonical komorebi.lnk to shell:startup that
-# starts komorebi + whkd (hotkeys) with the explicit managed config; it's idempotent so a
-# re-run just regenerates the same shortcut. yasb autostarts separately (its own installer).
+# Autostart komorebi at login via a scheduled task that runs the managed launcher
+# (~/.config/komorebi/autostart.ps1). NOT `komorebic enable-autostart` / a shell:startup
+# shortcut: at login the environment lacks scoop's shims on PATH, so `komorebic start` (which
+# does `Start-Process komorebi.exe`) can't find komorebi.exe and komorebi never launches —
+# nothing tiles (proven: strip <scoop>\shims from PATH and it reproduces). The launcher puts the
+# shims dir — resolved HERE while PATH is intact and passed in — back on PATH, waits for the
+# session to settle, then starts komorebi+whkd with retry. It's run by System32 powershell.exe
+# because the scoop-shimmed pwsh isn't on the task PATH either. yasb autostarts on its own.
 if (Get-Command komorebic -ErrorAction SilentlyContinue) {
-  komorebic enable-autostart --whkd --config (Join-Path $XdgConfig 'komorebi\komorebi.json')
+  # Drop any legacy shell:startup shortcut so it doesn't race the task.
+  Remove-Item (Join-Path ([Environment]::GetFolderPath('Startup')) 'komorebi.lnk') -Force -ErrorAction SilentlyContinue
+  try {
+    $launcher = Join-Path $XdgConfig 'komorebi\autostart.ps1'
+    $shims    = Split-Path (Get-Command komorebic).Source
+    $winps    = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+    $uid      = "$env:USERDOMAIN\$env:USERNAME"
+    $act = New-ScheduledTaskAction -Execute $winps -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$launcher`" -ShimsDir `"$shims`""
+    $trg = New-ScheduledTaskTrigger -AtLogOn -User $uid
+    $set = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero)
+    $prn = New-ScheduledTaskPrincipal -UserId $uid -LogonType Interactive -RunLevel Limited
+    Register-ScheduledTask -TaskName 'komorebi' -Action $act -Trigger $trg -Settings $set -Principal $prn -Force | Out-Null
+    Write-Host "[wm] komorebi/whkd installed; autostart registered (scheduled task 'komorebi')."
+  } catch {
+    Write-Host "[wm] komorebi/whkd installed, but autostart task registration failed: $($_.Exception.Message)"
+  }
 }
-Write-Host "[wm] komorebi/whkd installed and set to autostart at login."
 Write-Host "[wm] Run yasb once (or add it to startup) to launch the status bar."
 {{ end -}}
 
