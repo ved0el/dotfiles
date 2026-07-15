@@ -68,6 +68,22 @@ if (-not (Get-Command mise -ErrorAction SilentlyContinue)) {
   scoop install mise
 }
 
+# --- NanaZip replaces 7-Zip as scoop's archive extractor. scoop auto-installs its own
+#     `7zip` package as a decompress dependency for any app shipping a 7z archive; on a
+#     fresh box that happens above (git/pwsh/mise extraction). use_external_7zip=true makes
+#     scoop use whatever `7z` is on PATH instead, so we shim `7z` to NanaZip's
+#     7-Zip-compatible console (NanaZip.Universal.Console.exe, name globbed since it has
+#     changed across versions) and drop the 7zip package. Idempotent: the shim is only
+#     (re)created when `7z` isn't already NanaZip. ---
+if (-not (scoop list nanazip 2>$null | Select-String -Quiet '(?im)^\s*nanazip\b')) { scoop install nanazip }
+$nzConsole = Get-ChildItem (Join-Path (scoop prefix nanazip) '*Console*.exe') -ErrorAction SilentlyContinue | Select-Object -First 1
+if ($nzConsole) {
+  if (scoop list 7zip 2>$null | Select-String -Quiet '(?im)^\s*7zip\b') { scoop uninstall 7zip }
+  $is7zNana = $false; try { $is7zNana = ((& 7z 2>&1 | Select-Object -First 1) -match 'NanaZip') } catch { }
+  if (-not $is7zNana) { scoop shim add 7z $nzConsole.FullName }
+  scoop config use_external_7zip $true | Out-Null
+}
+
 # --- install tools/runtimes declared in ~/.config/mise/conf.d/*.toml ---
 # --cd $HOME: mise only auto-discovers the global conf.d/*.toml when CWD is inside the home
 # tree; chezmoi may run this script from elsewhere, so anchor it at $HOME or nothing installs.

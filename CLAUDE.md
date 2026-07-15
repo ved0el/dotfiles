@@ -62,6 +62,14 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
   `mole` (cleanup CLI) and `yabai`/`skhd` (wm). No more `btop`/`tree`/`wget` — `btop`→`bottom`
   (mise) and `tree`→`eza -T` alias.
 - Windows base → **scoop** (`git pwsh mise`) in the `.ps1` bootstrap.
+- **NanaZip replaces the `7zip` scoop package as the archive extractor.** scoop otherwise
+  auto-installs `7zip` as a decompress dependency for any app shipping a 7z archive (so it
+  keeps coming back on `scoop install`/`update`). The bootstrap installs `nanazip`, shims
+  `7z` → NanaZip's 7-Zip-compatible console (`NanaZip.Universal.Console.exe`, name globbed —
+  it has changed across versions), sets `scoop config use_external_7zip true` (scoop then
+  uses the PATH `7z` instead of installing its own), and uninstalls `7zip`. Idempotent. On a
+  FRESH box `7zip` is still pulled transiently to extract git/pwsh/mise before this block
+  swaps it out — expected. Do NOT re-add `7zip`; the config flag is what stops the reinstalls.
 - Prefer prebuilt backends for cross-platform tools: `"aqua:eza-community/eza"`, not bare
   `eza` (registry default is `cargo:eza` — source build, no Windows binary).
 - **`rtk` (rtk-ai/rtk) uses the mise `github:` backend** (`github:rtk-ai/rtk` — prebuilt release
