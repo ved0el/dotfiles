@@ -28,22 +28,24 @@ if ((Test-Path $ShimsDir) -and ($env:Path -notlike "*$ShimsDir*")) { $env:Path =
 
 $cfg = Join-Path $HOME '.config\komorebi\komorebi.json'
 
-# Let the desktop/environment settle, then (re)start until komorebi is alive. ~10s + 6×8s covers
-# the window where an early start would otherwise exit.
-Start-Sleep -Seconds 10
+# Let the environment settle briefly, then start komorebi, retrying until it sticks (an early
+# start can exit before the shell is ready). Break the moment it's alive so tiling appears fast.
+Start-Sleep -Seconds 5
 for ($i = 0; $i -lt 6; $i++) {
-  if (-not (Get-Process komorebi -ErrorAction SilentlyContinue)) {
-    komorebic start --whkd --config $cfg | Out-Null
-  }
-  Start-Sleep -Seconds 8
+  if (Get-Process komorebi -ErrorAction SilentlyContinue) { break }
+  komorebic start --whkd --config $cfg | Out-Null
+  Start-Sleep -Seconds 3
 }
 
-# Re-evaluate all windows against ignore_rules once the desktop has settled. Windows already
-# open at login (e.g. a browser session-restoring a Bitwarden extension popup) get managed
-# before their title settles, and komorebi does NOT re-check ignore rules on later title
-# changes — so a Title-matched popup stays wrongly tiled. Reloading the config forces a
-# re-evaluation and drops it to the floating/ignored state it should have had.
+# Windows already open at login (e.g. a browser session-restoring a Bitwarden extension popup)
+# get managed before their title settles, and komorebi does NOT re-check ignore rules on later
+# title changes — so a Title-matched popup stays wrongly tiled. Reloading the config forces a
+# re-evaluation. Browser restore timing varies, so reload a few times spaced out to catch the
+# popup whenever it finishes loading. These run after komorebi is already tiling, so they don't
+# delay startup.
 if (Get-Process komorebi -ErrorAction SilentlyContinue) {
-  Start-Sleep -Seconds 5
-  komorebic replace-configuration $cfg | Out-Null
+  foreach ($d in 5, 8, 12) {
+    Start-Sleep -Seconds $d
+    komorebic replace-configuration $cfg | Out-Null
+  }
 }
