@@ -55,6 +55,13 @@
       "matching_strategy": "Equals"
     }
   ],
+  "object_name_change_applications": [
+    {
+      "kind": "Exe",
+      "id": "brave.exe",
+      "matching_strategy": "Equals"
+    }
+  ],
   "floating_applications": [
     {
       "kind": "Title",
