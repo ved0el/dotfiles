@@ -29,8 +29,17 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
     A `.sh` on Windows is unrunnable ("%1 is not a valid Win32 application"), so it MUST
     be ignored, not just rendered empty (the shebang line keeps it non-empty).
 - chezmoi runs `.ps1` via `[interpreters.ps1]` (set Windows-only in `.chezmoi.toml.tmpl`):
-  `powershell -NoLogo -NoProfile -ExecutionPolicy Bypass` (5.1 is guaranteed on a fresh
-  box; the bootstrap then installs pwsh 7).
+  `powershell -NoLogo -NoProfile -ExecutionPolicy Bypass` — **always WinPS 5.1** at its fixed
+  `%SystemRoot%\System32\...` path, never pwsh. 5.1 is guaranteed on a fresh box and never moves;
+  the bootstrap is written to run under it (then installs pwsh 7 for shells).
+- **NEVER bake an absolute pwsh path into `.chezmoi.toml.tmpl`** (neither `[interpreters.ps1]` nor
+  `[cd]`). pwsh's location depends on the install source and CHANGES under you — scoop
+  (`<scoop>\apps\pwsh\current`) → winget/Store (a versioned `WindowsApps\Microsoft.PowerShell_X.Y.Z…`
+  dir). A path baked at `chezmoi init` goes stale the moment pwsh moves: `chezmoi apply` then fails
+  to run `.ps1` scripts, and `chezmoi cd`/`czcd` can't open a shell. `[interpreters.ps1]` uses the
+  stable 5.1 path; `[cd]` uses **bare `pwsh`** so chezmoi resolves it via PATH at runtime (survives
+  any pwsh source change with no re-init). (`lookPath "pwsh"` in the template has the same
+  bake-at-init trap — don't use it for pwsh.)
 
 ## Windows specifics
 - **scoop** is the PM (per-user, never elevated): `git`, `pwsh`, `mise`. CLI tools still
