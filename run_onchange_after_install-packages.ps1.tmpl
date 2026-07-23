@@ -57,17 +57,12 @@ if (-not (Get-Command scoop -ErrorAction SilentlyContinue)) {
   $env:Path = "$env:USERPROFILE\scoop\shims;$env:Path"
 }
 
-# git: scoop needs it for buckets/updates — stays on scoop. (curl ships with Windows 10+.)
+# git + pwsh via scoop (per-user, no elevation). pwsh 7 is the shell the managed profile targets;
+# this bootstrap itself runs under Windows PowerShell 5.1. Install only what's missing. (curl
+# ships with Windows 10+.) Nothing bakes pwsh's path: [interpreters.ps1] uses WinPS 5.1 and [cd]
+# uses bare `pwsh` (PATH-resolved at runtime) — see CLAUDE.md "never bake an absolute pwsh path".
 if (-not (Get-Command git  -ErrorAction SilentlyContinue)) { scoop install git }
-# pwsh: PowerShell 7, the shell the managed profile targets (this bootstrap itself runs under
-# Windows PowerShell 5.1). Installed via WINGET, not scoop — the `Microsoft.PowerShell` winget
-# package is an msix, so it installs per-user into WindowsApps with no elevation and no UAC
-# (like scoop), non-interactive with the accept flags. Its exact path is versioned and moves on
-# upgrade, so nothing bakes it: [interpreters.ps1] uses WinPS 5.1 and [cd] uses bare `pwsh`
-# (PATH-resolved at runtime) — see CLAUDE.md "never bake an absolute pwsh path".
-if (-not (Get-Command pwsh -ErrorAction SilentlyContinue)) {
-  winget install --id Microsoft.PowerShell --source winget --accept-package-agreements --accept-source-agreements
-}
+if (-not (Get-Command pwsh -ErrorAction SilentlyContinue)) { scoop install pwsh }
 
 # --- mise (runtimes + CLI tools, cross-platform — drives the tools/develop profiles) ---
 if (-not (Get-Command mise -ErrorAction SilentlyContinue)) {

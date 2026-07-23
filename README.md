@@ -53,8 +53,7 @@ Windows is gated off `.chezmoi.os == "windows"` (no extra prompt). Differences f
 macOS/Linux:
 
 - **Package manager:** [scoop](https://scoop.sh) (installed per-user, never elevated)
-  instead of brew/apt. `git` and `mise` come from scoop; **PowerShell 7 comes from winget**
-  (`Microsoft.PowerShell`, an msix — per-user, no elevation). The CLI tool set
+  instead of brew/apt. `git`, `pwsh`, and `mise` come from scoop; the CLI tool set
   (`bat`, `fd`, `ripgrep`, …) still comes from **mise** using the same
   `conf.d/{tools,develop}.toml` manifests.
 - **Shell:** a managed `~/.config/powershell/profile.ps1` mirrors the zsh config
@@ -115,5 +114,5 @@ dot_config/                                   # ~/.config/  (gated per profile +
 .chezmoi.toml.tmpl                            # profile prompts + per-OS data/interpreters
 .chezmoiignore                                # which files apply on this machine
 run_onchange_after_install-packages.sh.tmpl   # macOS/Linux bootstrap (brew/apt + mise)
-run_onchange_after_install-packages.ps1.tmpl  # Windows bootstrap (scoop + winget pwsh + mise)
+run_onchange_after_install-packages.ps1.tmpl  # Windows bootstrap (scoop + mise)
 ```

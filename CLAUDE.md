@@ -23,7 +23,7 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
 - Three values: `windows` / `darwin` / `linux`. Never prompt for the OS; branch on it.
 - **Bootstrap is split by OS family, one script each:**
   - `run_onchange_after_install-packages.sh.tmpl` — macOS (brew) + Linux (apt).
-  - `run_onchange_after_install-packages.ps1.tmpl` — Windows (scoop + winget).
+  - `run_onchange_after_install-packages.ps1.tmpl` — Windows (scoop).
   - `.chezmoiignore` ships exactly one (ignores `install-packages.ps1` on Unix and
     `install-packages.sh` on Windows — script target names drop the `run_*`/`.tmpl`).
     A `.sh` on Windows is unrunnable ("%1 is not a valid Win32 application"), so it MUST
@@ -42,18 +42,16 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
   bake-at-init trap — don't use it for pwsh.)
 
 ## Windows specifics
-- **Package managers**: **scoop** (per-user, never elevated) installs `git` + `mise`; **pwsh 7
-  comes from winget** (`winget install --id Microsoft.PowerShell`). CLI tools come from **mise**
-  (same `conf.d/*.toml` as Unix — one list).
-  - Why winget for pwsh: that package is an **msix** → installs per-user under `WindowsApps` with
-    no elevation/UAC (fine for the non-elevated bootstrap) and exposes a `pwsh` execution alias
-    already on PATH. Its path is versioned and moves on upgrade, so nothing bakes it (see
-    "never bake pwsh's path" in the OS-gate section). git/mise stay on scoop; only pwsh moved.
+- **Package managers**: **scoop** (per-user, never elevated) installs `git` + `pwsh` + `mise`.
+  CLI tools come from **mise** (same `conf.d/*.toml` as Unix — one list). pwsh's scoop path
+  (`<scoop>\apps\pwsh\current`) is never baked — `[cd]` uses bare `pwsh` (PATH-resolved) so it
+  survives a source change (scoop ↔ winget/Store); see "never bake pwsh's path" in the OS-gate
+  section.
 - **`powershell.exe` (WinPS 5.1) "not recognized"** → its dir
   `%SystemRoot%\System32\WindowsPowerShell\v1.0` fell off PATH (a Windows default that a trimmed
   Machine PATH can drop), breaking whkd keybinds, `[interpreters.ps1]`, and komorebi autostart.
   **Fix**: add that dir to the User PATH. Not a bootstrap step — a fresh box has it by default;
-  only a hand-mangled PATH loses it. (`pwsh`/winget is unaffected — this is 5.1 only.)
+  only a hand-mangled PATH loses it. (pwsh 7 is unaffected — this is WinPS 5.1 only.)
 - **`XDG_CONFIG_HOME=~/.config`** is persisted (user env) by the bootstrap + set in the
   profile so XDG-aware tools read `~/.config` (mise's config dir resolves to `~/.config/mise`).
   Exported on every platform — Unix sets it in `zsh/conf.d/10-env.zsh` — so configs live under
@@ -97,8 +95,7 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
 - Base via **OS PM** (brew/apt), installed only if missing: `git`, `curl`, `tmux`; macOS adds
   `mole` (cleanup CLI) and `yabai`/`skhd` (wm). No more `btop`/`tree`/`wget` — `btop`→`bottom`
   (mise) and `tree`→`eza -T` alias.
-- Windows base → **scoop** (`git mise`) in the `.ps1` bootstrap; **pwsh 7 via winget** (msix,
-  per-user, non-elevated).
+- Windows base → **scoop** (`git pwsh mise`) in the `.ps1` bootstrap.
 - **NanaZip replaces the `7zip` scoop package as the archive extractor.** scoop otherwise
   auto-installs `7zip` as a decompress dependency for any app shipping a 7z archive (so it
   keeps coming back on `scoop install`/`update`). The bootstrap installs `nanazip`, shims
