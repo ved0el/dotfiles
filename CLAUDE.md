@@ -23,7 +23,7 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
 - Three values: `windows` / `darwin` / `linux`. Never prompt for the OS; branch on it.
 - **Bootstrap is split by OS family, one script each:**
   - `run_onchange_after_install-packages.sh.tmpl` — macOS (brew) + Linux (apt).
-  - `run_onchange_after_install-packages.ps1.tmpl` — Windows (scoop).
+  - `run_onchange_after_install-packages.ps1.tmpl` — Windows (scoop + winget).
   - `.chezmoiignore` ships exactly one (ignores `install-packages.ps1` on Unix and
     `install-packages.sh` on Windows — script target names drop the `run_*`/`.tmpl`).
     A `.sh` on Windows is unrunnable ("%1 is not a valid Win32 application"), so it MUST
@@ -42,8 +42,18 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
   bake-at-init trap — don't use it for pwsh.)
 
 ## Windows specifics
-- **scoop** is the PM (per-user, never elevated): `git`, `pwsh`, `mise`. CLI tools still
-  come from **mise** (same `conf.d/*.toml` as Unix — one list).
+- **Package managers**: **scoop** (per-user, never elevated) installs `git` + `mise`; **pwsh 7
+  comes from winget** (`winget install --id Microsoft.PowerShell`). CLI tools come from **mise**
+  (same `conf.d/*.toml` as Unix — one list).
+  - Why winget for pwsh: that package is an **msix** → installs per-user under `WindowsApps` with
+    no elevation/UAC (fine for the non-elevated bootstrap) and exposes a `pwsh` execution alias
+    already on PATH. Its path is versioned and moves on upgrade, so nothing bakes it (see
+    "never bake pwsh's path" in the OS-gate section). git/mise stay on scoop; only pwsh moved.
+- **`powershell.exe` (WinPS 5.1) "not recognized"** → its dir
+  `%SystemRoot%\System32\WindowsPowerShell\v1.0` fell off PATH (a Windows default that a trimmed
+  Machine PATH can drop), breaking whkd keybinds, `[interpreters.ps1]`, and komorebi autostart.
+  **Fix**: add that dir to the User PATH. Not a bootstrap step — a fresh box has it by default;
+  only a hand-mangled PATH loses it. (`pwsh`/winget is unaffected — this is 5.1 only.)
 - **`XDG_CONFIG_HOME=~/.config`** is persisted (user env) by the bootstrap + set in the
   profile so XDG-aware tools read `~/.config` (mise's config dir resolves to `~/.config/mise`).
   Exported on every platform — Unix sets it in `zsh/conf.d/10-env.zsh` — so configs live under
@@ -53,29 +63,30 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
   (→ `~/.config/powershell/profile.ps1`). The bootstrap dot-sources it from the real
   `$PROFILE` (both pwsh 7 and WinPS 5.1 paths, via OneDrive-aware `GetFolderPath`).
   Edit the managed file, not `$PROFILE`.
-- **Window manager** (`wm` profile): scoop installs `komorebi whkd yasb` (extras bucket);
-  configs `dot_config/{whkd,komorebi,yasb}` apply only on Windows+wm (gated like skhd/yabai).
-  `KOMOREBI_CONFIG_HOME`/`WHKD_CONFIG_HOME`/`YASB_CONFIG_HOME` → `~/.config/<tool>`, persisted
-  (User scope) by the bootstrap because these apps launch at startup, outside any shell
-  profile — komorebi else defaults to `~/komorebi.json`, whkd to `~/.config/whkdrc`.
-  **komorebi autostart is a scheduled task, NOT `komorebic enable-autostart`/a shell:startup
-  shortcut.** Root cause those don't work: at login the environment has no scoop shims on PATH,
-  so `komorebic start` (which internally does `Start-Process komorebi.exe`) can't find
-  komorebi.exe and komorebi never launches — nothing tiles (reproduce: strip `<scoop>\shims`
-  from PATH → komorebi won't start). The bootstrap instead registers a logon scheduled task
-  ('komorebi') that runs the managed launcher `dot_config/komorebi/autostart.ps1`. The launcher
-  takes `-ShimsDir` (resolved at registration via `Split-Path (Get-Command komorebic).Source`
-  while PATH is intact — scoop can live anywhere, e.g. D:\scoop, and doesn't set `$env:SCOOP`),
-  prepends it to PATH, waits ~10s for the session to settle, then starts komorebi+whkd retrying
-  until it sticks. It's launched by **System32 `powershell.exe`** (WinPS 5.1) because the
-  scoop-shimmed `pwsh` isn't on the task PATH either. The bootstrap also deletes any legacy
-  `komorebi.lnk` in `shell:startup` so it can't race the task; do NOT re-add a shell:startup
-  shortcut or a `komorebi.vbs`. yasb autostarts via its own installer. NOTE: komorebi will
-  fight any other tiling WM running concurrently (e.g. Seelen UI / seelen-ui.exe) — if you keep
-  Seelen for its dock, turn OFF Seelen's own window manager in Seelen settings (this box already
-  has `@seelen/window-manager": enabled:false`) or neither tiles cleanly.
-  yasb's `config.yaml.tmpl` is templated — user paths use
-  `{{ .chezmoi.homeDir | replace "/" "\\" }}` (NEVER hardcode the username).
+- **Window manager** (`wm` profile): scoop installs `komorebi whkd yasb` (extras bucket); configs
+  `dot_config/{whkd,komorebi,yasb}` apply only on Windows+wm (gated like skhd/yabai).
+  - **Config homes**: `KOMOREBI_CONFIG_HOME`/`WHKD_CONFIG_HOME`/`YASB_CONFIG_HOME` → `~/.config/<tool>`,
+    persisted at User scope by the bootstrap (these apps launch at startup, outside any shell
+    profile; else komorebi defaults to `~/komorebi.json`, whkd to `~/.config/whkdrc`).
+  - **komorebi autostart = a logon scheduled task** named `komorebi`, NOT `komorebic
+    enable-autostart` or a shell:startup shortcut. Why those fail: at login scoop's shims aren't
+    on PATH, so `komorebic start` (which does `Start-Process komorebi.exe`) can't find
+    komorebi.exe — nothing tiles (reproduce: strip `<scoop>\shims` from PATH). The task runs the
+    managed launcher `dot_config/komorebi/autostart.ps1`, which resolves `-ShimsDir` at
+    registration (`Split-Path (Get-Command komorebic).Source`, while PATH is intact — scoop can
+    live anywhere, e.g. `D:\scoop`, and doesn't set `$env:SCOOP`), prepends it to PATH, waits for
+    the session to settle, then starts komorebi+whkd with retry.
+  - **Task command = `conhost.exe --headless <System32 powershell.exe> -File autostart.ps1`.**
+    WinPS 5.1 because pwsh isn't reliably on the task PATH. `--headless` = no console window ever;
+    launching `powershell.exe` directly FLASHES a console at logon even with `-WindowStyle Hidden`
+    (the host is allocated before the style applies — that was the "terminal at startup" flash).
+    Do NOT revert to a VBScript/mshta launcher (both deprecated) or a shell:startup
+    shortcut/`komorebi.vbs` (races the task — the bootstrap deletes any legacy `komorebi.lnk`).
+  - **yasb** autostarts via its own installer. Its `config.yaml.tmpl` templates user paths with
+    `{{ .chezmoi.homeDir | replace "/" "\\" }}` — never hardcode the username.
+  - **Seelen UI conflict**: komorebi fights any concurrent tiling WM (`seelen-ui.exe`). Keep
+    Seelen for its dock but turn OFF its window manager (this box has
+    `@seelen/window-manager: enabled:false`), or neither tiles cleanly.
 - Skipped on Windows: tmux, sheldon, p10k, `.claude/statusline.sh` (Windows uses
   `.claude/statusline.ps1` instead — see the statusline-flash gotcha).
 
@@ -86,7 +97,8 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
 - Base via **OS PM** (brew/apt), installed only if missing: `git`, `curl`, `tmux`; macOS adds
   `mole` (cleanup CLI) and `yabai`/`skhd` (wm). No more `btop`/`tree`/`wget` — `btop`→`bottom`
   (mise) and `tree`→`eza -T` alias.
-- Windows base → **scoop** (`git pwsh mise`) in the `.ps1` bootstrap.
+- Windows base → **scoop** (`git mise`) in the `.ps1` bootstrap; **pwsh 7 via winget** (msix,
+  per-user, non-elevated).
 - **NanaZip replaces the `7zip` scoop package as the archive extractor.** scoop otherwise
   auto-installs `7zip` as a decompress dependency for any app shipping a 7z archive (so it
   keeps coming back on `scoop install`/`update`). The bootstrap installs `nanazip`, shims

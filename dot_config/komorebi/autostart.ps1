@@ -8,8 +8,10 @@
 #   sticks. Direct launch — NOT `komorebic start` — because komorebic start spawns a pwsh process
 #   for its launch sequence that flashes a visible console window at login. Idempotent.
 #
-# Runs under Windows PowerShell 5.1 (launched via System32\powershell.exe, which — unlike the
-# scoop-shimmed pwsh — is always on the task's PATH). Keep it 5.1-compatible.
+# Runs under Windows PowerShell 5.1, launched by the 'komorebi' task as
+# `conhost.exe --headless System32\powershell.exe -File <this>` — --headless so no console window
+# ever flashes at logon; 5.1 (not the winget pwsh) because pwsh isn't reliably on the task PATH.
+# Keep it 5.1-compatible.
 #
 # -ShimsDir: scoop's shims directory (holds komorebi.exe), resolved at task-registration time
 # when PATH is intact and passed in here. A broken login/task environment can't discover scoop's
