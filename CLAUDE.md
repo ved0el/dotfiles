@@ -72,13 +72,22 @@ dir are applied to `$HOME`. Repo: `ved0el/dotfiles`.
     komorebi.exe — nothing tiles (reproduce: strip `<scoop>\shims` from PATH). The task runs the
     managed launcher `dot_config/komorebi/autostart.ps1`, which resolves `-ShimsDir` at
     registration (`Split-Path (Get-Command komorebic).Source`, while PATH is intact — scoop can
-    live anywhere, e.g. `D:\scoop`, and doesn't set `$env:SCOOP`), prepends it to PATH, waits for
-    the session to settle, then starts komorebi+whkd with retry.
-  - **Task command = `conhost.exe --headless <System32 powershell.exe> -File autostart.ps1`.**
-    WinPS 5.1 because pwsh isn't reliably on the task PATH. `--headless` = no console window ever;
-    launching `powershell.exe` directly FLASHES a console at logon even with `-WindowStyle Hidden`
-    (the host is allocated before the style applies — that was the "terminal at startup" flash).
-    Do NOT revert to a VBScript/mshta launcher (both deprecated) or a shell:startup
+    live anywhere, e.g. `D:\scoop`, and doesn't set `$env:SCOOP`), prepends it to PATH, then starts
+    komorebi+whkd ASAP with retry (no up-front sleep), and reloads the config once `komorebic state`
+    succeeds — that readiness probe, not a fixed sleep, is what makes the ignore rules re-apply.
+  - **Task command = `<System32 powershell.exe> -NoProfile -ExecutionPolicy Bypass -WindowStyle
+    Hidden -File autostart.ps1 -ShimsDir <shims>`.** WinPS 5.1 because pwsh isn't reliably on the
+    task PATH. `-WindowStyle Hidden` is sufficient — no console appears (verified by enumerating
+    visible windows during a task run).
+  - **NEVER wrap the task command in `conhost.exe --headless`.** It looks like the airtight way to
+    guarantee no console, and it DOES work when the task is run on demand — but at LOGON it can't
+    allocate its pseudoconsole during early session init, so the task dies immediately with
+    `0x80070003` (ERROR_PATH_NOT_FOUND) and nothing tiles. The on-demand success is the trap:
+    `Start-ScheduledTask` reports `0x0` while every real logon fails. Diagnose with
+    `(Get-ScheduledTaskInfo -TaskName komorebi).LastTaskResult` right after a REBOOT, not on demand.
+    It was added to kill a console flash that actually came from `komorebic start` spawning pwsh —
+    the launcher now starts `komorebi.exe`/`whkd.exe` directly, so no flash remains to suppress.
+    Also do NOT revert to a VBScript/mshta launcher (both deprecated) or a shell:startup
     shortcut/`komorebi.vbs` (races the task — the bootstrap deletes any legacy `komorebi.lnk`).
   - **yasb** autostarts via its own installer. Its `config.yaml.tmpl` templates user paths with
     `{{ .chezmoi.homeDir | replace "/" "\\" }}` — never hardcode the username.

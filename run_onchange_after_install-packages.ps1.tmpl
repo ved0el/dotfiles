@@ -127,13 +127,14 @@ foreach ($app in 'komorebi','whkd','yasb') {
 # shortcut: at login the environment lacks scoop's shims on PATH, so `komorebic start` (which
 # does `Start-Process komorebi.exe`) can't find komorebi.exe and komorebi never launches —
 # nothing tiles (proven: strip <scoop>\shims from PATH and it reproduces). The launcher puts the
-# shims dir — resolved HERE while PATH is intact and passed in — back on PATH, waits for the
-# session to settle, then starts komorebi+whkd with retry. It's run by System32 powershell.exe
-# (WinPS 5.1 — always present; the winget/scoop pwsh isn't reliably on the task PATH), wrapped in
-# `conhost.exe --headless` so NO console window is ever created: a scheduled task launching
-# powershell.exe directly briefly FLASHES a console at logon even with -WindowStyle Hidden
-# (the console host is allocated before the style applies). --headless is the modern, windowless
-# console host (not the deprecated VBScript/mshta trick), so the launcher runs fully invisibly.
+# shims dir — resolved HERE while PATH is intact and passed in — back on PATH, then starts
+# komorebi+whkd with retry. It's run by System32 powershell.exe (WinPS 5.1 — always present; the
+# winget/scoop pwsh isn't reliably on the task PATH) with -WindowStyle Hidden.
+# Do NOT wrap this in `conhost.exe --headless`: that flag can't allocate its pseudoconsole during
+# early session init, so the task dies at LOGON with 0x80070003 (ERROR_PATH_NOT_FOUND) and nothing
+# tiles — while still succeeding when run on demand, which makes it look fine. It was added to
+# suppress a console flash that actually came from `komorebic start` spawning pwsh; the launcher
+# now starts komorebi.exe/whkd.exe directly, so there is no flash left to suppress.
 if (Get-Command komorebic -ErrorAction SilentlyContinue) {
   # Drop any legacy shell:startup shortcut so it doesn't race the task.
   Remove-Item (Join-Path ([Environment]::GetFolderPath('Startup')) 'komorebi.lnk') -Force -ErrorAction SilentlyContinue
@@ -141,9 +142,8 @@ if (Get-Command komorebic -ErrorAction SilentlyContinue) {
     $launcher = Join-Path $XdgConfig 'komorebi\autostart.ps1'
     $shims    = Split-Path (Get-Command komorebic).Source
     $winps    = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
-    $conhost  = Join-Path $env:SystemRoot 'System32\conhost.exe'
     $uid      = "$env:USERDOMAIN\$env:USERNAME"
-    $act = New-ScheduledTaskAction -Execute $conhost -Argument "--headless `"$winps`" -NoProfile -ExecutionPolicy Bypass -File `"$launcher`" -ShimsDir `"$shims`""
+    $act = New-ScheduledTaskAction -Execute $winps -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$launcher`" -ShimsDir `"$shims`""
     $trg = New-ScheduledTaskTrigger -AtLogOn -User $uid
     $set = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero)
     $prn = New-ScheduledTaskPrincipal -UserId $uid -LogonType Interactive -RunLevel Limited
