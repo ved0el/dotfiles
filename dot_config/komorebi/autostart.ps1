@@ -33,26 +33,33 @@ $cfg = Join-Path $HOME '.config\komorebi\komorebi.json'
 # spawns a PowerShell process to run its launch sequence, and with scoop's shims now on PATH it
 # picks pwsh (Core) — flashing a visible console window at login. Full shim paths so we never
 # depend on PATH resolution. komorebi.exe reads the same static config via -c.
-$komorebiExe = if ($ShimsDir -and (Test-Path (Join-Path $ShimsDir 'komorebi.exe'))) { Join-Path $ShimsDir 'komorebi.exe' } else { 'komorebi.exe' }
-$whkdExe     = if ($ShimsDir -and (Test-Path (Join-Path $ShimsDir 'whkd.exe')))     { Join-Path $ShimsDir 'whkd.exe' }     else { 'whkd.exe' }
+$komorebiExe  = if ($ShimsDir -and (Test-Path (Join-Path $ShimsDir 'komorebi.exe')))  { Join-Path $ShimsDir 'komorebi.exe' }  else { 'komorebi.exe' }
+$whkdExe      = if ($ShimsDir -and (Test-Path (Join-Path $ShimsDir 'whkd.exe')))      { Join-Path $ShimsDir 'whkd.exe' }      else { 'whkd.exe' }
+$komorebicExe = if ($ShimsDir -and (Test-Path (Join-Path $ShimsDir 'komorebic.exe'))) { Join-Path $ShimsDir 'komorebic.exe' } else { 'komorebic.exe' }
 
-# Start komorebi as soon as the session allows — no long up-front wait. An early start can exit
-# before the shell is ready, so keep (re)starting until it sticks, polling every 2s, and break
-# the instant it's alive. Bounded so the task can't loop forever.
-for ($i = 0; $i -lt 40; $i++) {
+# Start komorebi ASAP — no up-front wait, fire on the very first iteration. An early start can
+# still exit before the shell is ready, so keep (re)starting until it sticks, polling every 1s,
+# and break the instant it's alive. Bounded so the task can't loop forever.
+for ($i = 0; $i -lt 60; $i++) {
   if (Get-Process komorebi -ErrorAction SilentlyContinue) { break }
   Start-Process $komorebiExe -ArgumentList "--config `"$cfg`"" -WindowStyle Hidden
-  Start-Sleep -Seconds 2
+  Start-Sleep -Seconds 1
 }
 # whkd (hotkeys) — start hidden if not already running.
 if (-not (Get-Process whkd -ErrorAction SilentlyContinue)) {
   Start-Process $whkdExe -WindowStyle Hidden
 }
 
-# brave.exe is in object_name_change_applications, so komorebi re-evaluates its windows when the
-# title settles — the Bitwarden extension popup lands ignored on its own. One reload after a
-# short settle is a safety net for windows already open when komorebi first started.
-if (Get-Process komorebi -ErrorAction SilentlyContinue) {
-  Start-Sleep -Seconds 8
-  komorebic replace-configuration $cfg | Out-Null
+# Reload the config as soon as komorebi is RESPONSIVE (not after a guessed sleep) so ignore_rules
+# get re-applied to windows that were already open at login. Needed because komorebi can manage a
+# window before its title settles — e.g. the Bitwarden browser popup, whose ignore rule matches on
+# Title — and it does not re-check ignore_rules on later title changes. `komorebic state` only
+# succeeds once komorebi's socket is serving, which is exactly when a reload can land.
+for ($i = 0; $i -lt 60; $i++) {
+  & $komorebicExe state *>$null
+  if ($LASTEXITCODE -eq 0) {
+    & $komorebicExe replace-configuration $cfg *>$null
+    break
+  }
+  Start-Sleep -Seconds 1
 }
