@@ -2,7 +2,8 @@
 README.md
 CLAUDE.md
 
-# Machine-local mise config — `mise use -g` writes here (MISE_GLOBAL_CONFIG_FILE).
+# Machine-local mise config — `mise use -g` writes here by default (no env var; never
+# set MISE_GLOBAL_CONFIG_FILE, it breaks conf.d discovery outside $HOME).
 # Never managed by chezmoi, so per-machine tool pins stay untracked + survive apply.
 .config/mise/config.toml
 
@@ -27,6 +28,7 @@ install-packages.ps1
 {{ else }}
 .config/powershell
 .config/mise/conf.d/windows.toml
+.config/starship.toml
 .claude/statusline.ps1
 {{ end }}
 

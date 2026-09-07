@@ -1,0 +1,16 @@
+# starship — prompt config (Windows only; Unix uses powerlevel10k).
+#
+# WHY THIS FILE EXISTS: the default scan_timeout of 30ms is marginal on Windows.
+# starship globs the CWD ONCE per prompt to decide which language modules apply; on
+# the first shell after boot that hits a cold filesystem cache (+ Defender), blows
+# 30ms, and prints:
+#   [WARN] - (starship::context): Scanning current directory timed out.
+# It is a CEILING, not a cost — `starship timings` shows the warm scan finishing in
+# ~1ms, so raising it slows nothing down; it only stops the bail-out on a cold read.
+scan_timeout = 500
+
+# docker_context was the single most expensive module here (3ms of a ~5ms prompt) and
+# renders NOTHING unless you're on a non-default docker context. Re-enable if you
+# actually switch contexts.
+[docker_context]
+disabled = true

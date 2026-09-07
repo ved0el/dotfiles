@@ -4,4 +4,4 @@
 tools: true     # CLI tools via mise
 develop: false  # language runtimes via mise
 tmux: true      # tmux + TPM plugins, and ~/.tmux.conf
-wm: false       # macOS window manager (yabai + skhd) + its config — macOS only
+wm: false       # tiling WM: macOS yabai+skhd / Windows komorebi+whkd+yasb (off on Linux)

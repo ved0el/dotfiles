@@ -27,18 +27,9 @@ Add-UserPath $LocalBin
 [Environment]::SetEnvironmentVariable('XDG_CONFIG_HOME', $XdgConfig, 'User')
 $env:XDG_CONFIG_HOME = $XdgConfig
 
-# NOTE: deliberately DO NOT persist MISE_GLOBAL_CONFIG_FILE. mise's default global config is
-# already ~/.config/mise/config.toml (chezmoi-ignored, so `mise use -g` pins stay untracked
-# there), so setting it is redundant — and it makes mise stop auto-discovering the global
-# config DIRECTORY (the conf.d/*.toml tool manifests) when a process runs with CWD outside
-# $HOME (Windows Terminal starts at the user's working drive), so `mise ls` shows no tools.
-# Earlier revisions set it; clear any stale User-scope value so upgrades self-heal.
-if ([Environment]::GetEnvironmentVariable('MISE_GLOBAL_CONFIG_FILE', 'User')) {
-  [Environment]::SetEnvironmentVariable('MISE_GLOBAL_CONFIG_FILE', $null, 'User')
-}
-if ([Environment]::GetEnvironmentVariable('MISE_CONFIG_DIR', 'User')) {
-  [Environment]::SetEnvironmentVariable('MISE_CONFIG_DIR', $null, 'User')
-}
+# NOTE: deliberately DO NOT set MISE_GLOBAL_CONFIG_FILE / MISE_CONFIG_DIR. They are redundant
+# (mise already defaults to ~/.config/mise) AND they stop mise auto-discovering the conf.d/*.toml
+# manifests when CWD is outside $HOME. The shell profiles unset them; see CLAUDE.md.
 
 # Window-manager config homes — point komorebi/whkd/yasb at ~/.config/<tool>. These
 # MUST be persisted (User scope): the WM apps launch at startup, outside any shell
@@ -57,32 +48,44 @@ if (-not (Get-Command scoop -ErrorAction SilentlyContinue)) {
   $env:Path = "$env:USERPROFILE\scoop\shims;$env:Path"
 }
 
-# git + pwsh via scoop (per-user, no elevation). pwsh 7 is the shell the managed profile targets;
-# this bootstrap itself runs under Windows PowerShell 5.1. Install only what's missing. (curl
-# ships with Windows 10+.) Nothing bakes pwsh's path: [interpreters.ps1] uses WinPS 5.1 and [cd]
-# uses bare `pwsh` (PATH-resolved at runtime) — see CLAUDE.md "never bake an absolute pwsh path".
-if (-not (Get-Command git  -ErrorAction SilentlyContinue)) { scoop install git }
-if (-not (Get-Command pwsh -ErrorAction SilentlyContinue)) { scoop install pwsh }
+# git via scoop (per-user, no elevation); curl ships with Windows 10+.
+if (-not (Get-Command git -ErrorAction SilentlyContinue)) { scoop install git }
+
+# pwsh 7 — the shell the managed profile targets (this bootstrap itself runs under WinPS 5.1).
+# From WINGET, not scoop: the `winget` source ships Microsoft.PowerShell as an MSIX bundle, so it
+# installs per-user with NO elevation and drops a `pwsh.exe` app alias into
+# %LOCALAPPDATA%\Microsoft\WindowsApps, which is on the user PATH by default. PATH resolution is
+# what matters: [cd] (`chezmoi cd`/`czcd`) and Claude Code's statusLine both invoke bare `pwsh`.
+# Nothing bakes an absolute path — see CLAUDE.md "never bake pwsh's path".
+if (-not (Get-Command pwsh -ErrorAction SilentlyContinue)) {
+  if (Get-Command winget -ErrorAction SilentlyContinue) {
+    $wgArgs = @('install', '--id', 'Microsoft.PowerShell', '--exact', '--source', 'winget',
+                '--silent', '--accept-package-agreements', '--accept-source-agreements',
+                '--disable-interactivity')
+    winget @wgArgs
+    if ($LASTEXITCODE -ne 0) {
+      Write-Host "[win] winget pwsh install exited $LASTEXITCODE - install PowerShell 7 by hand."
+    }
+  } else {
+    Write-Host "[win] winget not found - install PowerShell 7 by hand (czcd + Claude statusline need it)."
+  }
+}
 
 # --- mise (runtimes + CLI tools, cross-platform — drives the tools/develop profiles) ---
 if (-not (Get-Command mise -ErrorAction SilentlyContinue)) {
   scoop install mise
 }
 
-# --- NanaZip replaces 7-Zip as scoop's archive extractor. scoop auto-installs its own
-#     `7zip` package as a decompress dependency for any app shipping a 7z archive; on a
-#     fresh box that happens above (git/pwsh/mise extraction). use_external_7zip=true makes
-#     scoop use whatever `7z` is on PATH instead, so we shim `7z` to NanaZip's
-#     7-Zip-compatible console (NanaZip.Universal.Console.exe, name globbed since it has
-#     changed across versions) and drop the 7zip package. Idempotent: the shim is only
-#     (re)created when `7z` isn't already NanaZip. ---
-if (-not (scoop list nanazip 2>$null | Select-String -Quiet '(?im)^\s*nanazip\b')) { scoop install nanazip }
-$nzConsole = Get-ChildItem (Join-Path (scoop prefix nanazip) '*Console*.exe') -ErrorAction SilentlyContinue | Select-Object -First 1
-if ($nzConsole) {
-  if (scoop list 7zip 2>$null | Select-String -Quiet '(?im)^\s*7zip\b') { scoop uninstall 7zip }
-  $is7zNana = $false; try { $is7zNana = ((& 7z 2>&1 | Select-Object -First 1) -match 'NanaZip') } catch { }
-  if (-not $is7zNana) { scoop shim add 7z $nzConsole.FullName }
-  scoop config use_external_7zip $true | Out-Null
+# Windows-only scoop extras. openssh/openssl provide commands, so guard on the command (an ssh
+# from Git-for-Windows or the Windows optional feature already satisfies it). A font ships NO
+# command, so that one is guarded on `scoop list`; JetBrainsMono-NF-Mono needs the nerd-fonts
+# bucket, and the -Mono variant is the single-width one terminals want. Fonts install per-user
+# (HKCU) — no elevation.
+if (-not (Get-Command ssh     -ErrorAction SilentlyContinue)) { scoop install openssh }
+if (-not (Get-Command openssl -ErrorAction SilentlyContinue)) { scoop install openssl }
+if (-not (scoop list 2>$null | Select-String -Quiet '(?im)^\s*JetBrainsMono-NF-Mono\b')) {
+  if ((scoop bucket list 2>$null | Out-String) -notmatch 'nerd-fonts') { scoop bucket add nerd-fonts }
+  scoop install JetBrainsMono-NF-Mono
 }
 
 # --- install tools/runtimes declared in ~/.config/mise/conf.d/*.toml ---
@@ -94,6 +97,19 @@ mise --cd $HOME install --yes
 # edits ~/.claude/settings.json without prompting, keeping this bootstrap non-interactive;
 # it's idempotent so re-runs are safe.
 try { mise --cd $HOME exec -- rtk init -g --auto-patch } catch { }
+
+# Claude Code itself — the marketplace step below is a no-op without it, and because the
+# run_onchange fingerprint wouldn't change afterwards it would never retry on a fresh box.
+# `irm https://claude.ai/install.ps1 | iex` is the official native install (the documented
+# "Native Install (Recommended)" one-liner) — verbatim, so it stays greppable against the docs.
+# It lands in ~/.local/bin (already on PATH from the top of this script) and AUTO-UPDATES from
+# then on, which `winget install Anthropic.ClaudeCode` does not. Run inside `& { }` so the
+# installer's own `Set-StrictMode` / `$ErrorActionPreference` stay in ITS scope, and try/catch
+# so a network blip can't abort setup.
+if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
+  try { & { irm https://claude.ai/install.ps1 | iex } }
+  catch { Write-Host "[claude] install failed: $($_.Exception.Message)" }
+}
 
 # Claude Code plugin marketplaces — clone newly-declared marketplaces and update the rest.
 # Reads ~/.claude/settings.json (chezmoi-managed) for the declared set; plugins ship inside

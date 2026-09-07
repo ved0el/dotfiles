@@ -28,9 +28,20 @@ echo "[wm] yabai installed — run 'yabai --start-service' (needs SIP setup; see
 _pkgs=""
 command -v git  >/dev/null 2>&1 || _pkgs="$_pkgs git"
 command -v curl >/dev/null 2>&1 || _pkgs="$_pkgs curl"
+# zsh: this repo ships ~/.zshrc + the zsh/conf.d stack + sheldon, so the shell itself has to
+# exist. macOS already ships zsh; Debian/Ubuntu do not.
+command -v zsh  >/dev/null 2>&1 || _pkgs="$_pkgs zsh"
 {{ if .tmux }}command -v tmux >/dev/null 2>&1 || _pkgs="$_pkgs tmux"{{ end }}
 if [ -n "$_pkgs" ]; then sudo apt-get update -y && sudo apt-get install -y $_pkgs; fi
 {{ end -}}
+
+# chsh is interactive (it prompts for a password), so it is NOT run here — just say so once.
+# SHELL can be unset in a non-interactive run, and `set -u` makes ${SHELL##*/} fatal, so default it.
+_login_sh="${SHELL:-}"
+if command -v zsh >/dev/null 2>&1 && [ "${_login_sh##*/}" != "zsh" ]; then
+  echo "[shell] login shell is ${_login_sh:-unset} — run: chsh -s \"$(command -v zsh)\"  (then re-login)"
+fi
+unset _login_sh
 
 # ~/.local/bin holds self-installed tools (sheldon, mise).
 export PATH="$HOME/.local/bin:$PATH"
@@ -91,6 +102,13 @@ mise --cd "$HOME" install --yes
 # it's idempotent so re-runs are safe, and `|| true` keeps a hiccup from aborting setup.
 command -v rtk >/dev/null 2>&1 && rtk init -g --auto-patch || \
   mise --cd "$HOME" exec -- rtk init -g --auto-patch || true
+
+# Claude Code itself — the marketplace step below is a no-op without it, and since the
+# run_onchange fingerprint wouldn't change afterwards it would never retry on a fresh box.
+# Official installer; lands in ~/.local/bin (already on PATH above) and self-updates after that.
+command -v claude >/dev/null 2>&1 || \
+  curl -fsSL https://claude.ai/install.sh | bash || \
+  echo "[claude] install failed — install Claude Code by hand"
 
 # Claude Code plugin marketplaces — clone any newly-declared marketplace and pull the rest
 # up to date. `marketplace update` reads ~/.claude/settings.json (chezmoi-managed) for the

@@ -53,6 +53,7 @@ if (Get-Command chezmoi -ErrorAction SilentlyContinue) {
   function czu  { chezmoi update @args }  # git pull, then apply
   function czd  { chezmoi diff @args }    # show what apply would change
   function czs  { chezmoi status @args }  # short per-file status
+  function czra { chezmoi re-add @args }  # capture $HOME edits back into the source repo
   function czcd { chezmoi cd @args }      # cd into the source repo
 }
 

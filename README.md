@@ -53,8 +53,9 @@ Windows is gated off `.chezmoi.os == "windows"` (no extra prompt). Differences f
 macOS/Linux:
 
 - **Package manager:** [scoop](https://scoop.sh) (installed per-user, never elevated)
-  instead of brew/apt. `git`, `pwsh`, and `mise` come from scoop; the CLI tool set
-  (`bat`, `fd`, `ripgrep`, …) still comes from **mise** using the same
+  instead of brew/apt. `git`, `mise`, `openssh`, `openssl` and the `JetBrainsMono-NF-Mono`
+  Nerd Font come from scoop, PowerShell 7 from winget — each installed only if missing; the CLI
+  tool set (`bat`, `fd`, `ripgrep`, …) still comes from **mise** using the same
   `conf.d/{tools,develop}.toml` manifests.
 - **Shell:** a managed `~/.config/powershell/profile.ps1` mirrors the zsh config
   (mise env injection, eza/zoxide/fzf wiring, chezmoi aliases). The bootstrap dot-sources
@@ -65,6 +66,9 @@ macOS/Linux:
 - **Window manager** (`wm` profile, default off): scoop installs `komorebi`, `whkd`, and
   `yasb` — the Windows counterpart of macOS yabai/skhd. whkd/komorebi configs are managed
   under `~/.config`; start it with `komorebic start --whkd`.
+- **Prompt:** [starship](https://starship.rs) (Unix uses powerlevel10k). Configured by
+  `~/.config/starship.toml` — mainly `scan_timeout = 500` so a cold-cache shell stops
+  printing `Scanning current directory timed out`.
 - **Skipped:** tmux, sheldon, powerlevel10k.
 
 mise installs the tool set with `--yes`; pin or trim `conf.d/tools.toml` if a tool
@@ -85,6 +89,7 @@ tracked `conf.d/*.toml` instead.
 chezmoi edit ~/.tmux.conf    # edit a managed file in $EDITOR
 chezmoi apply                # apply changes + re-run bootstrap if it changed
 chezmoi update               # git pull, then apply (sync from another machine)
+chezmoi re-add ~/.claude/settings.json  # capture a $HOME edit back into the repo
 chezmoi cd                   # drop into the source repo to commit/push
 chezmoi add ~/.config/foo    # start managing a new file
 chezmoi managed              # list everything chezmoi tracks
