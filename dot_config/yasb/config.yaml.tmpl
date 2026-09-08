@@ -75,12 +75,19 @@ widgets:
       menu_list:
       - { separator: true }
       - { title: "🖥️ This PC", command: "explorer.exe shell:MyComputerFolder" }
-      - { title: "📥 Download (C:)", path: '{{ .chezmoi.homeDir | replace "/" "\\" }}\Downloads' }
+      - { separator: true }
+      - { title: "🪟 OS (C:)", path: "C:\\" }
       - { title: "💾 Data (D:)", path: "D:\\" }
+      - { title: "🎬 Multimedia (E:)", path: "E:\\" }
       - { title: "🛠️ Workspace (F:)", path: "F:\\" }
-      - { title: "📦 Portables (G:)", path: "G:\\Portables" }
+      - { title: "📦 Tools (G:)", path: "G:\\" }
       - { title: "🗃️ Extend (H:)", path: "H:\\" }
+      - { separator: true }
+      - { title: "🗂️ Desktop", path: '{{ .chezmoi.homeDir | replace "/" "\\" }}\Desktop' }
+      - { title: "📥 Downloads", path: '{{ .chezmoi.homeDir | replace "/" "\\" }}\Downloads' }
+      - { title: "🧰 Portables", path: "G:\\Portables" }
       - { title: "☁️ Dropbox", path: '{{ .chezmoi.homeDir | replace "/" "\\" }}\Documents\Dropbox' }
+      - { title: "📁 Box", path: '{{ .chezmoi.homeDir | replace "/" "\\" }}\Box' }
 
       power_menu: false
 
