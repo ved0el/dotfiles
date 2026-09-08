@@ -50,11 +50,13 @@ if (-not (Get-Process whkd -ErrorAction SilentlyContinue)) {
   Start-Process $whkdExe -WindowStyle Hidden
 }
 
-# Reload the config as soon as komorebi is RESPONSIVE (not after a guessed sleep) so ignore_rules
-# get re-applied to windows that were already open at login. Needed because komorebi can manage a
-# window before its title settles — e.g. the Bitwarden browser popup, whose ignore rule matches on
-# Title — and it does not re-check ignore_rules on later title changes. `komorebic state` only
-# succeeds once komorebi's socket is serving, which is exactly when a reload can land.
+# Reload the config as soon as komorebi is RESPONSIVE (not after a guessed sleep) so the rules get
+# applied to windows that were ALREADY OPEN at login — komorebi can adopt those before it has read
+# the config. `komorebic state` only succeeds once komorebi's socket is serving, which is exactly
+# when a reload can land.
+# NOTE: this does NOT help a window opened later in the session. An earlier revision of this
+# comment claimed it fixed the Bitwarden browser popup; it never could — that popup is created
+# minutes after logon. See CLAUDE.md "browser extension popups" for the actual cause and fix.
 for ($i = 0; $i -lt 60; $i++) {
   & $komorebicExe state *>$null
   if ($LASTEXITCODE -eq 0) {

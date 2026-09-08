@@ -70,11 +70,6 @@
     },
     {
       "kind": "Title",
-      "id": "Metamask",
-      "matching_strategy": "StartsWith"
-    },
-    {
-      "kind": "Title",
       "id": "VPN",
       "matching_strategy": "Contains"
     },
@@ -82,6 +77,11 @@
       "kind": "Title",
       "id": "Desktop Media Player",
       "matching_strategy": "Contains"
+    },
+    {
+      "kind": "Title",
+      "id": "_crx_",
+      "matching_strategy": "StartsWith"
     }
   ],
   "ignore_rules": [
@@ -123,11 +123,6 @@
     {
       "kind": "Exe",
       "id": "Palworld-Win64-Shipping.exe",
-      "matching_strategy": "Equals"
-    },
-    {
-      "kind": "Title",
-      "id": "Bitwarden",
       "matching_strategy": "Equals"
     }
   ]

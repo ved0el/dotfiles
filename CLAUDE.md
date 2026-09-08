@@ -223,8 +223,11 @@ apply only on Windows+wm (gated like skhd/yabai).
   managed launcher `dot_config/komorebi/autostart.ps1`, which resolves `-ShimsDir` at
   registration (`Split-Path (Get-Command komorebic).Source`, while PATH is intact — scoop can
   live anywhere, e.g. `D:\scoop`, and doesn't set `$env:SCOOP`), prepends it to PATH, then starts
-  komorebi+whkd ASAP with retry (no up-front sleep), and reloads the config once `komorebic state`
-  succeeds — that readiness probe, not a fixed sleep, is what makes the ignore rules re-apply.
+  komorebi+whkd ASAP with retry (no up-front sleep), and runs `komorebic replace-configuration`
+  once `komorebic state` succeeds — a readiness probe, not a fixed sleep. That reload only covers
+  windows ALREADY OPEN at login; it does nothing for windows opened later (see the extension-popup
+  gotcha below). Note the command is `replace-configuration` — `reload-configuration` is for the
+  LEGACY `komorebi.ahk`/`.ps1` configs and is a silent no-op against a static `komorebi.json`.
 - **Task command = `<System32 powershell.exe> -NoProfile -ExecutionPolicy Bypass -WindowStyle
   Hidden -File autostart.ps1 -ShimsDir <shims>`.** WinPS 5.1 because pwsh isn't reliably on the
   task PATH. `-WindowStyle Hidden` is sufficient — no console appears (verified by enumerating
@@ -239,6 +242,24 @@ apply only on Windows+wm (gated like skhd/yabai).
   deprecated) or a shell:startup shortcut/`komorebi.vbs` (races the task — the bootstrap deletes `komorebi.lnk`).
 - **yasb** autostarts via its own installer. Its `config.yaml.tmpl` templates user paths with
   `{{ .chezmoi.homeDir | replace "/" "\\" }}` — never hardcode the username.
+- **Browser extension popups are titled `_crx_<extension-id>`, NOT the extension's name.** A
+  popped-out Chromium extension window belongs to the BROWSER exe (`brave.exe`, class
+  `Chrome_WidgetWin_1`) and its title is Chromium's internal id form — the Bitwarden popup is
+  literally `_crx_nngceckbapebfimnlniiiahkandclblb`. So a `Title` rule for `"Bitwarden"` never
+  matches, at any `matching_strategy`, and komorebi tiles the popup. The rule here is therefore
+  `floating_applications` / `Title` / `StartsWith` / `_crx_` — ONE rule covering every popped-out
+  extension from any Chromium browser, with no per-extension id to maintain. The title is final
+  at window-creation time (no ` - Brave` suffix, no later rename), so this is not a title-timing
+  problem and needs no reload to take effect.
+  **Get the real identifiers from komorebi's own log, don't guess**: `%TEMP%\komorebi_plaintext.log*`
+  logs every event as `(hwnd: N, title: …, exe: …, class: …)`. Grep it for the app; if the name
+  never appears, that IS the finding. **Asymmetry when auditing rules with that log: FLOATED
+  windows are still logged (`Picture in picture` shows up), but IGNORED ones are not logged at
+  all.** So zero hits disproves a `floating_applications` rule, and proves nothing about an
+  `ignore_rules` entry — never delete an ignore rule on log silence alone. Find an extension's id under
+  `%LOCALAPPDATA%\BraveSoftware\Brave-Browser\User Data\Default\Extensions\` (its
+  `_locales/en/messages.json` gives the display name) — only needed to narrow the rule to a
+  SINGLE extension; the `_crx_` prefix rule needs no id at all.
 - **Seelen UI conflict**: komorebi fights any concurrent tiling WM (`seelen-ui.exe`). Keep
   Seelen for its dock but turn OFF its window manager (this box has
   `@seelen/window-manager: enabled:false`), or neither tiles cleanly.
