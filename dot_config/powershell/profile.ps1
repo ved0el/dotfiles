@@ -57,6 +57,11 @@ if (Get-Command chezmoi -ErrorAction SilentlyContinue) {
   function czcd { chezmoi cd @args }      # cd into the source repo
 }
 
+# ── Antigravity IDE (VS Code fork; its CLI ships as `antigravity-ide`, no short name) ──
+if (Get-Command antigravity-ide -ErrorAction SilentlyContinue) {
+  Set-Alias ag-ide antigravity-ide
+}
+
 # ── eza (ls replacement) ──────────────────────────────────────────────────────────
 if (Get-Command eza -ErrorAction SilentlyContinue) {
   # PowerShell resolves ALIASES before FUNCTIONS, so the shipped `ls`→Get-ChildItem
