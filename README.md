@@ -33,7 +33,7 @@ Profiles are toggled per machine at `init` time (stored in
 
 | Profile     | When                 | Contents                                                                                       |
 | ----------- | -------------------- | ---------------------------------------------------------------------------------------------- |
-| **base**    | always               | zsh (+ powerlevel10k, sheldon), tmux (+ TPM plugins), mise, Claude config; `git`, `tmux`        |
+| **base**    | always               | zsh (+ powerlevel10k, sheldon), tmux (+ TPM plugins), mise, Claude config + agent skills (humanizer, archify — need **develop** for node); `git`, `tmux` |
 | **tools**   | prompt (default on)  | mise tool set (bat, eza, fd, ripgrep, bottom, sd, fzf, micro, rtk, vivid, …) + zsh/pwsh aliases (incl. `tree`→eza); delta wired into git |
 | **develop** | prompt (default off) | language runtimes via mise (`conf.d/develop.toml`)                                             |
 | **macos**   | auto (Darwin only)   | mole (cleanup CLI); yabai + skhd via **wm**                                                     |
@@ -115,6 +115,7 @@ file that contains keys or tokens.
 dot_zshrc, dot_tmux.conf, dot_p10k.zsh        # ~/.zshrc, ~/.tmux.conf, ~/.p10k.zsh  (Unix)
 dot_config/powershell/profile.ps1             # ~/.config/powershell/profile.ps1     (Windows)
 dot_claude/                                   # ~/.claude/ (statusline.sh on Unix, statusline.ps1 on Windows; settings.json managed directly)
+                                              #   (~/.claude/skills/ is NOT managed — the bootstrap installs those via the `skills` CLI)
 dot_config/                                   # ~/.config/  (gated per profile + OS)
 .chezmoi.toml.tmpl                            # profile prompts + per-OS data/interpreters
 .chezmoiignore                                # which files apply on this machine

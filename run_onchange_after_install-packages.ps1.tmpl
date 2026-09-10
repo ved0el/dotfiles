@@ -118,6 +118,21 @@ if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
 # settings fingerprint (incl. extraKnownMarketplaces): {{ include "dot_claude/settings.json.tmpl" | sha256sum }}
 if (Get-Command claude -ErrorAction SilentlyContinue) { try { claude plugin marketplace update } catch { } }
 
+# Agent skills whose repos ship no plugin marketplace — `skills` CLI, the official method in both
+# READMEs. Flags are load-bearing for a non-interactive run: `npx -y` skips npx's own prompt, the
+# trailing `-y` the CLI's confirmation, `--agent claude-code` the agent picker, `--skill` pins the
+# one skill (repo basename == skill name), `--copy` avoids symlinks (they need elevation on
+# Windows, which this bootstrap never takes). Land in the UNMANAGED ~/.claude/skills/<name>, so
+# apply never fights them and a re-run just overwrites. npx comes from mise's node ("develop"
+# profile) — hence `mise exec`, same as rtk above; a tools-only box goes without.
+foreach ($repo in 'blader/humanizer', 'tt-a1i/archify') {
+  $name = $repo.Split('/')[-1]
+  # Empty catch = mise itself missing (CommandNotFound IS terminating, like the rtk line);
+  # $LASTEXITCODE = npx/node missing, which a native non-zero exit does NOT throw under WinPS 5.1.
+  try { mise --cd $HOME exec -- npx -y skills add $repo --skill $name --agent claude-code -g -y --copy } catch { }
+  if ($LASTEXITCODE -ne 0) { Write-Host "[skills] $repo skipped - needs node/npx (the develop profile)" }
+}
+
 {{ if .tools -}}
 # delta: wire git via include.path (idempotent); identity stays in the unmanaged config.
 if (Get-Command git -ErrorAction SilentlyContinue) {

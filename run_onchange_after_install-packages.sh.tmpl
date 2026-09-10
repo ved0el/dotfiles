@@ -119,6 +119,24 @@ command -v claude >/dev/null 2>&1 || \
 # settings fingerprint (incl. extraKnownMarketplaces): {{ include "dot_claude/settings.json.tmpl" | sha256sum }}
 command -v claude >/dev/null 2>&1 && claude plugin marketplace update || true
 
+# Agent skills whose repos ship no plugin marketplace — installed with the `skills` CLI, the
+# official method in both READMEs (`npx skills add <repo> -g`). Every flag is load-bearing for a
+# non-interactive run: `npx -y` skips npx's own "install skills?" prompt on a cold cache, the
+# trailing `-y` skips the CLI's confirmation, `--agent claude-code` stops it asking which agent,
+# `--skill` pins the one skill (repo basename == skill name for both), and `--copy` avoids
+# symlinks (Windows symlinks need elevation, which this bootstrap never takes). They land in
+# ~/.claude/skills/<name>, which chezmoi does NOT manage, so `apply` never fights them; a re-run
+# just overwrites in place. npx comes from mise's node ("develop" profile), so try PATH, then
+# mise, then warn — a tools-only box simply goes without.
+for _repo in blader/humanizer tt-a1i/archify; do
+  _name="${_repo##*/}"
+  command -v npx >/dev/null 2>&1 && \
+    npx -y skills add "$_repo" --skill "$_name" --agent claude-code -g -y --copy || \
+    mise --cd "$HOME" exec -- npx -y skills add "$_repo" --skill "$_name" --agent claude-code -g -y --copy || \
+    echo "[skills] $_repo skipped — needs node/npx (the develop profile)"
+done
+unset _repo _name
+
 {{ if .tools -}}
 # delta: point git at the tracked delta config via include.path (idempotent), leaving
 # ~/.gitconfig's identity/signing untouched. Only when the tools profile (delta) is on.
