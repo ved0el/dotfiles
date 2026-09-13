@@ -121,11 +121,18 @@ Verify before apply:
       four Nerd Font families here: FiraCode / Hack / JetBrainsMono / JetBrainsMonoNL, all in the
       long ID-16 form. So in styles.css the bare `JetBrainsMonoNL Nerd Font` is the ONLY usable
       JetBrains name — no NFM/NFP/NF entries, they are dead weight that hides a Tahoma fallback.
-  - `dot_config/komorebi/komorebi.bar.json` is a DIFFERENT engine (Rust, DirectWrite system
-    collection = ID 1) with ONE `font_family` string and no fallback, so it keeps the ID-1 name
-    `JetBrainsMonoNL NF`. Same font, different key. UNVERIFIED here — nothing launches
-    komorebi-bar on this box (yasb is the bar), so it has never been rendered; if you ever turn
-    it on and the bar comes up in a default face, try `JetBrainsMonoNL Nerd Font` instead.
+  - `dot_config/komorebi/komorebi.bar.json` is a DIFFERENT engine (Rust/DirectWrite) with ONE
+    `font_family` string and no fallback, so it takes the ID-1 name `JetBrainsMonoNL NF` — the
+    exact opposite of the styles.css value, same font. **`komorebi-bar --fonts` is the built-in
+    authority**: it prints every face it can see, as `<family> <style>` (`JetBrainsMonoNL NF
+    Regular`, `Hack Nerd Font Regular`), and `font_family` takes the family half. Verified by
+    actually running `komorebi-bar --config ~/.config/komorebi/komorebi.bar.json` for a few
+    seconds and screenshotting it: Nerd Font glyphs and Vietnamese diacritics both render.
+    Nothing launches komorebi-bar in normal use here (yasb is the bar), so re-run that probe
+    rather than assuming.
+  - The value it replaced, `"JetBrains Mono"`, was NOT in `--fonts` at all — the plain JetBrains
+    Mono family is not installed on this box, only the Nerd Font cuts. So komorebi's bar had
+    silently been on a fallback face since the config was written.
   - Suffixes: bare **NF** = original advance widths, **NFM** = Nerd Font Mono (icons squeezed to
     one cell), **NFP** = Propo. `NL` = no ligatures, orthogonal to all three. Only the bare cut
     is exposed to Qt at all, so the NFM/NFP distinction is unusable from yasb.
