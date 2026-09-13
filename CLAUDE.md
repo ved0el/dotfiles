@@ -99,6 +99,23 @@ Verify before apply:
   nothing reinstalls. The Nerd Font is the exception: a font ships no command, so it is guarded on
   `scoop list` instead, and it needs the `nerd-fonts` bucket added first. Fonts install per-user
   (HKCU), no elevation.
+- **`JetBrainsMono-NF-Mono` ships the WHOLE JetBrainsMono Nerd Font set, NL included.** Its
+  manifest downloads `nerd-fonts/releases/.../JetBrainsMono.zip`, so the box ends up with 96
+  registered faces — 48 of them the NL (no-ligature) cut. There is NO separate `JetBrainsMonoNL-*`
+  scoop package and none is needed; don't go looking for one.
+- **Each Nerd Font face carries TWO family names — pick per consumer, they are not
+  interchangeable:** name ID 1 (Win32) `JetBrainsMonoNL NFM`, name ID 16 (typographic)
+  `JetBrainsMonoNL Nerd Font Mono`. Read them with the `name` table, never guess:
+  `.Families.Name` from `System.Drawing.Text.InstalledFontCollection` only ever shows ID 1, so a
+  config written against ID 16 looks "not installed" there while working fine.
+  - `dot_config/yasb/styles.css` (Qt) lists the ID-16 name FIRST with the ID-1 name right behind
+    it, so it resolves whichever the engine indexes. CSS fallback makes this free.
+  - `dot_config/komorebi/komorebi.bar.json` has ONE `font_family` string and no fallback, so it
+    uses the ID-1 name (`JetBrainsMonoNL NFM`) — komorebi's loader goes through DirectWrite's
+    system collection, which matches ID 1. Same font, different key.
+  - Suffixes: **NFM** = Nerd Font Mono (fixed advance), **NFP** = Propo, bare **NF** = variable.
+    Keep the variant when swapping a family — the media-label stacks stay NFP because they are
+    proportional on purpose. `NL` = no ligatures, orthogonal to all three.
 - **The archive extractor is NOT managed here.** NanaZip is installed by hand via winget
   (`M2Team.NanaZip`), which puts a `7z` app-alias on PATH. An earlier revision made the
   bootstrap `scoop install nanazip`, shim `7z` to its console exe and set `scoop config
