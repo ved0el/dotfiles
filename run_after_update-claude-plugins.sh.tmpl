@@ -1,5 +1,6 @@
 #!/bin/sh
-# Refresh Claude Code marketplaces + the plugins settings.json declares. This script ONLY
+# Refresh Claude Code marketplaces, the plugins settings.json declares, and the global agent
+# skills. This script ONLY
 # EXISTS during `chezmoi update` (czu): .chezmoiignore gates it on `.chezmoi.command`, so
 # apply/diff/status never see it — apply just writes config, and an always-run script never
 # shows up as a permanent `R` in `chezmoi status`. Installing what's MISSING is the
@@ -9,8 +10,16 @@
 # so both steps are needed. `plugin update` takes ONE plugin, is idempotent and exits 0 when
 # already current ("already at the latest version").
 {{- $settings := includeTemplate "dot_claude/settings.json.tmpl" . | fromJson }}
-command -v claude >/dev/null 2>&1 || exit 0
-claude plugin marketplace update || echo "[claude] marketplace update failed"
+if command -v claude >/dev/null 2>&1; then
+  claude plugin marketplace update || echo "[claude] marketplace update failed"
 {{- range $id, $_ := $settings.enabledPlugins }}
-claude plugin update '{{ $id }}' || echo "[claude] update {{ $id }} failed"
+  claude plugin update '{{ $id }}' || echo "[claude] update {{ $id }} failed"
 {{- end }}
+fi
+
+# Agent skills (`skills` CLI). No list here on purpose: `update -g` refreshes every GLOBAL skill
+# in ~/.agents/skills, which is a superset of the three the bootstrap installs — one line beats
+# duplicating the repo:skill pairs. Same npx-then-mise fallback as the bootstrap.
+command -v npx >/dev/null 2>&1 && npx -y skills update -g -y || \
+  mise --cd "$HOME" exec -- npx -y skills update -g -y || \
+  echo "[skills] update skipped — needs node/npx (the develop profile)"

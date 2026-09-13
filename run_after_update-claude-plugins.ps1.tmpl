@@ -1,4 +1,5 @@
-# Refresh Claude Code marketplaces + the plugins settings.json declares. This script ONLY
+# Refresh Claude Code marketplaces, the plugins settings.json declares, and the global agent
+# skills. This script ONLY
 # EXISTS during `chezmoi update` (czu): .chezmoiignore gates it on `.chezmoi.command`, so
 # apply/diff/status never see it — apply just writes config, and an always-run script never
 # shows up as a permanent `R` in `chezmoi status`. Installing what's MISSING is the
@@ -14,3 +15,10 @@ if (Get-Command claude -ErrorAction SilentlyContinue) {
   try { claude plugin update '{{ $id }}' } catch { Write-Host "[claude] update {{ $id }} failed" }
 {{- end }}
 }
+
+# Agent skills (`skills` CLI). No list here on purpose: `update -g` refreshes every GLOBAL skill
+# in ~/.agents/skills, which is a superset of the three the bootstrap installs — one line beats
+# duplicating the repo:skill pairs. Same mise/npx fallback as the bootstrap; a box without node
+# just skips it.
+try { mise --cd $HOME exec -- npx -y skills update -g -y } catch { }
+if ($LASTEXITCODE -ne 0) { Write-Host "[skills] update skipped - needs node/npx (the develop profile)" }

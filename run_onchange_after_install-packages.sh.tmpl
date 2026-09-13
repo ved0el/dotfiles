@@ -134,22 +134,27 @@ if command -v claude >/dev/null 2>&1; then
 fi
 
 # Agent skills whose repos ship no plugin marketplace — installed with the `skills` CLI, the
-# official method in both READMEs (`npx skills add <repo> -g`). Every flag is load-bearing for a
-# non-interactive run: `npx -y` skips npx's own "install skills?" prompt on a cold cache, the
-# trailing `-y` skips the CLI's confirmation, `--agent claude-code` stops it asking which agent,
-# `--skill` pins the one skill (repo basename == skill name for both), and `--copy` avoids
-# symlinks (Windows symlinks need elevation, which this bootstrap never takes). They land in
-# ~/.claude/skills/<name>, which chezmoi does NOT manage, so `apply` never fights them; a re-run
-# just overwrites in place. npx comes from mise's node ("develop" profile), so try PATH, then
-# mise, then warn — a tools-only box simply goes without.
-for _repo in blader/humanizer tt-a1i/archify; do
-  _name="${_repo##*/}"
+# official method in their READMEs (`npx skills add <repo> -g`). Declared as `repo:skill` pairs:
+# the skill name is NOT always the repo basename (vercel-labs/skills ships `find-skills`), so it
+# is spelled out rather than derived. INSTALL ONLY WHAT'S MISSING — the CLI lands each skill in
+# ~/.claude/skills/<name> (chezmoi does NOT manage that dir, so `apply` never fights it), which
+# makes a plain existence test the check; refreshing them is `chezmoi update`'s job, see
+# run_after_update-claude-plugins.sh. Every flag is load-bearing for a non-interactive run:
+# `npx -y` skips npx's own "install skills?" prompt on a cold cache, the trailing `-y` skips the
+# CLI's confirmation, `--agent claude-code` stops it asking which agent (WITHOUT it the skill
+# installs for codex/gemini/copilot only and Claude never sees it), `--skill` pins the one skill,
+# and `--copy` avoids symlinks (Windows symlinks need elevation, which this bootstrap never
+# takes). npx comes from mise's node ("develop" profile), so try PATH, then mise, then warn — a
+# tools-only box simply goes without.
+for _entry in blader/humanizer:humanizer tt-a1i/archify:archify vercel-labs/skills:find-skills; do
+  _repo="${_entry%:*}"; _name="${_entry##*:}"
+  if [ -e "$HOME/.claude/skills/$_name" ]; then continue; fi
   command -v npx >/dev/null 2>&1 && \
     npx -y skills add "$_repo" --skill "$_name" --agent claude-code -g -y --copy || \
     mise --cd "$HOME" exec -- npx -y skills add "$_repo" --skill "$_name" --agent claude-code -g -y --copy || \
     echo "[skills] $_repo skipped — needs node/npx (the develop profile)"
 done
-unset _repo _name
+unset _entry _repo _name
 
 {{ if .tools -}}
 # delta: point git at the tracked delta config via include.path (idempotent), leaving
