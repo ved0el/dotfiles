@@ -109,17 +109,18 @@ Verify before apply:
   `.Families.Name` from `System.Drawing.Text.InstalledFontCollection` only ever shows ID 1, so a
   config written against ID 16 looks "not installed" there while working fine.
   - `dot_config/yasb/styles.css` (Qt) lists the ID-16 name FIRST with the ID-1 name right behind
-    it, so it resolves whichever the engine indexes. CSS fallback makes this free. The sheet is
-    now Hack-free: every icon rule (`.language-menu .icon`, `.media-widget .btn`,
-    `.power-menu-popup .button .icon`, `.systray .unpinned-visibility-btn`) takes the same Mono
-    stack, because icons want the single-cell advance to line up in buttons; the trailing
-    `sans-serif`/`monospace` in each rule is a last resort that never gets reached.
+    it, so it resolves whichever the engine indexes. CSS fallback makes this free.
   - `dot_config/komorebi/komorebi.bar.json` has ONE `font_family` string and no fallback, so it
     uses the ID-1 name (`JetBrainsMonoNL NFM`) — komorebi's loader goes through DirectWrite's
     system collection, which matches ID 1. Same font, different key.
   - Suffixes: **NFM** = Nerd Font Mono (fixed advance), **NFP** = Propo, bare **NF** = variable.
     Keep the variant when swapping a family — the media-label stacks stay NFP because they are
     proportional on purpose. `NL` = no ligatures, orthogonal to all three.
+  - **yasb's icon rules stay on `Hack Nerd Font` — do NOT "unify" them onto JetBrainsMonoNL.**
+    Tried once (`.language-menu .icon`, `.media-widget .btn`, `.power-menu-popup .button .icon`,
+    `.systray .unpinned-visibility-btn`) and reverted: JetBrainsMono's glyphs do not fit those
+    button boxes the way Hack's do. Two Nerd Fonts in one sheet is deliberate — JetBrainsMonoNL
+    for text, Hack for icons.
 - **The archive extractor is NOT managed here.** NanaZip is installed by hand via winget
   (`M2Team.NanaZip`), which puts a `7z` app-alias on PATH. An earlier revision made the
   bootstrap `scoop install nanazip`, shim `7z` to its console exe and set `scoop config

@@ -45,7 +45,7 @@
 * {
   font-size: 14px;
   color: var(--text);
-  font-family: 'JetBrainsMonoNL Nerd Font Mono', 'JetBrainsMonoNL NFM', monospace;
+  font-family: 'JetBrainsMonoNL Nerd Font Mono', 'JetBrainsMonoNL NFM', 'Hack Nerd Font', monospace;
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -297,7 +297,7 @@
 }
 
 .language-menu .language-item .icon {
-  font-family: 'JetBrainsMonoNL Nerd Font Mono', 'JetBrainsMonoNL NFM', sans-serif;
+  font-family: 'Hack Nerd Font', sans-serif;
   font-size: 16px;
   margin-right: 8px;
   color: var(--text);
@@ -347,7 +347,7 @@
 }
 
 .media-widget .btn {
-  font-family: 'JetBrainsMonoNL Nerd Font Mono', 'JetBrainsMonoNL NFM', sans-serif;
+  font-family: 'Hack Nerd Font', sans-serif;
   font-size: 16px;
   padding: 0 2px;
   color: var(--subtext1);
@@ -712,7 +712,7 @@
 }
 
 .power-menu-popup .button .icon {
-  font-family: 'JetBrainsMonoNL Nerd Font Mono', 'JetBrainsMonoNL NFM', monospace;
+  font-family: 'Hack Nerd Font', monospace;
   font-size: 64px;
   min-width: 100px;
   padding-top: 32px;
@@ -811,7 +811,7 @@
 }
 
 .systray .unpinned-visibility-btn {
-  font-family: 'JetBrainsMonoNL Nerd Font Mono', 'JetBrainsMonoNL NFM', sans-serif;
+  font-family: 'Hack Nerd Font', sans-serif;
   border-radius: 4px;
   padding: 0 4px;
   color: var(--surface2);
