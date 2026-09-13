@@ -109,7 +109,11 @@ Verify before apply:
   `.Families.Name` from `System.Drawing.Text.InstalledFontCollection` only ever shows ID 1, so a
   config written against ID 16 looks "not installed" there while working fine.
   - `dot_config/yasb/styles.css` (Qt) lists the ID-16 name FIRST with the ID-1 name right behind
-    it, so it resolves whichever the engine indexes. CSS fallback makes this free.
+    it, so it resolves whichever the engine indexes. CSS fallback makes this free. The sheet is
+    now Hack-free: every icon rule (`.language-menu .icon`, `.media-widget .btn`,
+    `.power-menu-popup .button .icon`, `.systray .unpinned-visibility-btn`) takes the same Mono
+    stack, because icons want the single-cell advance to line up in buttons; the trailing
+    `sans-serif`/`monospace` in each rule is a last resort that never gets reached.
   - `dot_config/komorebi/komorebi.bar.json` has ONE `font_family` string and no fallback, so it
     uses the ID-1 name (`JetBrainsMonoNL NFM`) — komorebi's loader goes through DirectWrite's
     system collection, which matches ID 1. Same font, different key.
