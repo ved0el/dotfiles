@@ -133,28 +133,36 @@ if command -v claude >/dev/null 2>&1; then
 {{- end }}
 fi
 
-# Agent skills whose repos ship no plugin marketplace — installed with the `skills` CLI, the
-# official method in their READMEs (`npx skills add <repo> -g`). Declared as `repo:skill` pairs:
-# the skill name is NOT always the repo basename (vercel-labs/skills ships `find-skills`), so it
-# is spelled out rather than derived. INSTALL ONLY WHAT'S MISSING — the CLI lands each skill in
-# ~/.claude/skills/<name> (chezmoi does NOT manage that dir, so `apply` never fights it), which
-# makes a plain existence test the check; refreshing them is `chezmoi update`'s job, see
-# run_after_update-claude-plugins.sh. Every flag is load-bearing for a non-interactive run:
-# `npx -y` skips npx's own "install skills?" prompt on a cold cache, the trailing `-y` skips the
-# CLI's confirmation, `--agent claude-code` stops it asking which agent (WITHOUT it the skill
-# installs for codex/gemini/copilot only and Claude never sees it), `--skill` pins the one skill,
-# and `--copy` avoids symlinks (Windows symlinks need elevation, which this bootstrap never
-# takes). npx comes from mise's node ("develop" profile), so try PATH, then mise, then warn — a
-# tools-only box simply goes without.
-for _entry in blader/humanizer:humanizer tt-a1i/archify:archify vercel-labs/skills:find-skills; do
-  _repo="${_entry%:*}"; _name="${_entry##*:}"
-  if [ -e "$HOME/.claude/skills/$_name" ]; then continue; fi
+# Agent skills from repos with no plugin marketplace — `skills` CLI, the official method in their
+# READMEs. Declared as `repo:skillspec:anchor`:
+#   skillspec — the `--skill` value. A name (repo basename is NOT always it: vercel-labs/skills
+#               ships `find-skills`), or `*` for "every skill this repo ships", which keeps up
+#               with upstream on its own (mattpocock/skills went 38 -> 37 names in three days,
+#               taste-skill 10 -> 13; a pinned name list would rot and fail on removed names).
+#   anchor    — the skill dir whose presence means "this repo is already done here". Exact for a
+#               single-skill entry; a representative one for a `*` entry, since knowing the full
+#               set of a `*` repo needs the network we are trying to avoid. Delete
+#               ~/.claude/skills/<anchor> to force a reinstall.
+# INSTALL ONLY WHAT'S MISSING — the CLI lands skills in ~/.claude/skills/<name>, which chezmoi
+# does NOT manage, so `apply` never fights them and that dir is the check. Refreshing is
+# `chezmoi update`'s job, see run_after_update-claude-plugins.sh. Every flag is load-bearing for
+# a non-interactive run: `npx -y` skips npx's own "install skills?" prompt on a cold cache, the
+# trailing `-y` skips the CLI's confirmation, `--agent claude-code` stops it asking which agent
+# (WITHOUT it the skill installs for codex/gemini/copilot only and Claude never sees it),
+# `--skill` pins the selection, and `--copy` avoids symlinks (Windows symlinks need elevation,
+# which this bootstrap never takes). npx comes from mise's node ("develop" profile), so try PATH,
+# then mise, then warn — a tools-only box simply goes without.
+for _entry in blader/humanizer:humanizer:humanizer tt-a1i/archify:archify:archify \
+              vercel-labs/skills:find-skills:find-skills 'mattpocock/skills:*:ask-matt' \
+              'Leonxlnx/taste-skill:*:brandkit'; do
+  _repo="${_entry%%:*}"; _rest="${_entry#*:}"; _spec="${_rest%:*}"; _anchor="${_rest##*:}"
+  if [ -e "$HOME/.claude/skills/$_anchor" ]; then continue; fi
   command -v npx >/dev/null 2>&1 && \
-    npx -y skills add "$_repo" --skill "$_name" --agent claude-code -g -y --copy || \
-    mise --cd "$HOME" exec -- npx -y skills add "$_repo" --skill "$_name" --agent claude-code -g -y --copy || \
+    npx -y skills add "$_repo" --skill "$_spec" --agent claude-code -g -y --copy || \
+    mise --cd "$HOME" exec -- npx -y skills add "$_repo" --skill "$_spec" --agent claude-code -g -y --copy || \
     echo "[skills] $_repo skipped — needs node/npx (the develop profile)"
 done
-unset _entry _repo _name
+unset _entry _repo _rest _spec _anchor
 
 {{ if .tools -}}
 # delta: point git at the tracked delta config via include.path (idempotent), leaving

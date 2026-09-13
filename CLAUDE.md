@@ -194,11 +194,21 @@ Verify before apply:
   `czu` update script bumps the plugin code in place — it never reinstalls or wipes the local
   memory DB. Do NOT add `npx claude-mem install` to the bootstrap: that's the non-plugin install
   path and would double-register hooks against the plugin's own.
-- **Agent skills from repos with no marketplace** are declared as **`repo:skill` pairs** —
-  `blader/humanizer:humanizer`, `tt-a1i/archify:archify`, `vercel-labs/skills:find-skills`. The
-  pair form is not decoration: the skill name is NOT always the repo basename (vercel-labs/skills
-  ships `find-skills`), so deriving it from the repo silently installs the wrong thing. They are
-  installed by both bootstraps with the `skills` CLI — `npx skills add <repo> -g`, the official
+- **Agent skills from repos with no marketplace** are declared as **`repo:skillspec:anchor`
+  triples** — `blader/humanizer:humanizer:humanizer`, `tt-a1i/archify:archify:archify`,
+  `vercel-labs/skills:find-skills:find-skills`, `mattpocock/skills:*:ask-matt`,
+  `Leonxlnx/taste-skill:*:brandkit`. Each field earns its place:
+  - **skillspec** = the `--skill` value. A literal name where only one skill is wanted — and it
+    is NOT always the repo basename (`vercel-labs/skills` ships `find-skills`), so deriving it
+    from the repo silently asks for a skill called "skills". `*` means "every skill this repo
+    ships", which tracks upstream on its own: in three days `mattpocock/skills` went 38 → 37
+    names and `Leonxlnx/taste-skill` 10 → 13, so a pinned name list would rot AND fail on the
+    removed names.
+  - **anchor** = the `~/.claude/skills/<dir>` whose presence means "this repo is already done on
+    this box". Identical to skillspec for a single-skill entry; a representative skill for a `*`
+    entry, because learning a `*` repo's real set costs the network round-trip the check exists
+    to avoid. `rm -rf ~/.claude/skills/<anchor>` forces a reinstall.
+  They are installed by both bootstraps with the `skills` CLI — `npx skills add <repo> -g`, the official
   method in each repo's own README. Humanizer ALSO offers a `/plugin marketplace add` path; it is
   deliberately NOT used, because archify has no marketplace at all, so the `skills` mechanism has
   to exist regardless — one mechanism for both beats splitting them, and it keeps
@@ -206,20 +216,22 @@ Verify before apply:
   non-interactive run and none may be dropped: `npx -y` skips **npx's own** "install skills?"
   prompt on a cold cache, the trailing `-y` skips the **CLI's** confirmation (two separate
   prompts, two separate flags), `--agent claude-code` suppresses the agent picker, `--skill`
-  pins the single skill, and `--copy` avoids symlinks — Windows symlinks need Developer Mode or
+  pins the selection, and `--copy` avoids symlinks — Windows symlinks need Developer Mode or
   elevation, which this bootstrap never takes. **`--agent claude-code` is the one that matters
   most**: without it the `skills` CLI installs for codex/gemini/copilot and Claude never sees the
-  skill — this box had 50 skills in `~/.agents/skills` (per `~/.agents/.skill-lock.json`: 38 from
-  `mattpocock/skills`, 10 from `Leonxlnx/taste-skill`) with only `archify` wired to Claude.
+  skill — this box had 50 skills in `~/.agents/skills` (per `~/.agents/.skill-lock.json`, the
+  CLI's own record of what came from where) with only `archify` wired to Claude. That is the
+  whole reason the two `*` repos are declared here.
   **`npx` comes from mise's `node = "lts"`, which lives in `develop.toml`** — so it is
   develop-gated even though Claude Code itself is base. Hence the rtk-style guard (`command -v
   npx` → `mise --cd "$HOME" exec --` → warn) rather than a `{{ if .develop }}` template gate: a
   tools-only box prints `[skills] … skipped` and carries on instead of silently shipping a
   script that can't run. Skills land in **`~/.claude/skills/<name>`, which chezmoi does NOT
   manage** (`chezmoi managed | grep -c '^.claude/skills'` → 0), so `apply` never fights them —
-  and that dir IS the install check: the loop skips any `repo:skill` whose
-  `~/.claude/skills/<name>` already exists, so `cza` never re-runs npx for a skill that's there
-  (verified: archify skipped, humanizer + find-skills installed, second run silent, exit 0).
+  and that dir IS the install check: the loop skips any triple whose anchor already exists, so
+  `cza` never re-runs npx for a repo that's done (verified end to end: archify skipped,
+  humanizer + find-skills + all of mattpocock/skills and taste-skill installed → 54 dirs in
+  `~/.claude/skills`, second run silent, exit 0).
   Refreshing them is `czu`'s job — `run_after_update-claude-plugins.{sh,ps1}` runs a single
   `npx -y skills update -g -y`, which covers every GLOBAL skill (a superset of these three), so
   the repo:skill list is NOT duplicated there.

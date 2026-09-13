@@ -131,23 +131,32 @@ if (Get-Command claude -ErrorAction SilentlyContinue) {
 {{- end }}
 }
 
-# Agent skills whose repos ship no plugin marketplace — `skills` CLI, the official method in
-# their READMEs. Declared as `repo:skill` pairs: the skill name is NOT always the repo basename
-# (vercel-labs/skills ships `find-skills`), so it is spelled out rather than derived. INSTALL
-# ONLY WHAT'S MISSING — the CLI lands each skill in the UNMANAGED ~/.claude/skills/<name>, so an
-# existence test is the check and `apply` never fights it; refreshing them is `chezmoi update`'s
-# job, see run_after_update-claude-plugins.ps1. Flags are load-bearing for a non-interactive run:
-# `npx -y` skips npx's own prompt, the trailing `-y` the CLI's confirmation, `--agent
-# claude-code` the agent picker (WITHOUT it the skill installs for codex/gemini/copilot only and
-# Claude never sees it), `--skill` pins the one skill, `--copy` avoids symlinks (they need
-# elevation on Windows, which this bootstrap never takes). npx comes from mise's node ("develop"
-# profile) — hence `mise exec`, same as rtk above; a tools-only box goes without.
-foreach ($entry in 'blader/humanizer:humanizer', 'tt-a1i/archify:archify', 'vercel-labs/skills:find-skills') {
-  $repo, $name = $entry.Split(':')
-  if (Test-Path (Join-Path $HOME ".claude\skills\$name")) { continue }
+# Agent skills from repos with no plugin marketplace — `skills` CLI, the official method in their
+# READMEs. Declared as `repo:skillspec:anchor`:
+#   skillspec - the `--skill` value. A name (repo basename is NOT always it: vercel-labs/skills
+#               ships `find-skills`), or `*` for "every skill this repo ships", which keeps up
+#               with upstream on its own (mattpocock/skills went 38 -> 37 names in three days,
+#               taste-skill 10 -> 13; a pinned name list would rot and fail on removed names).
+#   anchor    - the skill dir whose presence means "this repo is already done here". Exact for a
+#               single-skill entry; a representative one for a `*` entry, since knowing the full
+#               set of a `*` repo needs the network we are trying to avoid. Delete
+#               ~/.claude/skills/<anchor> to force a reinstall.
+# INSTALL ONLY WHAT'S MISSING - the CLI lands skills in the UNMANAGED ~/.claude/skills/<name>, so
+# `apply` never fights them and that dir is the check. Refreshing is `chezmoi update`'s job, see
+# run_after_update-claude-plugins.ps1. Flags are load-bearing for a non-interactive run: `npx -y`
+# skips npx's own prompt, the trailing `-y` the CLI's confirmation, `--agent claude-code` the
+# agent picker (WITHOUT it the skill installs for codex/gemini/copilot only and Claude never sees
+# it), `--skill` pins the selection, `--copy` avoids symlinks (they need elevation on Windows,
+# which this bootstrap never takes). npx comes from mise's node ("develop" profile) - hence
+# `mise exec`, same as rtk above; a tools-only box goes without.
+foreach ($entry in 'blader/humanizer:humanizer:humanizer', 'tt-a1i/archify:archify:archify',
+                   'vercel-labs/skills:find-skills:find-skills', 'mattpocock/skills:*:ask-matt',
+                   'Leonxlnx/taste-skill:*:brandkit') {
+  $repo, $spec, $anchor = $entry.Split(':')
+  if (Test-Path (Join-Path $HOME ".claude\skills\$anchor")) { continue }
   # Empty catch = mise itself missing (CommandNotFound IS terminating, like the rtk line);
   # $LASTEXITCODE = npx/node missing, which a native non-zero exit does NOT throw under WinPS 5.1.
-  try { mise --cd $HOME exec -- npx -y skills add $repo --skill $name --agent claude-code -g -y --copy } catch { }
+  try { mise --cd $HOME exec -- npx -y skills add $repo --skill $spec --agent claude-code -g -y --copy } catch { }
   if ($LASTEXITCODE -ne 0) { Write-Host "[skills] $repo skipped - needs node/npx (the develop profile)" }
 }
 
