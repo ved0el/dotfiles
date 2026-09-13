@@ -103,24 +103,40 @@ Verify before apply:
   manifest downloads `nerd-fonts/releases/.../JetBrainsMono.zip`, so the box ends up with 96
   registered faces — 48 of them the NL (no-ligature) cut. There is NO separate `JetBrainsMonoNL-*`
   scoop package and none is needed; don't go looking for one.
-- **Each Nerd Font face carries TWO family names — pick per consumer, they are not
-  interchangeable:** name ID 1 (Win32) `JetBrainsMonoNL NFM`, name ID 16 (typographic)
-  `JetBrainsMonoNL Nerd Font Mono`. Read them with the `name` table, never guess:
-  `.Families.Name` from `System.Drawing.Text.InstalledFontCollection` only ever shows ID 1, so a
-  config written against ID 16 looks "not installed" there while working fine.
-  - `dot_config/yasb/styles.css` (Qt) lists the ID-16 name FIRST with the ID-1 name right behind
-    it, so it resolves whichever the engine indexes. CSS fallback makes this free.
-  - `dot_config/komorebi/komorebi.bar.json` has ONE `font_family` string and no fallback, so it
-    uses the ID-1 name (`JetBrainsMonoNL NFM`) — komorebi's loader goes through DirectWrite's
-    system collection, which matches ID 1. Same font, different key.
-  - Suffixes: **NFM** = Nerd Font Mono (fixed advance), **NFP** = Propo, bare **NF** = variable.
-    Keep the variant when swapping a family — the media-label stacks stay NFP because they are
-    proportional on purpose. `NL` = no ligatures, orthogonal to all three.
+- **The cut in use is bare `JetBrainsMonoNL Nerd Font` with `Hack Nerd Font` behind it — and
+  each Nerd Font face carries TWO family names, not interchangeable, pick per consumer:** name
+  ID 1 (Win32) `JetBrainsMonoNL NF`, name ID 16 (typographic) `JetBrainsMonoNL Nerd Font`.
+  Read them off the face's `name` table, never guess — and never from
+  `System.Drawing.Text.InstalledFontCollection`, which only ever lists ID 1 and so calls a
+  perfectly working ID-16 name "not installed".
+  - **ASK THE ENGINE, it is the only authority.** For yasb that is Qt, and Qt's answer is the
+    opposite of `InstalledFontCollection`'s — it indexes ID 16 ONLY. Measured with yasb's own
+    bundled PyQt6 (`QFontDatabase.families()` + `QFontInfo(QFont(n)).family()`; the platform
+    plugin must be the real one — under `QT_QPA_PLATFORM=offscreen` the DB is EMPTY and every
+    name looks dead):
+    - `JetBrainsMonoNL Nerd Font` → resolves. `Hack Nerd Font`, `Be Vietnam Pro`,
+      `Noto Sans JP`, `Segoe Fluent Icons`, `Segoe UI` → all resolve.
+    - `JetBrainsMonoNL NF`, `JetBrainsMonoNL NFM`, `JetBrainsMonoNL NFP`, `… Nerd Font Mono`,
+      `… Nerd Font Propo` → **none are in Qt's DB; all silently become Tahoma.** Qt lists exactly
+      four Nerd Font families here: FiraCode / Hack / JetBrainsMono / JetBrainsMonoNL, all in the
+      long ID-16 form. So in styles.css the bare `JetBrainsMonoNL Nerd Font` is the ONLY usable
+      JetBrains name — no NFM/NFP/NF entries, they are dead weight that hides a Tahoma fallback.
+  - `dot_config/komorebi/komorebi.bar.json` is a DIFFERENT engine (Rust, DirectWrite system
+    collection = ID 1) with ONE `font_family` string and no fallback, so it keeps the ID-1 name
+    `JetBrainsMonoNL NF`. Same font, different key. UNVERIFIED here — nothing launches
+    komorebi-bar on this box (yasb is the bar), so it has never been rendered; if you ever turn
+    it on and the bar comes up in a default face, try `JetBrainsMonoNL Nerd Font` instead.
+  - Suffixes: bare **NF** = original advance widths, **NFM** = Nerd Font Mono (icons squeezed to
+    one cell), **NFP** = Propo. `NL` = no ligatures, orthogonal to all three. Only the bare cut
+    is exposed to Qt at all, so the NFM/NFP distinction is unusable from yasb.
   - **yasb's icon rules stay on `Hack Nerd Font` — do NOT "unify" them onto JetBrainsMonoNL.**
     Tried once (`.language-menu .icon`, `.media-widget .btn`, `.power-menu-popup .button .icon`,
     `.systray .unpinned-visibility-btn`) and reverted: JetBrainsMono's glyphs do not fit those
     button boxes the way Hack's do. Two Nerd Fonts in one sheet is deliberate — JetBrainsMonoNL
-    for text, Hack for icons.
+    for text, Hack for icons (and as the last Nerd Font fallback everywhere else).
+  - The pre-existing line-48 rule was `'JetBrainsMono NFP, Hack Nerd Font'` — the WHOLE string
+    quoted as ONE family, so it matched nothing and the bar silently ran on Qt's default
+    `monospace`. Two families, two quoted strings.
 - **The archive extractor is NOT managed here.** NanaZip is installed by hand via winget
   (`M2Team.NanaZip`), which puts a `7z` app-alias on PATH. An earlier revision made the
   bootstrap `scoop install nanazip`, shim `7z` to its console exe and set `scoop config

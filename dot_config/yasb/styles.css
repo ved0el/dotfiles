@@ -45,7 +45,7 @@
 * {
   font-size: 14px;
   color: var(--text);
-  font-family: 'JetBrainsMonoNL Nerd Font Mono', 'JetBrainsMonoNL NFM', 'Hack Nerd Font', monospace;
+  font-family: 'JetBrainsMonoNL Nerd Font', 'Hack Nerd Font', monospace;
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -341,7 +341,8 @@
 
 .media-widget .label {
   font-family:
-    'Be Vietnam Pro', 'Noto Sans JP', 'JetBrainsMonoNL NFP', sans-serif;
+    'Be Vietnam Pro', 'Noto Sans JP', 'JetBrainsMonoNL Nerd Font',
+    'Hack Nerd Font', sans-serif;
   color: var(--text);
   padding: 0 4px;
 }
@@ -377,7 +378,8 @@
 .media-menu .artist,
 .media-menu .source {
   font-family:
-    'Be Vietnam Pro', 'Noto Sans JP', 'JetBrainsMonoNL NFP', sans-serif;
+    'Be Vietnam Pro', 'Noto Sans JP', 'JetBrainsMonoNL Nerd Font',
+    'Hack Nerd Font', sans-serif;
   color: var(--text);
   font-size: 16px;
   font-weight: 500;
