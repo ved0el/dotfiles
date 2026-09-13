@@ -15,6 +15,19 @@ install-packages.sh
 install-packages.ps1
 {{ end }}
 
+# Claude plugin refresh: an always-run script, so gate its very EXISTENCE on the chezmoi
+# command. Only `chezmoi update` (czu) sees it — apply/diff/status ignore it, which keeps
+# apply config-only and keeps a permanent `R` out of `chezmoi status`. Same one-per-platform
+# rule as the bootstrap above.
+{{ if ne .chezmoi.command "update" }}
+update-claude-plugins.sh
+update-claude-plugins.ps1
+{{ else if eq .chezmoi.os "windows" }}
+update-claude-plugins.sh
+{{ else }}
+update-claude-plugins.ps1
+{{ end }}
+
 # OS split for shell config. Windows uses the PowerShell profile; Unix uses the zsh
 # stack (zsh/sheldon/p10k) + tmux. Each side ignores the other's files.
 {{ if eq .chezmoi.os "windows" }}

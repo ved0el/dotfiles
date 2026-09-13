@@ -88,7 +88,9 @@ tracked `conf.d/*.toml` instead.
 ```sh
 chezmoi edit ~/.tmux.conf    # edit a managed file in $EDITOR
 chezmoi apply                # apply changes + re-run bootstrap if it changed
+                             #   (installs any Claude plugin this box is missing)
 chezmoi update               # git pull, then apply (sync from another machine)
+                             #   (the ONLY command that updates Claude plugins)
 chezmoi re-add ~/.claude/settings.json  # capture a $HOME edit back into the repo
 chezmoi cd                   # drop into the source repo to commit/push
 chezmoi add ~/.config/foo    # start managing a new file
@@ -121,4 +123,5 @@ dot_config/                                   # ~/.config/  (gated per profile +
 .chezmoiignore                                # which files apply on this machine
 run_onchange_after_install-packages.sh.tmpl   # macOS/Linux bootstrap (brew/apt + mise)
 run_onchange_after_install-packages.ps1.tmpl  # Windows bootstrap (scoop + mise)
+run_after_update-claude-plugins.{sh,ps1}.tmpl # Claude plugin refresh (runs on `update` only)
 ```

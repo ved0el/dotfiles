@@ -59,7 +59,7 @@ if (Get-Command chezmoi -ErrorAction SilentlyContinue) {
 
 # ── Antigravity IDE (VS Code fork; its CLI ships as `antigravity-ide`, no short name) ──
 if (Get-Command antigravity-ide -ErrorAction SilentlyContinue) {
-  Set-Alias ag-ide antigravity-ide
+  Set-Alias agide antigravity-ide
 }
 
 # ── eza (ls replacement) ──────────────────────────────────────────────────────────

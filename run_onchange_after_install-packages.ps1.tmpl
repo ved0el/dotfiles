@@ -111,12 +111,25 @@ if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
   catch { Write-Host "[claude] install failed: $($_.Exception.Message)" }
 }
 
-# Claude Code plugin marketplaces — clone newly-declared marketplaces and update the rest.
-# Reads ~/.claude/settings.json (chezmoi-managed) for the declared set; plugins ship inside
-# their marketplace repos, so this refreshes plugin code too. The fingerprint re-runs this
-# script whenever the declared marketplaces change.
-# settings fingerprint (incl. extraKnownMarketplaces): {{ include "dot_claude/settings.json.tmpl" | sha256sum }}
-if (Get-Command claude -ErrorAction SilentlyContinue) { try { claude plugin marketplace update } catch { } }
+# Claude Code marketplaces + plugins — INSTALL ONLY WHAT'S MISSING. The ids below are
+# rendered straight out of dot_claude/settings.json.tmpl, so that file stays the single
+# source of truth and the rendered list doubles as this script's run_onchange fingerprint:
+# declaring a new marketplace/plugin re-fires the script, unrelated settings churn doesn't.
+# `plugin list`/`marketplace list` are local reads, so a box that already has everything
+# does no network work. Refreshing what IS installed is `chezmoi update`'s job — see
+# run_after_update-claude-plugins.ps1.
+{{- $settings := includeTemplate "dot_claude/settings.json.tmpl" . | fromJson }}
+if (Get-Command claude -ErrorAction SilentlyContinue) {
+  $haveMk = @(); try { $haveMk = @((claude plugin marketplace list --json | Out-String | ConvertFrom-Json).name) } catch { }
+{{- range $name, $mk := $settings.extraKnownMarketplaces }}
+  if ($haveMk -notcontains '{{ $name }}') { try { claude plugin marketplace add '{{ index $mk.source "repo" | default (index $mk.source "url") }}' } catch { Write-Host "[claude] marketplace add {{ $name }} failed" } }
+{{- end }}
+  # -y is mandatory: the install prompt has no TTY here and would otherwise hang.
+  $havePlugin = @(); try { $havePlugin = @((claude plugin list --json | Out-String | ConvertFrom-Json).id) } catch { }
+{{- range $id, $_ := $settings.enabledPlugins }}
+  if ($havePlugin -notcontains '{{ $id }}') { try { claude plugin install -y '{{ $id }}' } catch { Write-Host "[claude] install {{ $id }} failed" } }
+{{- end }}
+}
 
 # Agent skills whose repos ship no plugin marketplace — `skills` CLI, the official method in both
 # READMEs. Flags are load-bearing for a non-interactive run: `npx -y` skips npx's own prompt, the

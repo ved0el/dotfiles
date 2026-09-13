@@ -110,14 +110,28 @@ command -v claude >/dev/null 2>&1 || \
   curl -fsSL https://claude.ai/install.sh | bash || \
   echo "[claude] install failed — install Claude Code by hand"
 
-# Claude Code plugin marketplaces — clone any newly-declared marketplace and pull the rest
-# up to date. `marketplace update` reads ~/.claude/settings.json (chezmoi-managed) for the
-# declared set, so that file stays the single source of truth; plugins ship inside their
-# marketplace repos, so this refreshes plugin code too. Idempotent; || true so a network
-# blip or a not-yet-installed claude never aborts the bootstrap. The fingerprint below
-# re-runs this script whenever the declared marketplaces change.
-# settings fingerprint (incl. extraKnownMarketplaces): {{ include "dot_claude/settings.json.tmpl" | sha256sum }}
-command -v claude >/dev/null 2>&1 && claude plugin marketplace update || true
+# Claude Code marketplaces + plugins — INSTALL ONLY WHAT'S MISSING. The ids below are
+# rendered straight out of dot_claude/settings.json.tmpl, so that file stays the single
+# source of truth and the rendered list doubles as this script's run_onchange fingerprint:
+# declaring a new marketplace/plugin re-fires the script, unrelated settings churn doesn't.
+# `plugin list`/`marketplace list` are local reads, so a box that already has everything
+# does no network work. Refreshing what IS installed is `chezmoi update`'s job — see
+# run_after_update-claude-plugins.sh. grep -F over the --json dump keeps this jq-free.
+{{- $settings := includeTemplate "dot_claude/settings.json.tmpl" . | fromJson }}
+if command -v claude >/dev/null 2>&1; then
+  have_mk=$(claude plugin marketplace list --json 2>/dev/null || true)
+{{- range $name, $mk := $settings.extraKnownMarketplaces }}
+  printf '%s' "$have_mk" | grep -qF '"name": "{{ $name }}"' || \
+    claude plugin marketplace add '{{ index $mk.source "repo" | default (index $mk.source "url") }}' || \
+    echo "[claude] marketplace add {{ $name }} failed"
+{{- end }}
+  # -y is mandatory: the install prompt has no TTY here and would otherwise hang.
+  have_plugin=$(claude plugin list --json 2>/dev/null || true)
+{{- range $id, $_ := $settings.enabledPlugins }}
+  printf '%s' "$have_plugin" | grep -qF '"{{ $id }}"' || \
+    claude plugin install -y '{{ $id }}' || echo "[claude] install {{ $id }} failed"
+{{- end }}
+fi
 
 # Agent skills whose repos ship no plugin marketplace — installed with the `skills` CLI, the
 # official method in both READMEs (`npx skills add <repo> -g`). Every flag is load-bearing for a

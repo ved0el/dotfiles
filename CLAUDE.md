@@ -13,12 +13,12 @@ Aliases ship in `dot_config/zsh/conf.d/70-aliases.zsh` (zsh) and
 | alias  | command           | use |
 |--------|-------------------|-----|
 | `cz`   | `chezmoi`         | bare passthrough |
-| `cza`  | `chezmoi apply`   | source → `$HOME`; also re-runs the bootstrap if its fingerprint changed |
+| `cza`  | `chezmoi apply`   | source → `$HOME`; re-runs the bootstrap if its fingerprint changed (installs missing Claude plugins, never updates existing ones) |
 | `czd`  | `chezmoi diff`    | what `apply` would change |
 | `czs`  | `chezmoi status`  | short per-file status (`R` = a script will run) |
 | `cze`  | `chezmoi edit`    | edit a managed file in `$EDITOR` |
 | `czra` | `chezmoi re-add`  | capture a `$HOME` edit back into the source repo |
-| `czu`  | `chezmoi update`  | git pull, then apply |
+| `czu`  | `chezmoi update`  | git pull, then apply; also the ONLY command that updates Claude plugins |
 | `czcd` | `chezmoi cd`      | cd into this repo (to commit/push) |
 
 Verify before apply:
@@ -31,6 +31,8 @@ Verify before apply:
 ## Layout & naming
 - `dot_X` → `~/.X`; `executable_X` → +x; `private_X` → 0600; `*.tmpl` → Go-templated.
 - **Non-`dot_` files (README.md, CLAUDE.md) apply to `~/` unless in `.chezmoiignore`.**
+- `run_after_update-claude-plugins.{sh,ps1}.tmpl` — refreshes Claude marketplaces/plugins;
+  `.chezmoiignore` hides it from every command except `chezmoi update`.
 - `run_onchange_after_install-packages.{sh,ps1}.tmpl` — bootstrap (packages + plugins);
   re-runs when its rendered content changes; `after_` = runs once files are applied.
 
@@ -137,29 +139,59 @@ Verify before apply:
   lands in `~/.local/bin` (already on PATH from the top of both scripts) and AUTO-UPDATES in the
   background afterwards. Do NOT swap in `winget install Anthropic.ClaudeCode` / `brew install
   --cask claude-code` / `npm i -g @anthropic-ai/claude-code`: per the docs those do NOT
-  auto-update, so the box would silently drift behind. This is NOT optional polish: the marketplace step below is guarded on
-  `claude` existing, so on a fresh box it would be a silent no-op AND would never retry, because
-  the run_onchange fingerprint doesn't change afterwards. On Windows the install runs inside
+  auto-update, so the box would silently drift behind. This is NOT optional polish: the
+  marketplace/plugin step below is guarded on `claude` existing, so on a fresh box it would be a
+  silent no-op AND would never retry, because the run_onchange fingerprint doesn't change
+  afterwards. On Windows the install runs inside
   `& { … }` — the upstream installer sets `Set-StrictMode -Version Latest` and
   `$ErrorActionPreference = 'Stop'`, and the block scope keeps those out of the rest of the
   bootstrap (verified: the outer preference is unchanged after the block returns).
-- **Claude plugin marketplaces are cloned/updated by the bootstrap via `claude plugin
-  marketplace update`.** That command reads the chezmoi-managed `dot_claude/settings.json`
-  `extraKnownMarketplaces`, so that file is the single source of truth — no duplicate list in
-  the script. Plugins ship inside their marketplace repos, so updating the marketplaces also
-  refreshes plugin code; `enabledPlugins` just toggles them. Both bootstraps carry a
-  `# settings fingerprint (incl. extraKnownMarketplaces):` comment hashing the WHOLE settings
-  template (`include "dot_claude/settings.json.tmpl" | sha256sum`), so the run_onchange script
-  re-fires on the next `cza` after ANY settings change — newly-declared marketplaces get cloned,
-  not just existing ones pulled; the coarse hash costs an occasional no-op re-run. Add one by
-  editing `extraKnownMarketplaces`, then `cza`. Gated `|| true` / `try/catch` so a network blip
-  or a not-yet-installed `claude` never aborts setup.
-- **`claude-mem` (`thedotmack` marketplace) is fully plugin-managed — the bootstrap needs NO
-  claude-mem install step.** Its own plugin `Setup` hook (`version-check.js`) version-checks and
+- **Claude marketplaces + plugins: `cza` INSTALLS WHAT'S MISSING, `czu` UPDATES WHAT'S THERE.**
+  Two scripts, deliberately split:
+  - **Install (bootstrap, `run_onchange_after_install-packages.{sh,ps1}`)** — `marketplace add`
+    for every `extraKnownMarketplaces` entry not in `claude plugin marketplace list --json`, then
+    `claude plugin install -y` for every `enabledPlugins` id not in `claude plugin list --json`.
+    Both `list`s are local reads, so a box that already has everything does ZERO network work.
+    `-y` is mandatory — the install prompt has no TTY here and would hang the bootstrap.
+  - **Update (`run_after_update-claude-plugins.{sh,ps1}`)** — `claude plugin marketplace update`
+    plus `claude plugin update <id>` per declared plugin. It is an ALWAYS-run script whose very
+    EXISTENCE is gated in `.chezmoiignore` on `{{ ne .chezmoi.command "update" }}`, so only
+    `chezmoi update`/`czu` ever sees it: `cza` stays config-only and offline, and an always-run
+    script never parks a permanent `R` in `chezmoi status`. (`CHEZMOI_COMMAND` is also set to
+    `apply`/`update` at runtime — the ignore gate is used instead because it also kills the
+    status noise.)
+  - **The old single `claude plugin marketplace update` line did neither job** — measured with a
+    throwaway `CLAUDE_CONFIG_DIR`, so re-measure the same way before "simplifying" this back:
+    - It does NOT read `extraKnownMarketplaces`. On a fresh box it prints **"No marketplaces
+      configured"** and exits — nothing is ever cloned, so every plugin install then fails with
+      *"not found in marketplace … your local copy may be out of date"*. Only `marketplace add`
+      registers a marketplace (and it writes the entry into settings.json itself).
+    - It does NOT refresh plugin code either; it only `git pull`s the marketplace clones under
+      `~/.claude/plugins/marketplaces/`. Installed plugin code lives in
+      `~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/` and moves only on `claude
+      plugin update` (measured: `marketplace update` left claude-mem at 13.13.1; `plugin update`
+      took it to 13.24.23). `plugin update` takes ONE plugin, is idempotent, exits 0 on
+      "already latest".
+  - **`claude-plugins-official` is declared in `extraKnownMarketplaces` even though it's the
+    built-in one.** A fresh box does NOT have it registered (Claude Code adds it on first
+    interactive use), so without the declaration the add loop skips it and all 13
+    `@claude-plugins-official` plugins fail to install. Declaring it costs nothing on an
+    existing box (the presence check skips it) and keeps ONE loop instead of a hardcoded
+    special case. Verified end to end against an empty `CLAUDE_CONFIG_DIR`: 5 marketplaces
+    added, 17 plugins installed, zero failures; the second run is silent.
+  - Both scripts render their id lists from `dot_claude/settings.json.tmpl` via
+    `includeTemplate … | fromJson`, so that file stays the single source of truth and there is no
+    duplicate list. The RENDERED ids are also the bootstrap's run_onchange fingerprint — it
+    re-fires exactly when a marketplace/plugin is declared, not on unrelated settings churn (the
+    old `# settings fingerprint … | sha256sum` comment is gone). Add one by editing
+    `enabledPlugins`/`extraKnownMarketplaces`, then `cza`. Every call is `|| echo` / `try/catch`
+    so a network blip or a not-yet-installed `claude` never aborts setup.
+- **`claude-mem` (`thedotmack` marketplace) is fully plugin-managed — beyond the generic
+  `claude plugin install` above, the bootstrap needs NO claude-mem step.** Its own plugin `Setup` hook (`version-check.js`) version-checks and
   installs/updates the runtime per session, and its data lives in `~/.claude-mem/` (SQLite DB +
   chroma vectors + `settings.json`/`.env`), which `cza` never touches. So the whole integration
   is just the `enabledPlugins` toggle + the `thedotmack` entry in `extraKnownMarketplaces`; the
-  marketplace-update line `git pull`s the plugin code — it never reinstalls or wipes the local
+  `czu` update script bumps the plugin code in place — it never reinstalls or wipes the local
   memory DB. Do NOT add `npx claude-mem install` to the bootstrap: that's the non-plugin install
   path and would double-register hooks against the plugin's own.
 - **Agent skills from repos with no marketplace** (`blader/humanizer`, `tt-a1i/archify`) are
