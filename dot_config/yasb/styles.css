@@ -75,6 +75,11 @@
 .btn {
   font-family: 'JetBrainsMonoNL Nerd Font', monospace;
   font-size: 15px;
+  /* Nerd Font icons ink up to 6.6px past their 9px advance (Qt-measured); this reclaims
+     it wherever .icon lands on a real QLabel. Inline <span class='icon'> ignores padding,
+     so those labels carry a trailing U+00A0 in config.yaml.tmpl instead. */
+  padding-right: 6px;
+  padding-left: 2px;
 }
 
 /* ========================================== */

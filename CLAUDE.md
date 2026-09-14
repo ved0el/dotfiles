@@ -130,6 +130,23 @@ Verify before apply:
     `font-size` was deleted (they ranged 12–20px). Popup/menu/card rules keep their own scale —
     they are separate surfaces. Do not reintroduce a per-widget size to fix one widget; that is
     how the drift started.
+  - **A Nerd Font icon INKS PAST ITS ADVANCE, so it gets clipped or overlapped unless you hand
+    it the next cell.** Measured in Qt at 15px: advance is a flat `9.00` (it is a monospace
+    face) while the ink runs to `15.56` — up to **6.6px of spill to the right**, on 51 of the 54
+    icons. Nothing spills left; "the left is cut off" is really the *previous* widget's text
+    sitting on the icon. Two different fixes, because two different things clip:
+    - `padding-right: 6px` on `.icon, .btn` — works where `.icon` lands on a real QLabel
+      (whkd, cpu, memory).
+    - a trailing **`U+00A0`** in the label template — needed where the icon is an inline
+      `<span class='icon'>`, which ignores padding entirely. Affects the labels that END at the
+      span (home, whkd, power: sized to the advance, so the glyph is cut at the widget edge)
+      and the one with no separator (`volume`, `…</span>{level}`, so `100%` sat on the icon).
+      Verify by screenshotting, not by reading the CSS — the padding line looks like it works.
+    - **`&nbsp;` does NOT work**: yasb does not expand HTML entities, it renders the literal
+      text `&nbsp;` into the bar. Use the actual character.
+    - The real cure would be the Propo cut, whose advance matches its ink — but Qt only indexes
+      four Nerd Font families here (FiraCode/Hack/JetBrainsMono/JetBrainsMonoNL, all the bare
+      cut). `JetBrainsMonoNL Nerd Font Propo` is installed and invisible to Qt, so don't try.
 - **Each Nerd Font face carries TWO family names, not interchangeable, pick per consumer:** name
   ID 1 (Win32) `JetBrainsMonoNL NF`, name ID 16 (typographic) `JetBrainsMonoNL Nerd Font`.
   Read them off the face's `name` table, never guess — and never from
