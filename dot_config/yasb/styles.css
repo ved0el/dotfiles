@@ -78,6 +78,7 @@
      real QLabel. Inline spans ignore padding, so those labels carry a trailing U+00A0. */
   padding-right: 6px;
   padding-left: 2px;
+  min-width: 18px;
 }
 
 /* ========================================== */

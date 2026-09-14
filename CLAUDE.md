@@ -174,11 +174,22 @@ Verify before apply:
     glyphs were moved onto their Material equivalents for exactly that reason: home
     `F2DC→F02DC`, cpu `F2DB→F035B`, bell `EB9A→F009A`, pomodoro work `F252→F051F`, break
     `F0F4→F0176`, paused `F2F2→F03E4`, globe `F0AC→F059F`.
-  - Two deliberate exceptions: the komorebi layout icons stay on Codicon (`EBEB`, `EBF7`,
-    `EC01`, `EBEE`, `EBF0`, `EBF1`) because they are an internally coherent set drawn for this
-    exact purpose, and swapping half of it looks worse than leaving it thin; and memory stays
-    on `EFC5` because Material has no RAM stick — `nf-md-memory` is a CHIP, which would collide
-    with the cpu icon.
+  - **The whole set is now Material (`nf-md-*`).** The rule is one STROKE WEIGHT, not one
+    family — mixing families is fine when the result is coherent — but after comparing each
+    slot side by side, Material won every one, including the komorebi layouts: its `view-*`
+    block (`F056A`–`F0576`) maps onto them exactly (`F056E` bsp, `F0576` columns, `F056A` rows,
+    `F0570` grid, `F056B`/`F0575` stacks, `F056C` ultrawide, `F0574` right-main), and it is
+    solid where Codicon was hairline. cpu/memory use Material's own pair — `nf-md-chip`
+    `F061A` and `nf-md-memory` `F035B` — rather than a Codicon RAM stick.
+  - **A too-narrow icon QLabel clips the glyph's LEFT side, not its right.** The wifi wedge was
+    losing its left corner: ink is 15px wide in a 9px advance, and that label is right-aligned,
+    so the overflow was cut off the leading edge. `padding` alone does not fix it (the box is
+    still 9px) — `.icon, .btn` carries **`min-width: 18px`**. Symptom to recognise: a symmetric
+    glyph rendering lopsided while the same codepoint is perfectly symmetric in a standalone
+    render. Check the glyph alone before blaming the artwork.
+  - Weak-at-15px check, done by rendering every codepoint at the REAL size next to a 3x
+    blow-up: the last holdout was the pomodoro hourglass `F051F`, swapped for the solid
+    stopwatch `F13AB`. The wifi 0–24% steps stay faint on purpose — that IS the strength ramp.
 - **The archive extractor is NOT managed here.** NanaZip is installed by hand via winget
   (`M2Team.NanaZip`), which puts a `7z` app-alias on PATH. An earlier revision made the
   bootstrap `scoop install nanazip`, shim `7z` to its console exe and set `scoop config
