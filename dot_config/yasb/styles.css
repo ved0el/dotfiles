@@ -95,12 +95,10 @@
 /* CPU */
 .cpu-widget .icon {
   color: var(--sapphire);
-  font-weight: bold;
 }
 
 .cpu-widget .label {
   color: var(--sapphire);
-  font-weight: bold;
 }
 
 /* ==================== */
@@ -320,13 +318,10 @@
 
 .memory-widget .icon {
   color: var(--maroon);
-  font-weight: bold;
-  padding-right: 4px;
 }
 
 .memory-widget .label {
   color: var(--maroon);
-  font-weight: bold;
 }
 
 /* ====================== */
@@ -828,7 +823,6 @@
 
 .volume-widget .label {
   color: var(--teal);
-  font-weight: bold;
 }
 
 /* --- Volume Widget --- */
@@ -938,12 +932,10 @@
 /* WIFI */
 .wifi-widget .icon {
   color: var(--mauve);
-  font-weight: bold;
 }
 
 .wifi-widget .label {
   color: var(--mauve);
-  font-weight: bold;
 }
 
 .wifi-menu {
