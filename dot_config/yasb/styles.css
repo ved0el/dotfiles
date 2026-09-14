@@ -74,7 +74,10 @@
 .icon,
 .btn {
   font-family: 'Segoe Fluent Icons', 'JetBrainsMonoNL Nerd Font', sans-serif;
-  font-size: 15px;
+  /* 17, not the text's 15: a Segoe glyph fills its em box where a letter only reaches
+     cap height, so matching the numbers makes the icon read SMALLER than the text.
+     17 is where they balance - checked by rendering 15/16/17/18/19 against the digits. */
+  font-size: 17px;
   /* Nerd Font icons ink up to 6.6px past their 9px advance (Qt-measured); this reclaims
      it wherever .icon lands on a real QLabel. Inline <span class='icon'> ignores padding,
      so those labels carry a trailing U+00A0 in config.yaml.tmpl instead. */

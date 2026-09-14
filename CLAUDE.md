@@ -114,7 +114,12 @@ Verify before apply:
     | Segoe icon (any) | **15** | **15** | **0** | 13–15 |
     | Nerd Font icons | 9 | 12–15 | **3–6** | 10–15 |
     Segoe is drawn on a uniform em box — advance equals ink, every glyph the same optical size,
-    nothing to clip. The Nerd Font's advance is the mono cell (9px) while its icon ink is up to
+    nothing to clip. **That em box is also why `.icon` is 17px against the text's 15px**: a
+    Segoe glyph fills the box top to bottom while a letter only reaches cap height, so matching
+    the numbers makes the icon read SMALLER than the text sitting next to it. 17 is where they
+    balance — picked by rendering 15/16/17/18/19 baseline-aligned against real bar strings
+    (`25:00`, `100%`, `saufamily`); 18+ starts to dominate. Equal font-size is NOT equal
+    optical size. The Nerd Font's advance is the mono cell (9px) while its icon ink is up to
     15px and its ink HEIGHT varies 10–15px per glyph, so icons look different sizes next to each
     other AND next to the text, no matter what `font-size` you set. That is the size mismatch;
     it is a property of the font, not of the stylesheet.
