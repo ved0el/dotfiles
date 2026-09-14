@@ -214,7 +214,7 @@ widgets:
   volume:
     type: "yasb.volume.VolumeWidget"
     options:
-      label: "<span class='icon'>{icon}</span> {level}"
+      label: "V: {level}"
       volume_icons:
         - "󰖁" # Icon for muted
         - "󰝟" # Icon for 0-10% volume
@@ -252,7 +252,7 @@ widgets:
   power_menu:
     type: "yasb.power_menu.PowerMenuWidget"
     options:
-      label: "<span class='icon'>⏻</span>"
+      label: "<span class='icon'>󰐥</span>"
       uptime: True
       show_user: false
       blur: false
@@ -323,7 +323,7 @@ widgets:
   cpu:
     type: "yasb.cpu.CpuWidget"
     options:
-      label: "CPU {info[percent][total]}%"
+      label: "C: {info[percent][total]}%"
       update_interval: 2000
       cpu_thresholds:
         low: 25
@@ -347,8 +347,8 @@ widgets:
   memory:
     type: "yasb.memory.MemoryWidget"
     options:
-      label: "RAM {virtual_mem_percent}%"
-      label_alt: "<span>MEM</span> {virtual_mem_free}/{virtual_mem_total}"
+      label: "R: {virtual_mem_percent}%"
+      label_alt: "R: {virtual_mem_free}/{virtual_mem_total}"
       update_interval: 5000
       callbacks:
         on_left: "toggle_label"
@@ -370,7 +370,7 @@ widgets:
   wifi:
     type: "yasb.wifi.WifiWidget"
     options:
-      label: "<span class='icon'>{wifi_icon}</span> {wifi_name}"
+      label: "W: {wifi_name}"
       update_interval: 5000
       callbacks:
         on_left: "toggle_menu"

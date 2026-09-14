@@ -73,7 +73,7 @@
 .icon,
 .btn {
   font-family: 'JetBrainsMonoNL Nerd Font', sans-serif;
-  font-size: 15px;
+  font-size: 13px;
   /* A Nerd Font icon inks ~15px inside a 9px advance. min-width holds the whole ink —
      without it a right-aligned label clips the glyph's LEFT edge, not its right. The slack
      min-width leaves, plus this padding, plus the one space in the label template, IS the
@@ -115,7 +115,7 @@
 }
 
 .home-widget .icon {
-  font-size: 20px;
+  font-size: 19px;
   color: var(--overlay1);
   padding-right: 4px;
 }
@@ -244,6 +244,9 @@
 }
 
 .language-widget .icon {
+  min-width: 14px;
+  padding-right: 4px;
+  font-size: 14px;
   color: var(--text);
 }
 
@@ -348,6 +351,7 @@
 }
 
 .media-widget .btn {
+  font-size: 18px;
   font-family: 'JetBrainsMonoNL Nerd Font', sans-serif;
   padding: 0 2px;
   color: var(--subtext1);
@@ -610,7 +614,9 @@
 }
 
 .pomodoro-widget .icon {
-  padding-right: 2px;
+  min-width: 14px;
+  font-size: 15px;
+  padding-right: 4px;
 }
 
 .pomodoro-widget .label.paused,
@@ -682,8 +688,15 @@
 /* ====================== */
 
 .power-menu-widget .label {
-  color: var(--maroon);
-  font-size: 18px;
+  color: var(--red);
+  font-size: 14px;
+}
+
+/* the glyph lives in an inner <span class='icon'>, which takes .icon's rule rather than the
+   label's, so the colour has to be stated here too */
+.power-menu-widget .icon {
+  font-size: 23px;
+  color: var(--red);
 }
 
 .power-menu-popup {
@@ -807,6 +820,7 @@
 }
 
 .systray .unpinned-visibility-btn {
+  font-size: 18px;
   font-family: 'JetBrainsMonoNL Nerd Font', sans-serif;
   border-radius: 4px;
   padding: 0 4px;
@@ -871,6 +885,7 @@
 
 /* --- Weather Widget --- */
 .weather-widget .icon {
+  font-size: 17px;
   color: var(--yellow);
 }
 
@@ -1079,6 +1094,7 @@
 }
 
 .whkd-widget .icon {
+  font-size: 17px;
   /* size inherited: one bar scale */
 }
 
@@ -1187,3 +1203,9 @@
 /* ====================== */
 /* === NOTIFICATIONS WIDGET === */
 /* ====================== */
+
+.notification-widget .icon {
+  padding-right: 4px;
+  min-width: 14px;
+  font-size: 13px;
+}
