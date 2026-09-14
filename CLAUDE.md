@@ -103,8 +103,34 @@ Verify before apply:
   manifest downloads `nerd-fonts/releases/.../JetBrainsMono.zip`, so the box ends up with 96
   registered faces — 48 of them the NL (no-ligature) cut. There is NO separate `JetBrainsMonoNL-*`
   scoop package and none is needed; don't go looking for one.
-- **The cut in use is bare `JetBrainsMonoNL Nerd Font` with `Hack Nerd Font` behind it — and
-  each Nerd Font face carries TWO family names, not interchangeable, pick per consumer:** name
+- **ONE font draws the whole bar: `JetBrainsMonoNL Nerd Font`, weight 500, text and icons at
+  the same size.** No Hack, no Segoe Fluent Icons, no per-widget size overrides — those three
+  were exactly what made the bar look uneven. Rules, in order of how easy they are to break:
+  - **The font must cover every icon the config uses, or a mixed bar comes back.** `.icon`
+    previously declared `'Segoe Fluent Icons', sans-serif`, but Segoe had only **25 of the 58**
+    PUA codepoints in `config.yaml.tmpl` — the other 33 were drawn by whatever Qt picked per
+    glyph, each with its own design size. Count it, don't eyeball it: parse `config.yaml.tmpl`
+    for PUA codepoints, parse the face's `cmap` (format 12 — a format-4-only parser silently
+    returns nothing for a Nerd Font), and intersect. It is **54/54** now.
+  - **Getting there meant re-picking 18 glyphs in the config, not just changing the CSS.** Five
+    (`U+E992`–`U+E995` volume, `U+F7B6` pomodoro break) were Segoe codepoints no Nerd Font has.
+    Thirteen more sat on codepoints BOTH fonts define with different artwork, so dropping Segoe
+    silently changed the picture: the weather sun became a database stack (`U+E706`), the
+    language globe a droplet (`U+E774`), the whkd keyboard a seedling (`U+EDA7`), the cpu chip a
+    stray `V` (`U+E950`), and all nine wifi icons turned into a protractor/spiral/shopping-bag
+    set. **Render candidates and LOOK before choosing** — PIL + the .ttf onto a contact sheet
+    takes a minute and is the only way to tell `wifi_strength_N` from `wifi_strength_N_alert`
+    (`F0920`-style) or `_lock` (`F0921`-style), which differ by one codepoint.
+  - `U+E70F` (win key) and `U+EBAA` (weather default) also overlap both fonts but the Nerd
+    artwork is right — a Windows logo and a cloud — so they were left alone. Overlap is a
+    prompt to look, not an instruction to replace.
+  - **Weight 500, not 400.** Qt maps `font-weight: 500` onto the real Medium face
+    (`QFontDatabase.styles()` lists Regular/Medium/SemiBold/…); Regular is too wispy at 15px.
+  - **One size everywhere**: `*` and `.icon, .btn` are both 15px and every bar widget's own
+    `font-size` was deleted (they ranged 12–20px). Popup/menu/card rules keep their own scale —
+    they are separate surfaces. Do not reintroduce a per-widget size to fix one widget; that is
+    how the drift started.
+- **Each Nerd Font face carries TWO family names, not interchangeable, pick per consumer:** name
   ID 1 (Win32) `JetBrainsMonoNL NF`, name ID 16 (typographic) `JetBrainsMonoNL Nerd Font`.
   Read them off the face's `name` table, never guess — and never from
   `System.Drawing.Text.InstalledFontCollection`, which only ever lists ID 1 and so calls a
@@ -115,7 +141,7 @@ Verify before apply:
     plugin must be the real one — under `QT_QPA_PLATFORM=offscreen` the DB is EMPTY and every
     name looks dead):
     - `JetBrainsMonoNL Nerd Font` → resolves. `Hack Nerd Font`, `Be Vietnam Pro`,
-      `Noto Sans JP`, `Segoe Fluent Icons`, `Segoe UI` → all resolve.
+      `Noto Sans JP`, `Segoe Fluent Icons`, `Segoe UI` → all resolve (only the first is used).
     - `JetBrainsMonoNL NF`, `JetBrainsMonoNL NFM`, `JetBrainsMonoNL NFP`, `… Nerd Font Mono`,
       `… Nerd Font Propo` → **none are in Qt's DB; all silently become Tahoma.** Qt lists exactly
       four Nerd Font families here: FiraCode / Hack / JetBrainsMono / JetBrainsMonoNL, all in the
@@ -136,11 +162,12 @@ Verify before apply:
   - Suffixes: bare **NF** = original advance widths, **NFM** = Nerd Font Mono (icons squeezed to
     one cell), **NFP** = Propo. `NL` = no ligatures, orthogonal to all three. Only the bare cut
     is exposed to Qt at all, so the NFM/NFP distinction is unusable from yasb.
-  - **yasb's icon rules stay on `Hack Nerd Font` — do NOT "unify" them onto JetBrainsMonoNL.**
-    Tried once (`.language-menu .icon`, `.media-widget .btn`, `.power-menu-popup .button .icon`,
-    `.systray .unpinned-visibility-btn`) and reverted: JetBrainsMono's glyphs do not fit those
-    button boxes the way Hack's do. Two Nerd Fonts in one sheet is deliberate — JetBrainsMonoNL
-    for text, Hack for icons (and as the last Nerd Font fallback everywhere else).
+  - **Hack is gone, and the old "Hack for icons" note was wrong.** That verdict came from a
+    revert of a commit whose icon rules said `JetBrainsMonoNL Nerd Font Mono`/`NFM` — names Qt
+    resolves to **Tahoma**. The badly-fitting glyphs were Tahoma's, never JetBrains'. Hack is
+    also unusable for this box's text: it has **6 of the 90** Vietnamese precomposed codepoints
+    (`U+1EA0`–`U+1EF9`) against JetBrainsMonoNL's 90, so a Vietnamese window title rendered in
+    Hack switches font mid-word (`ô` is Latin-1 and stays, `ở` is not and jumps).
   - The pre-existing line-48 rule was `'JetBrainsMono NFP, Hack Nerd Font'` — the WHOLE string
     quoted as ONE family, so it matched nothing and the bar silently ran on Qt's default
     `monospace`. Two families, two quoted strings.

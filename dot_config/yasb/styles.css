@@ -43,9 +43,10 @@
 
 /* --- Base Styles --- */
 * {
-  font-size: 14px;
+  font-size: 15px;
   color: var(--text);
-  font-family: 'JetBrainsMonoNL Nerd Font', 'Hack Nerd Font', monospace;
+  font-family: 'JetBrainsMonoNL Nerd Font', monospace;
+  font-weight: 500;
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -72,8 +73,8 @@
 /* --- Icons --- */
 .icon,
 .btn {
-  font-family: 'Segoe Fluent Icons', sans-serif;
-  font-size: 16px;
+  font-family: 'JetBrainsMonoNL Nerd Font', monospace;
+  font-size: 15px;
 }
 
 /* ========================================== */
@@ -88,12 +89,10 @@
 .cpu-widget .icon {
   color: var(--sapphire);
   font-weight: bold;
-  font-size: 14px;
 }
 
 .cpu-widget .label {
   color: var(--sapphire);
-  font-size: 12px;
   font-weight: bold;
 }
 
@@ -106,7 +105,6 @@
 }
 
 .home-widget .icon {
-  font-size: 20px;
   color: var(--overlay1);
   padding-right: 4px;
 }
@@ -237,12 +235,10 @@
 
 .language-widget .icon {
   color: var(--text);
-  font-size: 14px;
 }
 
 .language-widget .label {
   color: var(--text);
-  font-size: 12px;
 }
 
 .language-menu {
@@ -297,7 +293,7 @@
 }
 
 .language-menu .language-item .icon {
-  font-family: 'Hack Nerd Font', sans-serif;
+  font-family: 'JetBrainsMonoNL Nerd Font', monospace;
   font-size: 16px;
   margin-right: 8px;
   color: var(--text);
@@ -320,13 +316,11 @@
 .memory-widget .icon {
   color: var(--maroon);
   font-weight: bold;
-  font-size: 14px;
   padding-right: 4px;
 }
 
 .memory-widget .label {
   color: var(--maroon);
-  font-size: 12px;
   font-weight: bold;
 }
 
@@ -341,21 +335,18 @@
 
 .media-widget .label {
   font-family:
-    'Be Vietnam Pro', 'Noto Sans JP', 'JetBrainsMonoNL Nerd Font',
-    'Hack Nerd Font', sans-serif;
+    'JetBrainsMonoNL Nerd Font', 'Noto Sans JP', monospace;
   color: var(--text);
   padding: 0 4px;
 }
 
 .media-widget .btn {
-  font-family: 'Hack Nerd Font', sans-serif;
-  font-size: 16px;
+  font-family: 'JetBrainsMonoNL Nerd Font', monospace;
   padding: 0 2px;
   color: var(--subtext1);
 }
 
 .media-widget .btn.play {
-  font-size: 18px;
   color: var(--subtext1);
 }
 
@@ -378,8 +369,7 @@
 .media-menu .artist,
 .media-menu .source {
   font-family:
-    'Be Vietnam Pro', 'Noto Sans JP', 'JetBrainsMonoNL Nerd Font',
-    'Hack Nerd Font', sans-serif;
+    'JetBrainsMonoNL Nerd Font', 'Noto Sans JP', monospace;
   color: var(--text);
   font-size: 16px;
   font-weight: 500;
@@ -470,7 +460,7 @@
 
 .media-menu .app-volume-container .mute-button,
 .media-menu .app-volume-container .unmute-button {
-  font-family: 'Segoe Fluent Icons', sans-serif;
+  font-family: 'JetBrainsMonoNL Nerd Font', monospace;
   font-size: 16px;
   color: var(--text);
   margin-top: 4px;
@@ -497,12 +487,10 @@
 }
 
 .notes-widget .label {
-  font-size: 14px;
   color: var(--green);
 }
 
 .notes-widget .icon {
-  font-size: 16px;
   color: var(--green);
 }
 
@@ -615,7 +603,6 @@
 }
 
 .pomodoro-widget .icon {
-  font-size: 14px;
   padding-right: 2px;
 }
 
@@ -689,7 +676,6 @@
 
 .power-menu-widget .label {
   color: var(--maroon);
-  font-size: 18px;
 }
 
 .power-menu-popup {
@@ -714,7 +700,7 @@
 }
 
 .power-menu-popup .button .icon {
-  font-family: 'Hack Nerd Font', monospace;
+  font-family: 'JetBrainsMonoNL Nerd Font', monospace;
   font-size: 64px;
   min-width: 100px;
   padding-top: 32px;
@@ -813,7 +799,7 @@
 }
 
 .systray .unpinned-visibility-btn {
-  font-family: 'Hack Nerd Font', sans-serif;
+  font-family: 'JetBrainsMonoNL Nerd Font', monospace;
   border-radius: 4px;
   padding: 0 4px;
   color: var(--surface2);
@@ -837,7 +823,6 @@
 .volume-widget .label {
   margin-left: -2px;
   color: var(--teal);
-  font-size: 12px;
   font-weight: bold;
 }
 
@@ -880,13 +865,11 @@
 
 /* --- Weather Widget --- */
 .weather-widget .icon {
-  font-size: 18px;
   color: var(--yellow);
 }
 
 .weather-widget .label {
   color: var(--yellow);
-  font-size: 12px;
 }
 
 .weather-card {
@@ -951,12 +934,10 @@
 .wifi-widget .icon {
   color: var(--mauve);
   font-weight: bold;
-  font-size: 16px;
 }
 
 .wifi-widget .label {
   color: var(--mauve);
-  font-size: 12px;
   font-weight: bold;
 }
 
@@ -1094,7 +1075,7 @@
 }
 
 .whkd-widget .icon {
-  font-size: 18px;
+  /* size + family inherited: one bar scale */
 }
 
 .whkd-popup .edit-config-button {
@@ -1172,7 +1153,7 @@
 /* ====================== */
 
 .clock-popup.calendar .calendar-table {
-  font-family: 'Segoe UI', sans-serif;
+  font-family: 'JetBrainsMonoNL Nerd Font', monospace;
   margin: 0;
   padding: 0;
   border: none;

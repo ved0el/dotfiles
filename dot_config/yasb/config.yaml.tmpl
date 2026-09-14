@@ -194,7 +194,7 @@ widgets:
       session_target: 8
       icons:
         work: ""
-        break: ""
+        break: ""
         paused: ""
       callbacks:
         on_left: "toggle_menu"
@@ -204,8 +204,8 @@ widgets:
   language:
     type: "yasb.language.LanguageWidget"
     options:
-      label: "<span class='icon'></span> {lang[country_code]}"
-      label_alt: "<span class='icon'></span> {lang[full_name]}"
+      label: "<span class='icon'></span> {lang[country_code]}"
+      label_alt: "<span class='icon'></span> {lang[full_name]}"
       update_interval: 5
       callbacks:
         on_left: "toggle_menu"
@@ -216,11 +216,11 @@ widgets:
     options:
       label: "<span class='icon'>{icon}</span>{level}"
       volume_icons:
-        - "" # Icon for muted
-        - "" # Icon for 0-10% volume
-        - "" # Icon for 11-30% volume
-        - "" # Icon for 31-60% volume
-        - "" # Icon for 61-100% volume
+        - "󰖁" # Icon for muted
+        - "󰝟" # Icon for 0-10% volume
+        - "󰕿" # Icon for 11-30% volume
+        - "󰖀" # Icon for 31-60% volume
+        - "󰕾" # Icon for 61-100% volume
       callbacks:
         on_left: "toggle_volume_menu"
         on_right: "toggle_mute"
@@ -270,7 +270,7 @@ widgets:
   whkd:
     type: "yasb.whkd.WhkdWidget"
     options:
-      label: "<span class='icon'></span>"
+      label: "<span class='icon'></span>"
       special_keys:
         - key: "win"
           key_replace: ""
@@ -304,7 +304,7 @@ widgets:
         on_left: "toggle_card"
         on_right: "toggle_label"
       icons:
-        sunnyDay: ""
+        sunnyDay: ""
         clearNight: ""
         cloudyDay: ""
         cloudyNight: ""
@@ -323,7 +323,7 @@ widgets:
   cpu:
     type: "yasb.cpu.CpuWidget"
     options:
-      label: "<span></span> {info[percent][total]}%"
+      label: "<span></span> {info[percent][total]}%"
       update_interval: 2000
       cpu_thresholds:
         low: 25
@@ -378,11 +378,11 @@ widgets:
         on_right: "do_nothing"
       get_exact_wifi_strength: false
       wifi_icons: [
-        "",  # Icon for 0% strength
-        "",  # Icon for 1-24% strength
-        "",  # Icon for 25-49% strength
-        "",  # Icon for 50-74% strength
-        ""   # Icon for 75-100% strength
+        "󰤯",  # Icon for 0% strength
+        "󰤟",  # Icon for 1-24% strength
+        "󰤢",  # Icon for 25-49% strength
+        "󰤥",  # Icon for 50-74% strength
+        "󰤨"   # Icon for 75-100% strength
       ]
       menu_config:
         blur: true
@@ -394,16 +394,16 @@ widgets:
         offset_top: 6
         offset_left: 0
         wifi_icons_secured: [
-          "",
-          "",
-          "",
-          "",
+          "󰤡",
+          "󰤤",
+          "󰤧",
+          "󰤪",
         ]
         wifi_icons_unsecured: [
-          "",
-          "",
-          "",
-          "",
+          "󰤟",
+          "󰤢",
+          "󰤥",
+          "󰤨",
         ]
 
   notifications:
