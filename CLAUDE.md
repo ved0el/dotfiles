@@ -187,6 +187,14 @@ Verify before apply:
     still 9px) — `.icon, .btn` carries **`min-width: 18px`**. Symptom to recognise: a symmetric
     glyph rendering lopsided while the same codepoint is perfectly symmetric in a standalone
     render. Check the glyph alone before blaming the artwork.
+  - **The icon-to-text gap is built from three pieces, and every label must contribute all
+    three**: the 3px of slack `min-width: 18px` leaves after the 15px ink, `.icon`'s 2px
+    `padding-right`, and ONE space in the label template itself. Measured on screen that lands
+    at 7–12px, the spread being the first text character's left side bearing (`9` and `s` are
+    tight, `6` and `1` are roomy) — that part cannot be equalised. Two traps found while tuning
+    it: the volume label had NO separator at all (`…</span>{level}`), and pomodoro/weather/power
+    still used a bare `<span>`, so they missed `class='icon'` and with it the whole icon box.
+    Grep for `<span>` without the class and for `</span>{` after any icon edit.
   - Weak-at-15px check, done by rendering every codepoint at the REAL size next to a 3x
     blow-up: the last holdout was the pomodoro hourglass `F051F`, swapped for the solid
     stopwatch `F13AB`. The wifi 0–24% steps stay faint on purpose — that IS the strength ramp.
