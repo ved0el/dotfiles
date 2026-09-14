@@ -103,9 +103,32 @@ Verify before apply:
   manifest downloads `nerd-fonts/releases/.../JetBrainsMono.zip`, so the box ends up with 96
   registered faces — 48 of them the NL (no-ligature) cut. There is NO separate `JetBrainsMonoNL-*`
   scoop package and none is needed; don't go looking for one.
-- **ONE font draws the whole bar: `JetBrainsMonoNL Nerd Font`, weight 500, text and icons at
-  the same size.** No Hack, no Segoe Fluent Icons, no per-widget size overrides — those three
-  were exactly what made the bar look uneven. Rules, in order of how easy they are to break:
+- **Two fonts, one job each: `Noto Sans JP` for text, `JetBrainsMonoNL Nerd Font` for icons.**
+  Both at weight 500, both 15px, no per-widget size overrides. `.icon, .btn` names the Nerd Font
+  first; every other rule names Noto first with the Nerd Font behind it as the icon fallback.
+  - **Why Noto Sans JP for text**: it is the only Google family on this box that covers
+    everything the bar shows — Latin 95/95, **Vietnamese 90/90** (`U+1EA0`–`U+1EF9`) and full
+    Japanese (86 hiragana, 91 katakana, 12,731 kanji). Be Vietnam Pro and Roboto also do 90/90
+    Vietnamese but have **zero** CJK. Its digits are tabular (all advance 9.0), so the clock
+    does not jitter — check that before swapping in any proportional font.
+  - **It is NOT installed by the bootstrap** (scoop has no plain Noto Sans JP; only
+    `Noto-CJK-Mega-OTC` and the Nerd-Font-patched `Noto-NF`, which is Latin-only). A fresh box
+    therefore falls through to `JetBrainsMonoNL Nerd Font`, which still has Vietnamese 90/90 —
+    only Japanese degrades. That is why the Nerd Font stays second in every text rule.
+  - **Every icon span carries `class='icon'`** so it gets both the icon font and the padding.
+    A bare `<span>` would still find the glyph by fallback but would miss the padding and clip.
+  - **`font-weight` CANNOT change how heavy an icon looks.** Measured: the same Nerd Font icon
+    rasterises to a byte-identical bitmap in Regular/Medium/SemiBold/Bold (743 ink px for
+    `U+F2DB` in all four) because the patcher embeds one SVG per codepoint; text glyphs vary
+    24–28% across the same faces. The ONLY lever is picking a heavier icon *set*: the whole
+    weather block moved off the thin-line `nf-weather` (`U+E3xx`) range onto Material
+    (`nf-md-weather-*`), and the keyboard off outline `U+F11C` onto solid `U+F030C`.
+  - **Both bars are styled identically by construction** — `primary-bar` and `secondary-bar`
+    share `class_name: yasb-bar`, `dimensions`, `padding` and `blur_effect`; only `screens` and
+    the widget lists differ. Both monitors run at 96 DPI / 100%, so 15px is 15px on each. If a
+    monitor ever gets a different scale, that is where per-screen drift would come from — check
+    `GetDpiForMonitor`, not the stylesheet.
+  Rules, in order of how easy they are to break:
   - **The font must cover every icon the config uses, or a mixed bar comes back.** `.icon`
     previously declared `'Segoe Fluent Icons', sans-serif`, but Segoe had only **25 of the 58**
     PUA codepoints in `config.yaml.tmpl` — the other 33 were drawn by whatever Qt picked per

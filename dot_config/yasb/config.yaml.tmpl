@@ -182,7 +182,7 @@ widgets:
   pomodoro:
     type: "yasb.pomodoro.PomodoroWidget"
     options:
-      label: "<span>{icon}</span> {remaining}"
+      label: "<span class='icon'>{icon}</span> {remaining}"
       work_duration: 25
       break_duration: 5
       long_break_duration: 15
@@ -252,7 +252,7 @@ widgets:
   power_menu:
     type: "yasb.power_menu.PowerMenuWidget"
     options:
-      label: "<span>⏻</span> "
+      label: "<span class='icon'>⏻</span> "
       uptime: True
       show_user: false
       blur: false
@@ -270,7 +270,7 @@ widgets:
   whkd:
     type: "yasb.whkd.WhkdWidget"
     options:
-      label: "<span class='icon'></span> "
+      label: "<span class='icon'>󰌌</span> "
       special_keys:
         - key: "win"
           key_replace: ""
@@ -292,7 +292,7 @@ widgets:
   weather:
     type: "yasb.weather.WeatherWidget"
     options:
-      label: "<span>{icon}</span> {temp}"
+      label: "<span class='icon'>{icon}</span> {temp}"
       label_alt: "{location}: Min {min_temp}, Max {max_temp}, Humidity {humidity}"
       api_key: "$env:YASB_WEATHER_API_KEY"
       show_alerts: true
@@ -304,26 +304,26 @@ widgets:
         on_left: "toggle_card"
         on_right: "toggle_label"
       icons:
-        sunnyDay: ""
-        clearNight: ""
-        cloudyDay: ""
-        cloudyNight: ""
-        rainyDay: ""
-        rainyNight: ""
+        sunnyDay: "󰖨"
+        clearNight: "󰖔"
+        cloudyDay: "󰖐"
+        cloudyNight: "󰼱"
+        rainyDay: "󰖗"
+        rainyNight: "󰖖"
         # snowyIcyDay: "󰼶"
         # snowyIcyNight: "󰼶"
-        blizzardDay: "󰼶"
-        blizzardNight: "󰼶"
-        foggyDay: ""
-        foggyNight: ""
-        thunderstormDay: ""
-        thunderstormNight: ""
-        default: ""
+        blizzardDay: "󰖘"
+        blizzardNight: "󰖘"
+        foggyDay: "󰖑"
+        foggyNight: "󰖑"
+        thunderstormDay: "󰖓"
+        thunderstormNight: "󰙾"
+        default: "󰖐"
 
   cpu:
     type: "yasb.cpu.CpuWidget"
     options:
-      label: "<span></span> {info[percent][total]}%"
+      label: "<span class='icon'></span> {info[percent][total]}%"
       update_interval: 2000
       cpu_thresholds:
         low: 25
@@ -347,7 +347,7 @@ widgets:
   memory:
     type: "yasb.memory.MemoryWidget"
     options:
-      label: "<span></span> {virtual_mem_percent}%"
+      label: "<span class='icon'></span> {virtual_mem_percent}%"
       label_alt: "<span>MEM</span> {virtual_mem_free}/{virtual_mem_total}"
       update_interval: 5000
       callbacks:
@@ -409,7 +409,7 @@ widgets:
   notifications:
     type: "yasb.notifications.NotificationsWidget"
     options:
-      label: "<span></span> {count}"
+      label: "<span class='icon'></span> {count}"
       label_alt: "{count} notifications"
       hide_empty: false
       tooltip: true
