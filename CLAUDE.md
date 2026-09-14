@@ -123,6 +123,20 @@ Verify before apply:
     15px and its ink HEIGHT varies 10–15px per glyph, so icons look different sizes next to each
     other AND next to the text, no matter what `font-size` you set. That is the size mismatch;
     it is a property of the font, not of the stylesheet.
+  - **Not every Segoe glyph is the same size — check the ink box, the font name is not enough.**
+    Two traps found on the secondary bar:
+    - `E871`–`E874`/`E701` (the old wifi ramp) are *signal-strength* art: the ink shrinks with
+      the level, **6px tall at 1–24% against 15px at full**, so the icon changed size as the
+      signal moved. `E904`–`E908` is the same five-step ramp drawn in a constant 15×17 box.
+    - `EEA0` (memory) and `EDA7` (keyboard) were the only glyphs **18px wide against a 17px
+      advance**, so they spilled. `E964` and `E765` are the 17-wide equivalents.
+    Measure with `ImageFont.getbbox` before adopting a codepoint; `inkH` 15–17 and `inkW` ≤ the
+    advance is the bar to clear.
+  - **Bar text is 16px against the 17px icons**, and every per-widget `font-weight` on a bar
+    widget is deleted. Nine of them (`.cpu-widget`, `.memory-widget`, `.volume-widget`,
+    `.wifi-widget`, `.komorebi-active-layout`) carried `bold`/`600` — which is why the SECONDARY
+    monitor's bar looked heavier than the primary's even though both read the same stylesheet.
+    Per-widget weight is the same trap as per-widget size: delete it, don't tune it.
   - **Segoe has no weather set** — swept `E9C0`–`EA3F` and it is empty; Windows' weather icons
     live in the Weather app's own font. So the weather block is the ONE widget still drawn by
     the Nerd Font, and the padding + `U+00A0` hacks stay for its sake. Everything else on both

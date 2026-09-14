@@ -43,7 +43,7 @@
 
 /* --- Base Styles --- */
 * {
-  font-size: 15px;
+  font-size: 16px;
   color: var(--text);
   font-family: 'Noto Sans JP', 'JetBrainsMonoNL Nerd Font', sans-serif;
   font-weight: 400;
@@ -96,12 +96,10 @@
 /* CPU */
 .cpu-widget .icon {
   color: var(--sapphire);
-  font-weight: bold;
 }
 
 .cpu-widget .label {
   color: var(--sapphire);
-  font-weight: bold;
 }
 
 /* ==================== */
@@ -149,7 +147,6 @@
 /* --- Komorebi Active Layout --- */
 .komorebi-active-layout .label {
   font-size: 18px;
-  font-weight: bold;
   padding: 0;
   padding-right: 12px;
   border-radius: 6px;
@@ -196,7 +193,6 @@
 .komorebi-workspaces .offline-status {
   color: var(--text);
   padding: 0 4px;
-  font-weight: 600;
 }
 
 .komorebi-workspaces .ws-btn {
@@ -323,13 +319,11 @@
 
 .memory-widget .icon {
   color: var(--maroon);
-  font-weight: bold;
   padding-right: 4px;
 }
 
 .memory-widget .label {
   color: var(--maroon);
-  font-weight: bold;
 }
 
 /* ====================== */
@@ -831,7 +825,6 @@
 .volume-widget .label {
   margin-left: -2px;
   color: var(--teal);
-  font-weight: bold;
 }
 
 /* --- Volume Widget --- */
@@ -941,12 +934,10 @@
 /* WIFI */
 .wifi-widget .icon {
   color: var(--mauve);
-  font-weight: bold;
 }
 
 .wifi-widget .label {
   color: var(--mauve);
-  font-weight: bold;
 }
 
 .wifi-menu {
