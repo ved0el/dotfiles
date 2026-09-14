@@ -99,6 +99,15 @@ Verify before apply:
   nothing reinstalls. The Nerd Font is the exception: a font ships no command, so it is guarded on
   `scoop list` instead, and it needs the `nerd-fonts` bucket added first. Fonts install per-user
   (HKCU), no elevation.
+- **Bar text is `Noto Sans JP`; the Nerd Font sits behind it and stays PRIMARY on icon rules.**
+  Noto is the only Google family installed here that covers everything the bar shows — Latin
+  95/95, **Vietnamese 90/90** (`U+1EA0`–`U+1EF9`) and full Japanese (86 hiragana, 91 katakana,
+  12,731 kanji); Be Vietnam Pro and Roboto match it on Vietnamese but have ZERO CJK. Its digits
+  are tabular (every one advances 9.0), so the clock does not jitter — verify that before
+  swapping in any proportional font. It steals none of the config's icon codepoints, so it is
+  safe in front. It is NOT installed by the bootstrap (scoop has no plain Noto Sans JP), so a
+  fresh box falls through to the Nerd Font and loses only Japanese — which is why the Nerd Font
+  stays second in every text rule.
 - **The two JetBrains declarations point at the NL (no-ligature) Nerd Font cut, and they are
   spelled DIFFERENTLY on purpose** — `dot_config/yasb/styles.css` uses the typographic name
   `JetBrainsMonoNL Nerd Font` (Qt matches name ID 16), `dot_config/komorebi/komorebi.bar.json`

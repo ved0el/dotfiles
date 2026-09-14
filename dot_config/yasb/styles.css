@@ -45,7 +45,7 @@
 * {
   font-size: 14px;
   color: var(--text);
-  font-family: 'JetBrainsMonoNL Nerd Font', 'Hack Nerd Font', monospace;
+  font-family: 'Noto Sans JP', 'JetBrainsMonoNL Nerd Font', sans-serif;
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -74,14 +74,13 @@
 .btn {
   font-family: 'JetBrainsMonoNL Nerd Font', sans-serif;
   font-size: 15px;
-  /* a Nerd Font icon inks past its advance; this reclaims it wherever .icon lands on a
-     real QLabel. Inline spans ignore padding, so those labels carry a trailing U+00A0. */
-  /* min-width holds the whole 15px ink: the box is otherwise the 9px advance and a
-     right-aligned label clips the glyph's LEFT edge. The 3px of slack it leaves plus
-     padding plus the label's own space is the icon-to-text gap, ~9px. */
+  /* A Nerd Font icon inks ~15px inside a 9px advance. min-width holds the whole ink —
+     without it a right-aligned label clips the glyph's LEFT edge, not its right. The slack
+     min-width leaves, plus this padding, plus the one space in the label template, IS the
+     icon-to-text gap (~7-13px; the spread is the first text glyph's side bearing). */
   min-width: 18px;
   padding-left: 1px;
-  padding-right: 2px;
+  padding-right: 4px;
 }
 
 /* ========================================== */
@@ -1150,7 +1149,7 @@
 /* ====================== */
 
 .clock-popup.calendar .calendar-table {
-  font-family: 'Segoe UI', sans-serif;
+  font-family: 'Noto Sans JP', 'JetBrainsMonoNL Nerd Font', sans-serif;
   margin: 0;
   padding: 0;
   border: none;
