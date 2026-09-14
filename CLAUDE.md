@@ -103,9 +103,28 @@ Verify before apply:
   manifest downloads `nerd-fonts/releases/.../JetBrainsMono.zip`, so the box ends up with 96
   registered faces — 48 of them the NL (no-ligature) cut. There is NO separate `JetBrainsMonoNL-*`
   scoop package and none is needed; don't go looking for one.
-- **Two fonts, one job each: `Noto Sans JP` for text, `JetBrainsMonoNL Nerd Font` for icons.**
-  Both at weight 500, both 15px, no per-widget size overrides. `.icon, .btn` names the Nerd Font
-  first; every other rule names Noto first with the Nerd Font behind it as the icon fallback.
+- **Three fonts, one job each: `Noto Sans JP` for text (weight 400), `Segoe Fluent Icons` for
+  icons, `JetBrainsMonoNL Nerd Font` only as the icon fallback.** All 15px, no per-widget size
+  overrides. `.icon, .btn` names Segoe first; every other rule names Noto first with the Nerd
+  Font behind it.
+  - **Icons are Segoe because a Nerd Font can never size-match UI text.** Measured at 15px:
+    | | advance | ink W | spill | ink H |
+    |---|---|---|---|---|
+    | Noto Sans JP cap `M` | 12 | 12 | 0 | 12 |
+    | Segoe icon (any) | **15** | **15** | **0** | 13–15 |
+    | Nerd Font icons | 9 | 12–15 | **3–6** | 10–15 |
+    Segoe is drawn on a uniform em box — advance equals ink, every glyph the same optical size,
+    nothing to clip. The Nerd Font's advance is the mono cell (9px) while its icon ink is up to
+    15px and its ink HEIGHT varies 10–15px per glyph, so icons look different sizes next to each
+    other AND next to the text, no matter what `font-size` you set. That is the size mismatch;
+    it is a property of the font, not of the stylesheet.
+  - **Segoe has no weather set** — swept `E9C0`–`EA3F` and it is empty; Windows' weather icons
+    live in the Weather app's own font. So the weather block is the ONE widget still drawn by
+    the Nerd Font, and the padding + `U+00A0` hacks stay for its sake. Everything else on both
+    bars is Segoe: home `E80F`, keyboard `EDA7`, cpu `E950`, memory `EEA0`, wifi `E871`–`E874`/
+    `E701`, volume `E74F`/`E992`–`E995`, globe `E774`, stopwatch `E916`, pause `E769`, bell
+    `EA8F`. Find new ones by rendering a Segoe range to a contact sheet and looking — the names
+    in Microsoft's docs are not in the font.
   - **Why Noto Sans JP for text**: it is the only Google family on this box that covers
     everything the bar shows — Latin 95/95, **Vietnamese 90/90** (`U+1EA0`–`U+1EF9`) and full
     Japanese (86 hiragana, 91 katakana, 12,731 kanji). Be Vietnam Pro and Roboto also do 90/90
@@ -117,7 +136,7 @@ Verify before apply:
     only Japanese degrades. That is why the Nerd Font stays second in every text rule.
   - **Every icon span carries `class='icon'`** so it gets both the icon font and the padding.
     A bare `<span>` would still find the glyph by fallback but would miss the padding and clip.
-  - **`font-weight` CANNOT change how heavy an icon looks.** Measured: the same Nerd Font icon
+  - **`font-weight` CANNOT change how heavy a NERD FONT icon looks.** Measured: the same Nerd Font icon
     rasterises to a byte-identical bitmap in Regular/Medium/SemiBold/Bold (743 ink px for
     `U+F2DB` in all four) because the patcher embeds one SVG per codepoint; text glyphs vary
     24–28% across the same faces. The ONLY lever is picking a heavier icon *set*: the whole
