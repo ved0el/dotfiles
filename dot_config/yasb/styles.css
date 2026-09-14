@@ -821,7 +821,6 @@
 }
 
 .volume-widget .label {
-  margin-left: -2px;
   color: var(--teal);
   font-weight: bold;
 }

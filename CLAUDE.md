@@ -138,7 +138,24 @@ Verify before apply:
   - Hack has **6 of the 90** Vietnamese precomposed codepoints against JetBrainsMono's 90, so
     Vietnamese window titles switch font mid-word in it. Noto Sans JP covers Latin + all 90 +
     full Japanese and has tabular digits, if a text font is ever wanted.
-  - `.volume-widget .label` carries `margin-left: -2px`; it is deliberate, not a bug.
+  - **Icons do NOT share the text's line, and no CSS value fixes that — it is the icon font.**
+    Ink band relative to the shared baseline (0 = sitting on it), measured with the real faces:
+
+    | | ink bottom | ink top |
+    |---|---|---|
+    | text `M`/`8` (JetBrainsMonoNL 14px) | 0 | 10 |
+    | text `x` | 0 | 8 |
+    | **Segoe icons 15px** | 0 | **13–15** |
+    | **Nerd Font icons 14px** | **−1 … −2** | **11–12** |
+
+    Segoe is a UI icon font: every glyph fills its em box and sits ON the baseline, so it towers
+    3–5px over the cap line no matter what size you pick (shrinking it to match means a 10px
+    icon). Nerd Font icons are patched onto the TEXT font's own metrics — they dip 1–2px below
+    the baseline and stop 1–2px over the cap, i.e. they are centred on the text band. **If
+    shared line height is what you want, the icon font has to be the Nerd Font**, and the price
+    is the 6.6px advance overflow (see the reverted rework) which needs a space after each icon.
+    Qt offers no `vertical-align`/`line-height` lever on an inline `<span>` to split the
+    difference.
 - **The archive extractor is NOT managed here.** NanaZip is installed by hand via winget
   (`M2Team.NanaZip`), which puts a `7z` app-alias on PATH. An earlier revision made the
   bootstrap `scoop install nanazip`, shim `7z` to its console exe and set `scoop config
