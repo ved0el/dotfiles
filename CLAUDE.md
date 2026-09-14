@@ -99,170 +99,6 @@ Verify before apply:
   nothing reinstalls. The Nerd Font is the exception: a font ships no command, so it is guarded on
   `scoop list` instead, and it needs the `nerd-fonts` bucket added first. Fonts install per-user
   (HKCU), no elevation.
-- **Bar text is `Noto Sans JP`; the Nerd Font sits behind it and stays PRIMARY on icon rules.**
-  Noto is the only Google family installed here that covers everything the bar shows — Latin
-  95/95, **Vietnamese 90/90** (`U+1EA0`–`U+1EF9`) and full Japanese (86 hiragana, 91 katakana,
-  12,731 kanji); Be Vietnam Pro and Roboto match it on Vietnamese but have ZERO CJK. Its digits
-  are tabular (every one advances 9.0), so the clock does not jitter — verify that before
-  swapping in any proportional font. It steals none of the config's icon codepoints, so it is
-  safe in front. It is NOT installed by the bootstrap (scoop has no plain Noto Sans JP), so a
-  fresh box falls through to the Nerd Font and loses only Japanese — which is why the Nerd Font
-  stays second in every text rule.
-- **The two JetBrains declarations point at the NL (no-ligature) Nerd Font cut, and they are
-  spelled DIFFERENTLY on purpose** — `dot_config/yasb/styles.css` uses the typographic name
-  `JetBrainsMonoNL Nerd Font` (Qt matches name ID 16), `dot_config/komorebi/komorebi.bar.json`
-  uses the Win32 name `JetBrainsMonoNL NF` (komorebi goes through DirectWrite = ID 1). Same
-  font, two keys; `komorebi-bar --fonts` prints the names komorebi can actually see. Both slots
-  were dead before: styles.css had `'JetBrainsMono NFP, Hack Nerd Font'` — the WHOLE string
-  quoted as ONE family, so it matched nothing and the bar ran on Qt's default monospace — and
-  komorebi asked for `JetBrains Mono`, the plain family, which is not installed here (only the
-  Nerd Font patch is). Icons use the same family — see the ink table below.
-- **Sizes are set by measured INK, never by `font-size`.** Each glyph fills a different share of
-  its em box, so equal `font-size` is not equal apparent size. Reference: the text cap/digit at
-  14px inks **11px tall, band `(0, 11)`**. Everything is tuned against that.
-
-  | rule | px | ink | why |
-  |---|---|---|---|
-  | `*` (text) | 14 | 11 | the reference |
-  | `.icon, .btn` | 13 | ~11 | shared default; 15px made every icon overshoot the cap |
-  | `.weather-widget .icon` | 17 | 12 | the cloud inks only 9 at 13px |
-  | `.whkd-widget .icon` | 17 | 12 | keyboard, same problem |
-  | `.media-widget .btn` | 18 | 12 | transport glyphs ink 8 at 13px |
-  | `.systray .unpinned-visibility-btn` | 18 | 12 | chevrons, same |
-  | `.pomodoro-widget .icon` | 15 | 13 | |
-  | `.notification-widget .icon` | 13 | 13 | solid bell `F009A`; the outline+badge `EB9A` reads smaller at the same height |
-  | `.language-widget .icon` | 14 | 12 | |
-  | `.home-widget .icon` | 19 | 18 | control, thin radial glyph — needs +2 over layout to LOOK equal |
-  | `.komorebi-active-layout .label` | 20 | 16 | control, solid blocks |
-  | `.power-menu-widget .icon` | 23 | 17 | control |
-
-  The first four exist because those glyphs are unusually small in their em box — that is a
-  normalisation, not the per-widget drift the sweep removed. Add one only with a measured ink
-  number next to it.
-- **`min-width` is per widget too, sized to that icon's own ink + 2.** The shared `18px` left
-  2px of slack behind the 16px-wide cloud but 6px behind a 12px-wide glyph, and that 4px IS the
-  uneven icon-to-text gap. Narrow icons carry `min-width: 14px`.
-- **A glyph inside `<span class='icon'>` takes `.icon`'s `font-size` and `color`, NOT the
-  widget's `.label` rule.** This cost four rounds on the power button: `font-size` was raised
-  14→17→22→29 on `.power-menu-widget .label` with no visible change at all, because the glyph
-  was still reading `.icon`'s 13px. Style a widget's icon with `.<widget> .icon`; writing it on
-  `.label` fails silently. Same trap for `color` — the red had to be restated on `.icon`.
-- **yasb's volume widget can freeze, and it is NOT a config bug.** Proved it by driving the real
-  endpoint with yasb's own bundled pycaw (`library.zip` + `lib` on `sys.path`; synthetic
-  `keybd_event` volume keys do NOT move the system volume, so they make a useless harness): with
-  the stock untouched label, the system went to 55% while the bar sat at 37%. **`yasbc reload`
-  does not re-hook the audio notifications — `yasbc stop` then `yasbc start` does.** Any time a
-  readout looks stuck, restart before editing anything.
-- **`yasbc reload` is also required after changing a label's STRUCTURE**, not just its text:
-  yasb splits the label on `(<span…</span>)` and builds one QLabel per part at startup, so
-  adding or removing a span while it is running leaves the old widget list in place and the
-  value freezes.
-- **cpu/memory/wifi/volume are TEXT tags `C:` `R:` `W:` `V:`, not icons.** Every glyph in this
-  font that sits in the text's ink band is some flavour of chip, so cpu and ram could never be
-  told apart at bar size; the distinct ones float 2–3px out of band. A tag is unambiguous AND
-  aligned by construction, because it is text. Do not "improve" this back into icons.
-- **The bar fonts/icons were reworked, reverted once, then redone — read the history first.**
-  `b1d8ccf`..`aef0e66` is the reverted attempt; everything after `d09e58e` is the current one.
-  What was MEASURED across both and is still true:
-  - Qt (yasb) indexes a font's name ID 16 ONLY — `JetBrainsMonoNL Nerd Font` resolves, while
-    `… NF`/`NFM`/`NFP`/`… Nerd Font Mono` all silently become **Tahoma**.
-    `System.Drawing.Text.InstalledFontCollection` shows the opposite (ID 1 only), so it is the
-    wrong tool to check with; ask Qt through yasb's bundled PyQt6, under the REAL platform
-    plugin (`QT_QPA_PLATFORM=offscreen` reports an empty font DB).
-  - A Nerd Font icon inks up to 6.6px past its 9px mono advance, so it clips or overlaps unless
-    given the next cell. Segoe Fluent Icons is advance == ink on a uniform em box — that is why
-    this theme uses it for icons and why it cannot be swapped for a Nerd Font without also
-    re-picking every codepoint.
-  - Segoe has no weather set at all (swept `E9C0`–`EA3F`), which is why the weather icons are
-    Nerd Font ones even though the rest are Segoe.
-  - `font-weight` cannot change how heavy a Nerd Font icon looks: the same glyph rasterises
-    byte-identically in Regular/Medium/SemiBold/Bold.
-  - Hack has **6 of the 90** Vietnamese precomposed codepoints against JetBrainsMono's 90, so
-    Vietnamese window titles switch font mid-word in it. Noto Sans JP covers Latin + all 90 +
-    full Japanese and has tabular digits, if a text font is ever wanted.
-  - **Icons do NOT share the text's line, and no CSS value fixes that — it is the icon font.**
-    Ink band relative to the shared baseline (0 = sitting on it), measured with the real faces:
-
-    | | ink bottom | ink top |
-    |---|---|---|
-    | text `M`/`8` (JetBrainsMonoNL 14px) | 0 | 10 |
-    | text `x` | 0 | 8 |
-    | **Segoe icons 15px** | 0 | **13–15** |
-    | **Nerd Font icons 14px** | **−1 … −2** | **11–12** |
-
-    Segoe is a UI icon font: every glyph fills its em box and sits ON the baseline, so it towers
-    3–5px over the cap line no matter what size you pick (shrinking it to match means a 10px
-    icon). Nerd Font icons are patched onto the TEXT font's own metrics — they dip 1–2px below
-    the baseline and stop 1–2px over the cap, i.e. they are centred on the text band. Qt offers
-    no `vertical-align`/`line-height` lever on an inline `<span>` to split the difference, so
-    **the icons are JetBrainsMonoNL Nerd Font too** — that shared line is the whole reason.
-    What that costs, and what pays it:
-    - The glyph inks ~6.6px past its 9px advance. `.icon, .btn` carries `padding-right: 6px`
-      for the widgets where `.icon` is a real QLabel; labels that END at the span carry a
-      trailing **U+00A0** because an inline span ignores padding. `&nbsp;` does NOT work — yasb
-      renders the literal text.
-    - Segoe and Nerd Font define many of the SAME PUA codepoints with different artwork, so the
-      switch is not a font-family edit: 36 codepoints had to be re-picked (weather onto
-      `nf-md-weather-*`, volume onto `nf-md-volume-*`, the wifi ramp onto
-      `wifi_strength_N`/`_N_lock`, globe, keyboard, cpu, pomodoro break). Coverage is verified
-      **53/53** by intersecting the config's PUA set with the face's `cmap`; re-run that check
-      after touching any icon.
-    - Every icon-bearing `<span>` carries `class='icon'`, otherwise it finds the glyph by
-      fallback but misses the padding and gets clipped.
-  - **A Nerd Font is five icon families stacked in one file, and they do NOT share a stroke
-    weight.** Audit by rendering every codepoint the config uses at the REAL bar size next to a
-    3x blow-up — thin line art (Codicon `EBxx`, Font Awesome `F0xx`/`F2xx`) turns to mush at
-    15px while Material (`nf-md-*`, the `F0xxx`/`F1xxx` range) stays solid. Seven one-off
-    glyphs were moved onto their Material equivalents for exactly that reason: home
-    `F2DC→F02DC`, cpu `F2DB→F035B`, bell `EB9A→F009A`, pomodoro work `F252→F051F`, break
-    `F0F4→F0176`, paused `F2F2→F03E4`, globe `F0AC→F059F`.
-  - **The whole set is now Material (`nf-md-*`).** The rule is one STROKE WEIGHT, not one
-    family — mixing families is fine when the result is coherent — but after comparing each
-    slot side by side, Material won every one, including the komorebi layouts: its `view-*`
-    block (`F056A`–`F0576`) maps onto them exactly (`F056E` bsp, `F0576` columns, `F056A` rows,
-    `F0570` grid, `F056B`/`F0575` stacks, `F056C` ultrawide, `F0574` right-main), and it is
-    solid where Codicon was hairline. cpu/memory use Material's own pair — `nf-md-chip`
-    `F061A` and `nf-md-memory` `F035B` — rather than a Codicon RAM stick.
-  - **A too-narrow icon QLabel clips the glyph's LEFT side, not its right.** The wifi wedge was
-    losing its left corner: ink is 15px wide in a 9px advance, and that label is right-aligned,
-    so the overflow was cut off the leading edge. `padding` alone does not fix it (the box is
-    still 9px) — `.icon, .btn` carries **`min-width: 18px`**. Symptom to recognise: a symmetric
-    glyph rendering lopsided while the same codepoint is perfectly symmetric in a standalone
-    render. Check the glyph alone before blaming the artwork.
-  - **The icon-to-text gap is built from three pieces, and every label must contribute all
-    three**: the 3px of slack `min-width: 18px` leaves after the 15px ink, `.icon`'s 2px
-    `padding-right`, and ONE space in the label template itself. Measured on screen that lands
-    at 7–12px, the spread being the first text character's left side bearing (`9` and `s` are
-    tight, `6` and `1` are roomy) — that part cannot be equalised. Two traps found while tuning
-    it: the volume label had NO separator at all (`…</span>{level}`), and pomodoro/weather/power
-    still used a bare `<span>`, so they missed `class='icon'` and with it the whole icon box.
-    Grep for `<span>` without the class and for `</span>{` after any icon edit.
-  - **Align icons by their INK BAND, measured, not by eye.** Compute ink top/bottom relative to
-    the baseline (`ascent - bbox`) for the text cap and for every icon: the text cap is `(0, 11)`
-    here, and an icon one pixel off that — `F0EE0` at `(-1, 12)` — reads as visibly floating
-    next to a neighbour that sits at `(0, 11)`. That is why cpu is `F061A` and not the `64`
-    chip: same band as the RAM stick and the text, and it survives 15px where `F0EE0`'s digits
-    turn to mush. Check the band before adopting a codepoint, the same way you check the cmap.
-  - **`min-width`/`padding` belong to `.icon`, NOT to `.icon, .btn`.** `.btn` is the media
-    transport, which sets its own tight `padding: 0 2px`; handing it an 18px min-width spreads
-    the three controls apart.
-  - **cpu and memory use the TEXT tags `CPU` / `RAM`, not icons — on purpose.** Every candidate
-    in this font that sits in the text's ink band is some flavour of chip (`F061A`, `F035B`,
-    `F0EE0`, `F0A0C`…), so the two readouts could never be told apart at 15px; the ones that
-    ARE distinct (`F4BC`, `F2DB`) sit 2–3px out of band and float. A tag is both unambiguous
-    and perfectly aligned, because it is text. Do not "improve" this back into icons without
-    first finding two in-band glyphs a stranger can name.
-  - **An icon has to be readable AS ITS THING, not just readable.** cpu and memory were both
-    Material chips (`F061A`/`F035B`) and indistinguishable at 15px. cpu is now `F0EE0`, which
-    spells `64` inside the chip, and memory is `EFC5` — the only actual RAM stick in the whole
-    font, Codicon rather than Material. That is the case the "one weight, not one family" rule
-    exists for: it is filled, so it sits with the Material set fine.
-  - **`.komorebi-active-layout .label` sits between the layout icon and the window title**, so
-    its `padding-right` IS the title's left gap — it was 12px, now 6px. It also carried
-    `font-size: 18px` + `bold`, two more strays from the per-widget era.
-  - Weak-at-15px check, done by rendering every codepoint at the REAL size next to a 3x
-    blow-up: the last holdout was the pomodoro hourglass `F051F`, swapped for the solid
-    stopwatch `F13AB`. The wifi 0–24% steps stay faint on purpose — that IS the strength ramp.
 - **The archive extractor is NOT managed here.** NanaZip is installed by hand via winget
   (`M2Team.NanaZip`), which puts a `7z` app-alias on PATH. An earlier revision made the
   bootstrap `scoop install nanazip`, shim `7z` to its console exe and set `scoop config
@@ -500,6 +336,116 @@ apply only on Windows+wm (gated like skhd/yabai).
 - **Seelen UI conflict**: komorebi fights any concurrent tiling WM (`seelen-ui.exe`). Keep
   Seelen for its dock but turn OFF its window manager (this box has
   `@seelen/window-manager: enabled:false`), or neither tiles cleanly.
+
+#### yasb bar: fonts, icons, sizing
+One text font and one icon font, both declared in `dot_config/yasb/styles.css`; the icon
+codepoints live in `dot_config/yasb/config.yaml.tmpl`. Run `yasbc reload` after any change here,
+and read the two restart traps at the end before concluding something is broken.
+
+- **Text = `Noto Sans JP`, icons = `JetBrainsMonoNL Nerd Font`, and the Nerd Font is also second
+  in every text rule.** Noto is the only Google family installed here that covers everything the
+  bar shows: Latin 95/95, **Vietnamese 90/90** (`U+1EA0`-`U+1EF9`), full Japanese (86 hiragana,
+  91 katakana, 12,731 kanji). Be Vietnam Pro and Roboto match it on Vietnamese but have ZERO
+  CJK; Hack has **6 of the 90** Vietnamese codepoints, so Vietnamese window titles switch font
+  mid-word in it. Noto's digits are tabular (all advance 9.0) so the clock does not jitter -
+  check that before swapping in any proportional font. Noto is NOT installed by the bootstrap
+  (scoop has no plain Noto Sans JP), so a fresh box falls through to the Nerd Font and loses
+  only Japanese.
+- **Icons are a Nerd Font rather than a UI icon font because only a Nerd Font shares the text's
+  line.** Ink band relative to the shared baseline (0 = sitting on it):
+
+  | | ink bottom | ink top |
+  |---|---|---|
+  | text cap `M`/`8` | 0 | 11 |
+  | text `x` | 0 | 8 |
+  | Segoe Fluent Icons | 0 | **13-15** |
+  | Nerd Font icons | **-1 ... -2** | **11-12** |
+
+  Segoe fills its em box and sits ON the baseline, so it towers 3-5px over the cap line at any
+  size (shrinking it to match means a 10px icon). Nerd Font icons are patched onto the text
+  font's own metrics and straddle the text band instead. Qt offers no `vertical-align` or
+  `line-height` lever on an inline `<span>`, so the font IS the fix. The price: the glyph inks
+  ~6.6px past its 9px advance (see `min-width` below), and Segoe and Nerd Font define many of
+  the SAME PUA codepoints with DIFFERENT artwork, so 36 of them had to be re-picked. Verify
+  coverage by intersecting the config's PUA set with the face's `cmap` after any icon edit.
+- **The family name is spelled differently per consumer, on purpose.** `styles.css` uses the
+  typographic name `JetBrainsMonoNL Nerd Font` (Qt matches name **ID 16** only - `... NF`,
+  `NFM`, `NFP`, `... Nerd Font Mono` all silently become **Tahoma**); `komorebi.bar.json` uses
+  the Win32 name `JetBrainsMonoNL NF` (DirectWrite = **ID 1**).
+  `System.Drawing.Text.InstalledFontCollection` lists ID 1 only, so it is the WRONG tool to
+  check Qt with - ask Qt through yasb's bundled PyQt6, under the real platform plugin
+  (`QT_QPA_PLATFORM=offscreen` reports an empty font DB). `komorebi-bar --fonts` prints the
+  names komorebi can actually see.
+- **Sizes are set by measured INK, never by `font-size`** - each glyph fills a different share
+  of its em box. Reference: the text cap/digit at 14px inks **11px tall, band `(0, 11)`**.
+
+  | rule | px | ink | why |
+  |---|---|---|---|
+  | `*` (text) | 14 | 11 | the reference |
+  | `.icon, .btn` | 13 | ~11 | shared default; 15px made every icon overshoot the cap |
+  | `.weather-widget .icon` | 17 | 12 | the cloud inks only 9 at 13px |
+  | `.whkd-widget .icon` | 17 | 12 | keyboard, same |
+  | `.media-widget .btn` | 18 | 12 | transport glyphs ink 8 at 13px |
+  | `.systray .unpinned-visibility-btn` | 18 | 12 | chevrons, same |
+  | `.pomodoro-widget .icon` | 15 | 13 | solid stopwatch `F13AB` |
+  | `.notification-widget .icon` | 13 | 13 | solid bell `F009A`; outline+badge `EB9A` reads smaller at the same height |
+  | `.language-widget .icon` | 14 | 12 | |
+  | `.home-widget .icon` | 19 | 18 | control; thin radial glyph, needs +2 over layout to LOOK equal |
+  | `.komorebi-active-layout .label` | 20 | 16 | control; its `padding-right` IS the window title's left gap |
+  | `.power-menu-widget .icon` | 23 | 17 | control; `F0425` uniquely sits at band bottom 0 at EVERY size |
+
+  The first four are normalisation for glyphs that are unusually small in their em box - not the
+  per-widget drift that was swept out. Add a row only with a measured ink number beside it.
+- **Align by ink band, measured, not by eye.** `ascent - bbox` for the text cap and for the
+  candidate glyph; one pixel off reads as visibly floating (`F0EE0` at `(-1, 12)` beside a
+  neighbour at `(0, 11)`). Check the band the same way you check the `cmap`.
+- **`min-width` lives on `.icon` alone, sized per widget to that icon's ink + 2.** A too-narrow
+  icon QLabel clips the glyph's **LEFT** side, not its right: the wifi wedge inks 15px inside a
+  9px advance and its label is right-aligned, so the overflow was cut off the leading edge.
+  Symptom to recognise - a symmetric glyph rendering lopsided while the same codepoint is
+  symmetric in a standalone render. The shared `18px` left 2px of slack behind a 16px-wide cloud
+  but 6px behind a 12px glyph, and that 4px WAS the uneven icon-to-text gap; narrow icons carry
+  `min-width: 14px`. Do NOT put it on `.icon, .btn` - `.btn` is the media transport with its own
+  tight `padding: 0 2px`, and an 18px box spreads the three controls apart.
+- **The icon-to-text gap is three pieces and every label must contribute all three**: the slack
+  `min-width` leaves after the ink, `.icon`'s `padding-right: 4px`, and ONE space in the label
+  template. That lands at 7-12px; the spread is the first text character's left side bearing
+  (`9`/`s` tight, `6`/`1` roomy) and cannot be equalised. Labels that END at the span carry a
+  trailing **U+00A0**, because an inline span ignores padding - `&nbsp;` does NOT work, yasb
+  renders the literal text. Every icon-bearing `<span>` needs `class='icon'` or it finds the
+  glyph by fallback and misses the box entirely. Grep for `<span>` without the class, and for
+  `</span>{`, after any icon edit.
+- **A glyph inside `<span class='icon'>` takes `.icon`'s `font-size` and `color`, NOT the
+  widget's `.label` rule.** This cost four rounds on the power button: it was raised
+  14 -> 17 -> 22 -> 29 on `.power-menu-widget .label` with no visible change at all, because the
+  glyph was still reading `.icon`'s 13px. Style a widget's icon with `.<widget> .icon`; writing
+  it on `.label` fails silently - same trap for `color`, the red had to be restated on `.icon`.
+- **cpu/memory/wifi/volume are the TEXT tags `C:` `R:` `W:` `V:`, not icons.** Every glyph in
+  this font that sits in the text's ink band is some flavour of chip (`F061A`, `F035B`, `F0EE0`,
+  `F0A0C` ...), so cpu and ram could never be told apart at bar size; the ones that ARE distinct
+  (`F4BC`, `F2DB`) sit 2-3px out of band and float. A tag is unambiguous AND aligned by
+  construction, because it is text. Do not "improve" this back into icons without first finding
+  two in-band glyphs a stranger can name.
+- **The icon set is Material (`nf-md-*`) throughout.** The rule is one STROKE WEIGHT, not one
+  family - mixing is fine when the result stays coherent - but Material won every slot on
+  comparison, including the komorebi layouts: its `view-*` block maps onto them exactly
+  (`F056E` bsp, `F0576` columns, `F056A` rows, `F0570` grid, `F056B`/`F0575` stacks, `F056C`
+  ultrawide, `F0574` right-main), and it is solid where Codicon was hairline. A Nerd Font is
+  FIVE icon families in one file with different stroke weights: audit by rendering every
+  codepoint at the real bar size next to a 3x blow-up - Codicon `EBxx` and Font Awesome
+  `F0xx`/`F2xx` line art turns to mush at 13-15px. `font-weight` cannot help: the same icon
+  rasterises byte-identically in Regular/Medium/SemiBold/Bold.
+- **Two restart traps - check these BEFORE editing config when a readout looks wrong:**
+  - **A frozen volume is not a config bug.** With the stock untouched label the system sat at
+    55% while the bar showed 37%. `yasbc reload` does NOT re-hook the audio notifications;
+    `yasbc stop` then `yasbc start` does. Prove it by driving the real endpoint with yasb's own
+    bundled pycaw (`library.zip` + `lib` on `sys.path`) - synthetic `keybd_event` volume keys do
+    NOT move the system volume and make a useless harness.
+  - **Changing a label's STRUCTURE needs a reload, not just an apply.** yasb splits the label on
+    `(<span...</span>)` and builds one QLabel per part at startup, so adding or removing a span
+    while it is running leaves the old widget list in place and the value freezes.
+- History: `b1d8ccf`..`aef0e66` is an earlier rework that was reverted wholesale; everything
+  from `d09e58e` on is the current design. `git show` those before re-litigating any of it.
 
 ## Gotchas
 
