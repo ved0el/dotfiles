@@ -109,6 +109,7 @@
 }
 
 .home-widget .icon {
+  font-size: 20px;
   color: var(--overlay1);
   padding-right: 4px;
 }
@@ -144,6 +145,7 @@
 
 /* --- Komorebi Active Layout --- */
 .komorebi-active-layout .label {
+  font-size: 18px;
   padding: 0;
   padding-right: 6px;
   border-radius: 6px;
