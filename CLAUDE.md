@@ -167,6 +167,18 @@ Verify before apply:
       after touching any icon.
     - Every icon-bearing `<span>` carries `class='icon'`, otherwise it finds the glyph by
       fallback but misses the padding and gets clipped.
+  - **A Nerd Font is five icon families stacked in one file, and they do NOT share a stroke
+    weight.** Audit by rendering every codepoint the config uses at the REAL bar size next to a
+    3x blow-up — thin line art (Codicon `EBxx`, Font Awesome `F0xx`/`F2xx`) turns to mush at
+    15px while Material (`nf-md-*`, the `F0xxx`/`F1xxx` range) stays solid. Seven one-off
+    glyphs were moved onto their Material equivalents for exactly that reason: home
+    `F2DC→F02DC`, cpu `F2DB→F035B`, bell `EB9A→F009A`, pomodoro work `F252→F051F`, break
+    `F0F4→F0176`, paused `F2F2→F03E4`, globe `F0AC→F059F`.
+  - Two deliberate exceptions: the komorebi layout icons stay on Codicon (`EBEB`, `EBF7`,
+    `EC01`, `EBEE`, `EBF0`, `EBF1`) because they are an internally coherent set drawn for this
+    exact purpose, and swapping half of it looks worse than leaving it thin; and memory stays
+    on `EFC5` because Material has no RAM stick — `nf-md-memory` is a CHIP, which would collide
+    with the cpu icon.
 - **The archive extractor is NOT managed here.** NanaZip is installed by hand via winget
   (`M2Team.NanaZip`), which puts a `7z` app-alias on PATH. An earlier revision made the
   bootstrap `scoop install nanazip`, shim `7z` to its console exe and set `scoop config

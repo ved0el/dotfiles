@@ -71,7 +71,7 @@ widgets:
   home:
     type: "yasb.home.HomeWidget"
     options:
-      label: "<span class='icon'></span> "
+      label: "<span class='icon'>󰋜</span> "
       menu_list:
       - { separator: true }
       - { title: "🖥️ This PC", command: "explorer.exe shell:MyComputerFolder" }
@@ -193,9 +193,9 @@ widgets:
       show_notification: true
       session_target: 8
       icons:
-        work: ""
-        break: ""
-        paused: ""
+        work: "󰔟"
+        break: "󰅶"
+        paused: "󰏤"
       callbacks:
         on_left: "toggle_menu"
         on_middle: "reset_timer"
@@ -204,8 +204,8 @@ widgets:
   language:
     type: "yasb.language.LanguageWidget"
     options:
-      label: "<span class='icon'></span> {lang[country_code]}"
-      label_alt: "<span class='icon'></span> {lang[full_name]}"
+      label: "<span class='icon'>󰖟</span> {lang[country_code]}"
+      label_alt: "<span class='icon'>󰖟</span> {lang[full_name]}"
       update_interval: 5
       callbacks:
         on_left: "toggle_menu"
@@ -323,7 +323,7 @@ widgets:
   cpu:
     type: "yasb.cpu.CpuWidget"
     options:
-      label: "<span class='icon'></span> {info[percent][total]}%"
+      label: "<span class='icon'>󰍛</span> {info[percent][total]}%"
       update_interval: 2000
       cpu_thresholds:
         low: 25
@@ -409,7 +409,7 @@ widgets:
   notifications:
     type: "yasb.notifications.NotificationsWidget"
     options:
-      label: "<span class='icon'></span> {count}"
+      label: "<span class='icon'>󰂚</span> {count}"
       label_alt: "{count} notifications"
       hide_empty: false
       tooltip: true
