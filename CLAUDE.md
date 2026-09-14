@@ -121,7 +121,8 @@ Verify before apply:
   `font-size`.** The eighteen overrides that used to sit on the widgets ranged 12–20px (labels
   at 12 while the clock ran at the 14px base, icons at 14/16/18/20), which is what made icons
   and text look misaligned from widget to widget — the two that came back (`.home-widget
-  .icon` 20px, `.komorebi-active-layout .label` 18px) came back on purpose; they are controls
+  .icon` and `.komorebi-active-layout .label`, both 20px — they must MATCH each other or they
+  read as misaligned side by side) came back on purpose; they are controls
   you click, not readouts. 15 for icons is not arbitrary: a Segoe glyph
   inks its FULL em box while a letter only reaches cap height (14px text → 10px cap ink), so
   icon and text sizes are not comparable numbers — 13/14/15/16 were rendered against real bar
@@ -215,6 +216,12 @@ Verify before apply:
   - **`min-width`/`padding` belong to `.icon`, NOT to `.icon, .btn`.** `.btn` is the media
     transport, which sets its own tight `padding: 0 2px`; handing it an 18px min-width spreads
     the three controls apart.
+  - **cpu and memory use the TEXT tags `CPU` / `RAM`, not icons — on purpose.** Every candidate
+    in this font that sits in the text's ink band is some flavour of chip (`F061A`, `F035B`,
+    `F0EE0`, `F0A0C`…), so the two readouts could never be told apart at 15px; the ones that
+    ARE distinct (`F4BC`, `F2DB`) sit 2–3px out of band and float. A tag is both unambiguous
+    and perfectly aligned, because it is text. Do not "improve" this back into icons without
+    first finding two in-band glyphs a stranger can name.
   - **An icon has to be readable AS ITS THING, not just readable.** cpu and memory were both
     Material chips (`F061A`/`F035B`) and indistinguishable at 15px. cpu is now `F0EE0`, which
     spells `64` inside the chip, and memory is `EFC5` — the only actual RAM stick in the whole
