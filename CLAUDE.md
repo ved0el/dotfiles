@@ -151,11 +151,22 @@ Verify before apply:
     Segoe is a UI icon font: every glyph fills its em box and sits ON the baseline, so it towers
     3–5px over the cap line no matter what size you pick (shrinking it to match means a 10px
     icon). Nerd Font icons are patched onto the TEXT font's own metrics — they dip 1–2px below
-    the baseline and stop 1–2px over the cap, i.e. they are centred on the text band. **If
-    shared line height is what you want, the icon font has to be the Nerd Font**, and the price
-    is the 6.6px advance overflow (see the reverted rework) which needs a space after each icon.
-    Qt offers no `vertical-align`/`line-height` lever on an inline `<span>` to split the
-    difference.
+    the baseline and stop 1–2px over the cap, i.e. they are centred on the text band. Qt offers
+    no `vertical-align`/`line-height` lever on an inline `<span>` to split the difference, so
+    **the icons are JetBrainsMonoNL Nerd Font too** — that shared line is the whole reason.
+    What that costs, and what pays it:
+    - The glyph inks ~6.6px past its 9px advance. `.icon, .btn` carries `padding-right: 6px`
+      for the widgets where `.icon` is a real QLabel; labels that END at the span carry a
+      trailing **U+00A0** because an inline span ignores padding. `&nbsp;` does NOT work — yasb
+      renders the literal text.
+    - Segoe and Nerd Font define many of the SAME PUA codepoints with different artwork, so the
+      switch is not a font-family edit: 36 codepoints had to be re-picked (weather onto
+      `nf-md-weather-*`, volume onto `nf-md-volume-*`, the wifi ramp onto
+      `wifi_strength_N`/`_N_lock`, globe, keyboard, cpu, pomodoro break). Coverage is verified
+      **53/53** by intersecting the config's PUA set with the face's `cmap`; re-run that check
+      after touching any icon.
+    - Every icon-bearing `<span>` carries `class='icon'`, otherwise it finds the glyph by
+      fallback but misses the padding and gets clipped.
 - **The archive extractor is NOT managed here.** NanaZip is installed by hand via winget
   (`M2Team.NanaZip`), which puts a `7z` app-alias on PATH. An earlier revision made the
   bootstrap `scoop install nanazip`, shim `7z` to its console exe and set `scoop config

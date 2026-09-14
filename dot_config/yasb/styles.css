@@ -72,8 +72,12 @@
 /* --- Icons --- */
 .icon,
 .btn {
-  font-family: 'Segoe Fluent Icons', sans-serif;
+  font-family: 'JetBrainsMonoNL Nerd Font', sans-serif;
   font-size: 15px;
+  /* a Nerd Font icon inks past its advance; this reclaims it wherever .icon lands on a
+     real QLabel. Inline spans ignore padding, so those labels carry a trailing U+00A0. */
+  padding-right: 6px;
+  padding-left: 2px;
 }
 
 /* ========================================== */
@@ -292,7 +296,7 @@
 }
 
 .language-menu .language-item .icon {
-  font-family: 'Hack Nerd Font', sans-serif;
+  font-family: 'JetBrainsMonoNL Nerd Font', sans-serif;
   font-size: 16px;
   margin-right: 8px;
   color: var(--text);
@@ -340,7 +344,7 @@
 }
 
 .media-widget .btn {
-  font-family: 'Hack Nerd Font', sans-serif;
+  font-family: 'JetBrainsMonoNL Nerd Font', sans-serif;
   padding: 0 2px;
   color: var(--subtext1);
 }
@@ -459,7 +463,7 @@
 
 .media-menu .app-volume-container .mute-button,
 .media-menu .app-volume-container .unmute-button {
-  font-family: 'Segoe Fluent Icons', sans-serif;
+  font-family: 'JetBrainsMonoNL Nerd Font', sans-serif;
   font-size: 16px;
   color: var(--text);
   margin-top: 4px;
@@ -700,7 +704,7 @@
 }
 
 .power-menu-popup .button .icon {
-  font-family: 'Hack Nerd Font', monospace;
+  font-family: 'JetBrainsMonoNL Nerd Font', sans-serif;
   font-size: 64px;
   min-width: 100px;
   padding-top: 32px;
@@ -799,7 +803,7 @@
 }
 
 .systray .unpinned-visibility-btn {
-  font-family: 'Hack Nerd Font', sans-serif;
+  font-family: 'JetBrainsMonoNL Nerd Font', sans-serif;
   border-radius: 4px;
   padding: 0 4px;
   color: var(--surface2);
