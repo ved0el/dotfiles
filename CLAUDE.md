@@ -132,7 +132,17 @@ Verify before apply:
       advance**, so they spilled. `E964` and `E765` are the 17-wide equivalents.
     Measure with `ImageFont.getbbox` before adopting a codepoint; `inkH` 15–17 and `inkW` ≤ the
     advance is the bar to clear.
-  - **Bar text is 16px against the 17px icons**, and every per-widget `font-weight` on a bar
+  - **A hand-tuned `margin-left: -2px` on `.volume-widget .label` was pulling the value INTO
+    its icon** — that, not the font, was the "volume spacing is off" bug, and it survived every
+    font change because nothing else in the sheet looked wrong. Found by probing: raising
+    `.icon`'s `padding-right` to 20px moved every other widget's gap and left volume's at 3px,
+    and a wider separator character had no effect either. Grep `margin.*-[0-9]` before blaming
+    a font for spacing. The volume label does keep a **U+2002** separator rather than a plain
+    space: its speaker glyph's ink fills the full 17px advance where the cpu/memory/wifi icons
+    leave 1–2px of right bearing, so it needs the extra 4px to land in the same 4–12px band the
+    others show. (That band is set mostly by the FIRST text character's left side bearing —
+    `1` and `6` are roomy, `9` and `s` are tight — so it can never be pixel-identical.)
+  - **Bar text is 16px at weight 500 against the 17px icons**, and every per-widget `font-weight` on a bar
     widget is deleted. Nine of them (`.cpu-widget`, `.memory-widget`, `.volume-widget`,
     `.wifi-widget`, `.komorebi-active-layout`) carried `bold`/`600` — which is why the SECONDARY
     monitor's bar looked heavier than the primary's even though both read the same stylesheet.
