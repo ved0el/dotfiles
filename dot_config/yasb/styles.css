@@ -73,7 +73,7 @@
 .icon,
 .btn {
   font-family: 'Segoe Fluent Icons', sans-serif;
-  font-size: 16px;
+  font-size: 15px;
 }
 
 /* ========================================== */
@@ -88,12 +88,10 @@
 .cpu-widget .icon {
   color: var(--sapphire);
   font-weight: bold;
-  font-size: 14px;
 }
 
 .cpu-widget .label {
   color: var(--sapphire);
-  font-size: 12px;
   font-weight: bold;
 }
 
@@ -106,7 +104,6 @@
 }
 
 .home-widget .icon {
-  font-size: 20px;
   color: var(--overlay1);
   padding-right: 4px;
 }
@@ -237,12 +234,10 @@
 
 .language-widget .icon {
   color: var(--text);
-  font-size: 14px;
 }
 
 .language-widget .label {
   color: var(--text);
-  font-size: 12px;
 }
 
 .language-menu {
@@ -320,13 +315,11 @@
 .memory-widget .icon {
   color: var(--maroon);
   font-weight: bold;
-  font-size: 14px;
   padding-right: 4px;
 }
 
 .memory-widget .label {
   color: var(--maroon);
-  font-size: 12px;
   font-weight: bold;
 }
 
@@ -348,13 +341,11 @@
 
 .media-widget .btn {
   font-family: 'Hack Nerd Font', sans-serif;
-  font-size: 16px;
   padding: 0 2px;
   color: var(--subtext1);
 }
 
 .media-widget .btn.play {
-  font-size: 18px;
   color: var(--subtext1);
 }
 
@@ -495,12 +486,10 @@
 }
 
 .notes-widget .label {
-  font-size: 14px;
   color: var(--green);
 }
 
 .notes-widget .icon {
-  font-size: 16px;
   color: var(--green);
 }
 
@@ -613,7 +602,6 @@
 }
 
 .pomodoro-widget .icon {
-  font-size: 14px;
   padding-right: 2px;
 }
 
@@ -835,7 +823,6 @@
 .volume-widget .label {
   margin-left: -2px;
   color: var(--teal);
-  font-size: 12px;
   font-weight: bold;
 }
 
@@ -878,13 +865,11 @@
 
 /* --- Weather Widget --- */
 .weather-widget .icon {
-  font-size: 18px;
   color: var(--yellow);
 }
 
 .weather-widget .label {
   color: var(--yellow);
-  font-size: 12px;
 }
 
 .weather-card {
@@ -949,12 +934,10 @@
 .wifi-widget .icon {
   color: var(--mauve);
   font-weight: bold;
-  font-size: 16px;
 }
 
 .wifi-widget .label {
   color: var(--mauve);
-  font-size: 12px;
   font-weight: bold;
 }
 
@@ -1092,7 +1075,7 @@
 }
 
 .whkd-widget .icon {
-  font-size: 18px;
+  /* size inherited: one bar scale */
 }
 
 .whkd-popup .edit-config-button {

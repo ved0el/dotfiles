@@ -108,6 +108,14 @@ Verify before apply:
   quoted as ONE family, so it matched nothing and the bar ran on Qt's default monospace — and
   komorebi asked for `JetBrains Mono`, the plain family, which is not installed here (only the
   Nerd Font patch is). Icons are untouched by this: Hack and Segoe Fluent Icons keep their rules.
+- **One size pair for the whole bar: text 14px, `.icon, .btn` 15px, and NO per-widget
+  `font-size`.** The eighteen overrides that used to sit on the widgets ranged 12–20px (labels
+  at 12 while the clock ran at the 14px base, icons at 14/16/18/20), which is what made icons
+  and text look misaligned from widget to widget. 15 for icons is not arbitrary: a Segoe glyph
+  inks its FULL em box while a letter only reaches cap height (14px text → 10px cap ink), so
+  icon and text sizes are not comparable numbers — 13/14/15/16 were rendered against real bar
+  strings and 15 is where they balance, 16 lets the icon dominate. Fix a widget by changing the
+  pair, never by adding an override back.
 - **The bar fonts/icons were reworked end to end and then REVERTED — don't redo it blind.**
   Six rounds (`b1d8ccf`..`aef0e66`) tried JetBrainsMonoNL for everything, then Noto Sans JP for
   text with Segoe Fluent Icons for icons, then size/weight/spacing tuning; the result still read
