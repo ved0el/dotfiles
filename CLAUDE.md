@@ -195,6 +195,14 @@ Verify before apply:
     it: the volume label had NO separator at all (`…</span>{level}`), and pomodoro/weather/power
     still used a bare `<span>`, so they missed `class='icon'` and with it the whole icon box.
     Grep for `<span>` without the class and for `</span>{` after any icon edit.
+  - **An icon has to be readable AS ITS THING, not just readable.** cpu and memory were both
+    Material chips (`F061A`/`F035B`) and indistinguishable at 15px. cpu is now `F0EE0`, which
+    spells `64` inside the chip, and memory is `EFC5` — the only actual RAM stick in the whole
+    font, Codicon rather than Material. That is the case the "one weight, not one family" rule
+    exists for: it is filled, so it sits with the Material set fine.
+  - **`.komorebi-active-layout .label` sits between the layout icon and the window title**, so
+    its `padding-right` IS the title's left gap — it was 12px, now 6px. It also carried
+    `font-size: 18px` + `bold`, two more strays from the per-widget era.
   - Weak-at-15px check, done by rendering every codepoint at the REAL size next to a 3x
     blow-up: the last holdout was the pomodoro hourglass `F051F`, swapped for the solid
     stopwatch `F13AB`. The wifi 0–24% steps stay faint on purpose — that IS the strength ramp.
