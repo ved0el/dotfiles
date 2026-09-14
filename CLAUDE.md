@@ -99,6 +99,15 @@ Verify before apply:
   nothing reinstalls. The Nerd Font is the exception: a font ships no command, so it is guarded on
   `scoop list` instead, and it needs the `nerd-fonts` bucket added first. Fonts install per-user
   (HKCU), no elevation.
+- **The two JetBrains declarations point at the NL (no-ligature) Nerd Font cut, and they are
+  spelled DIFFERENTLY on purpose** — `dot_config/yasb/styles.css` uses the typographic name
+  `JetBrainsMonoNL Nerd Font` (Qt matches name ID 16), `dot_config/komorebi/komorebi.bar.json`
+  uses the Win32 name `JetBrainsMonoNL NF` (komorebi goes through DirectWrite = ID 1). Same
+  font, two keys; `komorebi-bar --fonts` prints the names komorebi can actually see. Both slots
+  were dead before: styles.css had `'JetBrainsMono NFP, Hack Nerd Font'` — the WHOLE string
+  quoted as ONE family, so it matched nothing and the bar ran on Qt's default monospace — and
+  komorebi asked for `JetBrains Mono`, the plain family, which is not installed here (only the
+  Nerd Font patch is). Icons are untouched by this: Hack and Segoe Fluent Icons keep their rules.
 - **The bar fonts/icons were reworked end to end and then REVERTED — don't redo it blind.**
   Six rounds (`b1d8ccf`..`aef0e66`) tried JetBrainsMonoNL for everything, then Noto Sans JP for
   text with Segoe Fluent Icons for icons, then size/weight/spacing tuning; the result still read
