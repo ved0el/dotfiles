@@ -120,7 +120,9 @@ Verify before apply:
 - **One size pair for the whole bar: text 14px, `.icon, .btn` 15px, and NO per-widget
   `font-size`.** The eighteen overrides that used to sit on the widgets ranged 12–20px (labels
   at 12 while the clock ran at the 14px base, icons at 14/16/18/20), which is what made icons
-  and text look misaligned from widget to widget. 15 for icons is not arbitrary: a Segoe glyph
+  and text look misaligned from widget to widget — the two that came back (`.home-widget
+  .icon` 20px, `.komorebi-active-layout .label` 18px) came back on purpose; they are controls
+  you click, not readouts. 15 for icons is not arbitrary: a Segoe glyph
   inks its FULL em box while a letter only reaches cap height (14px text → 10px cap ink), so
   icon and text sizes are not comparable numbers — 13/14/15/16 were rendered against real bar
   strings and 15 is where they balance, 16 lets the icon dominate. Fix a widget by changing the
@@ -204,6 +206,15 @@ Verify before apply:
     it: the volume label had NO separator at all (`…</span>{level}`), and pomodoro/weather/power
     still used a bare `<span>`, so they missed `class='icon'` and with it the whole icon box.
     Grep for `<span>` without the class and for `</span>{` after any icon edit.
+  - **Align icons by their INK BAND, measured, not by eye.** Compute ink top/bottom relative to
+    the baseline (`ascent - bbox`) for the text cap and for every icon: the text cap is `(0, 11)`
+    here, and an icon one pixel off that — `F0EE0` at `(-1, 12)` — reads as visibly floating
+    next to a neighbour that sits at `(0, 11)`. That is why cpu is `F061A` and not the `64`
+    chip: same band as the RAM stick and the text, and it survives 15px where `F0EE0`'s digits
+    turn to mush. Check the band before adopting a codepoint, the same way you check the cmap.
+  - **`min-width`/`padding` belong to `.icon`, NOT to `.icon, .btn`.** `.btn` is the media
+    transport, which sets its own tight `padding: 0 2px`; handing it an 18px min-width spreads
+    the three controls apart.
   - **An icon has to be readable AS ITS THING, not just readable.** cpu and memory were both
     Material chips (`F061A`/`F035B`) and indistinguishable at 15px. cpu is now `F0EE0`, which
     spells `64` inside the chip, and memory is `EFC5` — the only actual RAM stick in the whole
