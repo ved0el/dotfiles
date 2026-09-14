@@ -99,166 +99,29 @@ Verify before apply:
   nothing reinstalls. The Nerd Font is the exception: a font ships no command, so it is guarded on
   `scoop list` instead, and it needs the `nerd-fonts` bucket added first. Fonts install per-user
   (HKCU), no elevation.
-- **`JetBrainsMono-NF-Mono` ships the WHOLE JetBrainsMono Nerd Font set, NL included.** Its
-  manifest downloads `nerd-fonts/releases/.../JetBrainsMono.zip`, so the box ends up with 96
-  registered faces — 48 of them the NL (no-ligature) cut. There is NO separate `JetBrainsMonoNL-*`
-  scoop package and none is needed; don't go looking for one.
-- **Three fonts, one job each: `Noto Sans JP` for text (weight 400), `Segoe Fluent Icons` for
-  icons, `JetBrainsMonoNL Nerd Font` only as the icon fallback.** All 15px, no per-widget size
-  overrides. `.icon, .btn` names Segoe first; every other rule names Noto first with the Nerd
-  Font behind it.
-  - **Icons are Segoe because a Nerd Font can never size-match UI text.** Measured at 15px:
-    | | advance | ink W | spill | ink H |
-    |---|---|---|---|---|
-    | Noto Sans JP cap `M` | 12 | 12 | 0 | 12 |
-    | Segoe icon (any) | **15** | **15** | **0** | 13–15 |
-    | Nerd Font icons | 9 | 12–15 | **3–6** | 10–15 |
-    Segoe is drawn on a uniform em box — advance equals ink, every glyph the same optical size,
-    nothing to clip. **That em box is also why `.icon` is 17px against the text's 15px**: a
-    Segoe glyph fills the box top to bottom while a letter only reaches cap height, so matching
-    the numbers makes the icon read SMALLER than the text sitting next to it. 17 is where they
-    balance — picked by rendering 15/16/17/18/19 baseline-aligned against real bar strings
-    (`25:00`, `100%`, `saufamily`); 18+ starts to dominate. Equal font-size is NOT equal
-    optical size. The Nerd Font's advance is the mono cell (9px) while its icon ink is up to
-    15px and its ink HEIGHT varies 10–15px per glyph, so icons look different sizes next to each
-    other AND next to the text, no matter what `font-size` you set. That is the size mismatch;
-    it is a property of the font, not of the stylesheet.
-  - **Not every Segoe glyph is the same size — check the ink box, the font name is not enough.**
-    Two traps found on the secondary bar:
-    - `E871`–`E874`/`E701` (the old wifi ramp) are *signal-strength* art: the ink shrinks with
-      the level, **6px tall at 1–24% against 15px at full**, so the icon changed size as the
-      signal moved. `E904`–`E908` is the same five-step ramp drawn in a constant 15×17 box.
-    - `EEA0` (memory) and `EDA7` (keyboard) were the only glyphs **18px wide against a 17px
-      advance**, so they spilled. `E964` and `E765` are the 17-wide equivalents.
-    Measure with `ImageFont.getbbox` before adopting a codepoint; `inkH` 15–17 and `inkW` ≤ the
-    advance is the bar to clear.
-  - **A hand-tuned `margin-left: -2px` on `.volume-widget .label` was pulling the value INTO
-    its icon** — that, not the font, was the "volume spacing is off" bug, and it survived every
-    font change because nothing else in the sheet looked wrong. Found by probing: raising
-    `.icon`'s `padding-right` to 20px moved every other widget's gap and left volume's at 3px,
-    and a wider separator character had no effect either. Grep `margin.*-[0-9]` before blaming
-    a font for spacing. The volume label does keep a **U+2002** separator rather than a plain
-    space: its speaker glyph's ink fills the full 17px advance where the cpu/memory/wifi icons
-    leave 1–2px of right bearing, so it needs the extra 4px to land in the same 4–12px band the
-    others show. (That band is set mostly by the FIRST text character's left side bearing —
-    `1` and `6` are roomy, `9` and `s` are tight — so it can never be pixel-identical.)
-  - **Bar text is 16px at weight 500 against the 17px icons**, and every per-widget `font-weight` on a bar
-    widget is deleted. Nine of them (`.cpu-widget`, `.memory-widget`, `.volume-widget`,
-    `.wifi-widget`, `.komorebi-active-layout`) carried `bold`/`600` — which is why the SECONDARY
-    monitor's bar looked heavier than the primary's even though both read the same stylesheet.
-    Per-widget weight is the same trap as per-widget size: delete it, don't tune it.
-  - **Segoe has no weather set** — swept `E9C0`–`EA3F` and it is empty; Windows' weather icons
-    live in the Weather app's own font. So the weather block is the ONE widget still drawn by
-    the Nerd Font, and the padding + `U+00A0` hacks stay for its sake. Everything else on both
-    bars is Segoe: home `E80F`, keyboard `EDA7`, cpu `E950`, memory `EEA0`, wifi `E871`–`E874`/
-    `E701`, volume `E74F`/`E992`–`E995`, globe `E774`, stopwatch `E916`, pause `E769`, bell
-    `EA8F`. Find new ones by rendering a Segoe range to a contact sheet and looking — the names
-    in Microsoft's docs are not in the font.
-  - **Why Noto Sans JP for text**: it is the only Google family on this box that covers
-    everything the bar shows — Latin 95/95, **Vietnamese 90/90** (`U+1EA0`–`U+1EF9`) and full
-    Japanese (86 hiragana, 91 katakana, 12,731 kanji). Be Vietnam Pro and Roboto also do 90/90
-    Vietnamese but have **zero** CJK. Its digits are tabular (all advance 9.0), so the clock
-    does not jitter — check that before swapping in any proportional font.
-  - **It is NOT installed by the bootstrap** (scoop has no plain Noto Sans JP; only
-    `Noto-CJK-Mega-OTC` and the Nerd-Font-patched `Noto-NF`, which is Latin-only). A fresh box
-    therefore falls through to `JetBrainsMonoNL Nerd Font`, which still has Vietnamese 90/90 —
-    only Japanese degrades. That is why the Nerd Font stays second in every text rule.
-  - **Every icon span carries `class='icon'`** so it gets both the icon font and the padding.
-    A bare `<span>` would still find the glyph by fallback but would miss the padding and clip.
-  - **`font-weight` CANNOT change how heavy a NERD FONT icon looks.** Measured: the same Nerd Font icon
-    rasterises to a byte-identical bitmap in Regular/Medium/SemiBold/Bold (743 ink px for
-    `U+F2DB` in all four) because the patcher embeds one SVG per codepoint; text glyphs vary
-    24–28% across the same faces. The ONLY lever is picking a heavier icon *set*: the whole
-    weather block moved off the thin-line `nf-weather` (`U+E3xx`) range onto Material
-    (`nf-md-weather-*`), and the keyboard off outline `U+F11C` onto solid `U+F030C`.
-  - **Both bars are styled identically by construction** — `primary-bar` and `secondary-bar`
-    share `class_name: yasb-bar`, `dimensions`, `padding` and `blur_effect`; only `screens` and
-    the widget lists differ. Both monitors run at 96 DPI / 100%, so 15px is 15px on each. If a
-    monitor ever gets a different scale, that is where per-screen drift would come from — check
-    `GetDpiForMonitor`, not the stylesheet.
-  Rules, in order of how easy they are to break:
-  - **The font must cover every icon the config uses, or a mixed bar comes back.** `.icon`
-    previously declared `'Segoe Fluent Icons', sans-serif`, but Segoe had only **25 of the 58**
-    PUA codepoints in `config.yaml.tmpl` — the other 33 were drawn by whatever Qt picked per
-    glyph, each with its own design size. Count it, don't eyeball it: parse `config.yaml.tmpl`
-    for PUA codepoints, parse the face's `cmap` (format 12 — a format-4-only parser silently
-    returns nothing for a Nerd Font), and intersect. It is **54/54** now.
-  - **Getting there meant re-picking 18 glyphs in the config, not just changing the CSS.** Five
-    (`U+E992`–`U+E995` volume, `U+F7B6` pomodoro break) were Segoe codepoints no Nerd Font has.
-    Thirteen more sat on codepoints BOTH fonts define with different artwork, so dropping Segoe
-    silently changed the picture: the weather sun became a database stack (`U+E706`), the
-    language globe a droplet (`U+E774`), the whkd keyboard a seedling (`U+EDA7`), the cpu chip a
-    stray `V` (`U+E950`), and all nine wifi icons turned into a protractor/spiral/shopping-bag
-    set. **Render candidates and LOOK before choosing** — PIL + the .ttf onto a contact sheet
-    takes a minute and is the only way to tell `wifi_strength_N` from `wifi_strength_N_alert`
-    (`F0920`-style) or `_lock` (`F0921`-style), which differ by one codepoint.
-  - `U+E70F` (win key) and `U+EBAA` (weather default) also overlap both fonts but the Nerd
-    artwork is right — a Windows logo and a cloud — so they were left alone. Overlap is a
-    prompt to look, not an instruction to replace.
-  - **Weight 500, not 400.** Qt maps `font-weight: 500` onto the real Medium face
-    (`QFontDatabase.styles()` lists Regular/Medium/SemiBold/…); Regular is too wispy at 15px.
-  - **One size everywhere**: `*` and `.icon, .btn` are both 15px and every bar widget's own
-    `font-size` was deleted (they ranged 12–20px). Popup/menu/card rules keep their own scale —
-    they are separate surfaces. Do not reintroduce a per-widget size to fix one widget; that is
-    how the drift started.
-  - **A Nerd Font icon INKS PAST ITS ADVANCE, so it gets clipped or overlapped unless you hand
-    it the next cell.** Measured in Qt at 15px: advance is a flat `9.00` (it is a monospace
-    face) while the ink runs to `15.56` — up to **6.6px of spill to the right**, on 51 of the 54
-    icons. Nothing spills left; "the left is cut off" is really the *previous* widget's text
-    sitting on the icon. Two different fixes, because two different things clip:
-    - `padding-right: 6px` on `.icon, .btn` — works where `.icon` lands on a real QLabel
-      (whkd, cpu, memory).
-    - a trailing **`U+00A0`** in the label template — needed where the icon is an inline
-      `<span class='icon'>`, which ignores padding entirely. Affects the labels that END at the
-      span (home, whkd, power: sized to the advance, so the glyph is cut at the widget edge)
-      and the one with no separator (`volume`, `…</span>{level}`, so `100%` sat on the icon).
-      Verify by screenshotting, not by reading the CSS — the padding line looks like it works.
-    - **`&nbsp;` does NOT work**: yasb does not expand HTML entities, it renders the literal
-      text `&nbsp;` into the bar. Use the actual character.
-    - The real cure would be the Propo cut, whose advance matches its ink — but Qt only indexes
-      four Nerd Font families here (FiraCode/Hack/JetBrainsMono/JetBrainsMonoNL, all the bare
-      cut). `JetBrainsMonoNL Nerd Font Propo` is installed and invisible to Qt, so don't try.
-- **Each Nerd Font face carries TWO family names, not interchangeable, pick per consumer:** name
-  ID 1 (Win32) `JetBrainsMonoNL NF`, name ID 16 (typographic) `JetBrainsMonoNL Nerd Font`.
-  Read them off the face's `name` table, never guess — and never from
-  `System.Drawing.Text.InstalledFontCollection`, which only ever lists ID 1 and so calls a
-  perfectly working ID-16 name "not installed".
-  - **ASK THE ENGINE, it is the only authority.** For yasb that is Qt, and Qt's answer is the
-    opposite of `InstalledFontCollection`'s — it indexes ID 16 ONLY. Measured with yasb's own
-    bundled PyQt6 (`QFontDatabase.families()` + `QFontInfo(QFont(n)).family()`; the platform
-    plugin must be the real one — under `QT_QPA_PLATFORM=offscreen` the DB is EMPTY and every
-    name looks dead):
-    - `JetBrainsMonoNL Nerd Font` → resolves. `Hack Nerd Font`, `Be Vietnam Pro`,
-      `Noto Sans JP`, `Segoe Fluent Icons`, `Segoe UI` → all resolve (only the first is used).
-    - `JetBrainsMonoNL NF`, `JetBrainsMonoNL NFM`, `JetBrainsMonoNL NFP`, `… Nerd Font Mono`,
-      `… Nerd Font Propo` → **none are in Qt's DB; all silently become Tahoma.** Qt lists exactly
-      four Nerd Font families here: FiraCode / Hack / JetBrainsMono / JetBrainsMonoNL, all in the
-      long ID-16 form. So in styles.css the bare `JetBrainsMonoNL Nerd Font` is the ONLY usable
-      JetBrains name — no NFM/NFP/NF entries, they are dead weight that hides a Tahoma fallback.
-  - `dot_config/komorebi/komorebi.bar.json` is a DIFFERENT engine (Rust/DirectWrite) with ONE
-    `font_family` string and no fallback, so it takes the ID-1 name `JetBrainsMonoNL NF` — the
-    exact opposite of the styles.css value, same font. **`komorebi-bar --fonts` is the built-in
-    authority**: it prints every face it can see, as `<family> <style>` (`JetBrainsMonoNL NF
-    Regular`, `Hack Nerd Font Regular`), and `font_family` takes the family half. Verified by
-    actually running `komorebi-bar --config ~/.config/komorebi/komorebi.bar.json` for a few
-    seconds and screenshotting it: Nerd Font glyphs and Vietnamese diacritics both render.
-    Nothing launches komorebi-bar in normal use here (yasb is the bar), so re-run that probe
-    rather than assuming.
-  - The value it replaced, `"JetBrains Mono"`, was NOT in `--fonts` at all — the plain JetBrains
-    Mono family is not installed on this box, only the Nerd Font cuts. So komorebi's bar had
-    silently been on a fallback face since the config was written.
-  - Suffixes: bare **NF** = original advance widths, **NFM** = Nerd Font Mono (icons squeezed to
-    one cell), **NFP** = Propo. `NL` = no ligatures, orthogonal to all three. Only the bare cut
-    is exposed to Qt at all, so the NFM/NFP distinction is unusable from yasb.
-  - **Hack is gone, and the old "Hack for icons" note was wrong.** That verdict came from a
-    revert of a commit whose icon rules said `JetBrainsMonoNL Nerd Font Mono`/`NFM` — names Qt
-    resolves to **Tahoma**. The badly-fitting glyphs were Tahoma's, never JetBrains'. Hack is
-    also unusable for this box's text: it has **6 of the 90** Vietnamese precomposed codepoints
-    (`U+1EA0`–`U+1EF9`) against JetBrainsMonoNL's 90, so a Vietnamese window title rendered in
-    Hack switches font mid-word (`ô` is Latin-1 and stays, `ở` is not and jumps).
-  - The pre-existing line-48 rule was `'JetBrainsMono NFP, Hack Nerd Font'` — the WHOLE string
-    quoted as ONE family, so it matched nothing and the bar silently ran on Qt's default
-    `monospace`. Two families, two quoted strings.
+- **The bar fonts/icons were reworked end to end and then REVERTED — don't redo it blind.**
+  Six rounds (`b1d8ccf`..`aef0e66`) tried JetBrainsMonoNL for everything, then Noto Sans JP for
+  text with Segoe Fluent Icons for icons, then size/weight/spacing tuning; the result still read
+  worse than the original, so the whole thing is back to `JetBrainsMono NFP, Hack Nerd Font` +
+  Segoe icons. `git show` those commits before touching this again. What was MEASURED there and
+  is still true:
+  - Qt (yasb) indexes a font's name ID 16 ONLY — `JetBrainsMonoNL Nerd Font` resolves, while
+    `… NF`/`NFM`/`NFP`/`… Nerd Font Mono` all silently become **Tahoma**.
+    `System.Drawing.Text.InstalledFontCollection` shows the opposite (ID 1 only), so it is the
+    wrong tool to check with; ask Qt through yasb's bundled PyQt6, under the REAL platform
+    plugin (`QT_QPA_PLATFORM=offscreen` reports an empty font DB).
+  - A Nerd Font icon inks up to 6.6px past its 9px mono advance, so it clips or overlaps unless
+    given the next cell. Segoe Fluent Icons is advance == ink on a uniform em box — that is why
+    this theme uses it for icons and why it cannot be swapped for a Nerd Font without also
+    re-picking every codepoint.
+  - Segoe has no weather set at all (swept `E9C0`–`EA3F`), which is why the weather icons are
+    Nerd Font ones even though the rest are Segoe.
+  - `font-weight` cannot change how heavy a Nerd Font icon looks: the same glyph rasterises
+    byte-identically in Regular/Medium/SemiBold/Bold.
+  - Hack has **6 of the 90** Vietnamese precomposed codepoints against JetBrainsMono's 90, so
+    Vietnamese window titles switch font mid-word in it. Noto Sans JP covers Latin + all 90 +
+    full Japanese and has tabular digits, if a text font is ever wanted.
+  - `.volume-widget .label` carries `margin-left: -2px`; it is deliberate, not a bug.
 - **The archive extractor is NOT managed here.** NanaZip is installed by hand via winget
   (`M2Team.NanaZip`), which puts a `7z` app-alias on PATH. An earlier revision made the
   bootstrap `scoop install nanazip`, shim `7z` to its console exe and set `scoop config

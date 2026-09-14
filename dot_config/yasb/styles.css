@@ -43,10 +43,9 @@
 
 /* --- Base Styles --- */
 * {
-  font-size: 16px;
+  font-size: 14px;
   color: var(--text);
-  font-family: 'Noto Sans JP', 'JetBrainsMonoNL Nerd Font', sans-serif;
-  font-weight: 500;
+  font-family: 'JetBrainsMono NFP, Hack Nerd Font', monospace;
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -73,16 +72,8 @@
 /* --- Icons --- */
 .icon,
 .btn {
-  font-family: 'Segoe Fluent Icons', 'JetBrainsMonoNL Nerd Font', sans-serif;
-  /* 17, not the text's 15: a Segoe glyph fills its em box where a letter only reaches
-     cap height, so matching the numbers makes the icon read SMALLER than the text.
-     17 is where they balance - checked by rendering 15/16/17/18/19 against the digits. */
-  font-size: 17px;
-  /* Nerd Font icons ink up to 6.6px past their 9px advance (Qt-measured); this reclaims
-     it wherever .icon lands on a real QLabel. Inline <span class='icon'> ignores padding,
-     so those labels carry a trailing U+00A0 in config.yaml.tmpl instead. */
-  padding-right: 6px;
-  padding-left: 2px;
+  font-family: 'Segoe Fluent Icons', sans-serif;
+  font-size: 16px;
 }
 
 /* ========================================== */
@@ -96,10 +87,14 @@
 /* CPU */
 .cpu-widget .icon {
   color: var(--sapphire);
+  font-weight: bold;
+  font-size: 14px;
 }
 
 .cpu-widget .label {
   color: var(--sapphire);
+  font-size: 12px;
+  font-weight: bold;
 }
 
 /* ==================== */
@@ -111,6 +106,7 @@
 }
 
 .home-widget .icon {
+  font-size: 20px;
   color: var(--overlay1);
   padding-right: 4px;
 }
@@ -147,6 +143,7 @@
 /* --- Komorebi Active Layout --- */
 .komorebi-active-layout .label {
   font-size: 18px;
+  font-weight: bold;
   padding: 0;
   padding-right: 12px;
   border-radius: 6px;
@@ -193,6 +190,7 @@
 .komorebi-workspaces .offline-status {
   color: var(--text);
   padding: 0 4px;
+  font-weight: 600;
 }
 
 .komorebi-workspaces .ws-btn {
@@ -239,10 +237,12 @@
 
 .language-widget .icon {
   color: var(--text);
+  font-size: 14px;
 }
 
 .language-widget .label {
   color: var(--text);
+  font-size: 12px;
 }
 
 .language-menu {
@@ -297,7 +297,7 @@
 }
 
 .language-menu .language-item .icon {
-  font-family: 'Noto Sans JP', 'JetBrainsMonoNL Nerd Font', sans-serif;
+  font-family: 'Hack Nerd Font', sans-serif;
   font-size: 16px;
   margin-right: 8px;
   color: var(--text);
@@ -319,11 +319,15 @@
 
 .memory-widget .icon {
   color: var(--maroon);
+  font-weight: bold;
+  font-size: 14px;
   padding-right: 4px;
 }
 
 .memory-widget .label {
   color: var(--maroon);
+  font-size: 12px;
+  font-weight: bold;
 }
 
 /* ====================== */
@@ -337,18 +341,20 @@
 
 .media-widget .label {
   font-family:
-    'Noto Sans JP', 'JetBrainsMonoNL Nerd Font', sans-serif;
+    'Be Vietnam Pro', 'Noto Sans JP', 'JetBrainsMono NFP', sans-serif;
   color: var(--text);
   padding: 0 4px;
 }
 
 .media-widget .btn {
-  font-family: 'Noto Sans JP', 'JetBrainsMonoNL Nerd Font', sans-serif;
+  font-family: 'Hack Nerd Font', sans-serif;
+  font-size: 16px;
   padding: 0 2px;
   color: var(--subtext1);
 }
 
 .media-widget .btn.play {
+  font-size: 18px;
   color: var(--subtext1);
 }
 
@@ -371,7 +377,7 @@
 .media-menu .artist,
 .media-menu .source {
   font-family:
-    'Noto Sans JP', 'JetBrainsMonoNL Nerd Font', sans-serif;
+    'Be Vietnam Pro', 'Noto Sans JP', 'JetBrainsMono NFP', sans-serif;
   color: var(--text);
   font-size: 16px;
   font-weight: 500;
@@ -462,7 +468,7 @@
 
 .media-menu .app-volume-container .mute-button,
 .media-menu .app-volume-container .unmute-button {
-  font-family: 'Noto Sans JP', 'JetBrainsMonoNL Nerd Font', sans-serif;
+  font-family: 'Segoe Fluent Icons', sans-serif;
   font-size: 16px;
   color: var(--text);
   margin-top: 4px;
@@ -489,10 +495,12 @@
 }
 
 .notes-widget .label {
+  font-size: 14px;
   color: var(--green);
 }
 
 .notes-widget .icon {
+  font-size: 16px;
   color: var(--green);
 }
 
@@ -605,6 +613,7 @@
 }
 
 .pomodoro-widget .icon {
+  font-size: 14px;
   padding-right: 2px;
 }
 
@@ -678,6 +687,7 @@
 
 .power-menu-widget .label {
   color: var(--maroon);
+  font-size: 18px;
 }
 
 .power-menu-popup {
@@ -702,7 +712,7 @@
 }
 
 .power-menu-popup .button .icon {
-  font-family: 'Noto Sans JP', 'JetBrainsMonoNL Nerd Font', sans-serif;
+  font-family: 'Hack Nerd Font', monospace;
   font-size: 64px;
   min-width: 100px;
   padding-top: 32px;
@@ -801,7 +811,7 @@
 }
 
 .systray .unpinned-visibility-btn {
-  font-family: 'Noto Sans JP', 'JetBrainsMonoNL Nerd Font', sans-serif;
+  font-family: 'Hack Nerd Font', sans-serif;
   border-radius: 4px;
   padding: 0 4px;
   color: var(--surface2);
@@ -823,7 +833,10 @@
 }
 
 .volume-widget .label {
+  margin-left: -2px;
   color: var(--teal);
+  font-size: 12px;
+  font-weight: bold;
 }
 
 /* --- Volume Widget --- */
@@ -865,11 +878,13 @@
 
 /* --- Weather Widget --- */
 .weather-widget .icon {
+  font-size: 18px;
   color: var(--yellow);
 }
 
 .weather-widget .label {
   color: var(--yellow);
+  font-size: 12px;
 }
 
 .weather-card {
@@ -933,10 +948,14 @@
 /* WIFI */
 .wifi-widget .icon {
   color: var(--mauve);
+  font-weight: bold;
+  font-size: 16px;
 }
 
 .wifi-widget .label {
   color: var(--mauve);
+  font-size: 12px;
+  font-weight: bold;
 }
 
 .wifi-menu {
@@ -1073,7 +1092,7 @@
 }
 
 .whkd-widget .icon {
-  /* size + family inherited: one bar scale */
+  font-size: 18px;
 }
 
 .whkd-popup .edit-config-button {
@@ -1151,7 +1170,7 @@
 /* ====================== */
 
 .clock-popup.calendar .calendar-table {
-  font-family: 'Noto Sans JP', 'JetBrainsMonoNL Nerd Font', sans-serif;
+  font-family: 'Segoe UI', sans-serif;
   margin: 0;
   padding: 0;
   border: none;
