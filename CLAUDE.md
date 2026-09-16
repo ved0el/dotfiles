@@ -435,15 +435,36 @@ and read the two restart traps at the end before concluding something is broken.
   codepoint at the real bar size next to a 3x blow-up - Codicon `EBxx` and Font Awesome
   `F0xx`/`F2xx` line art turns to mush at 13-15px. `font-weight` cannot help: the same icon
   rasterises byte-identically in Regular/Medium/SemiBold/Bold.
-- **Two restart traps - check these BEFORE editing config when a readout looks wrong:**
-  - **A frozen volume is not a config bug.** With the stock untouched label the system sat at
-    55% while the bar showed 37%. `yasbc reload` does NOT re-hook the audio notifications;
-    `yasbc stop` then `yasbc start` does. Prove it by driving the real endpoint with yasb's own
-    bundled pycaw (`library.zip` + `lib` on `sys.path`) - synthetic `keybd_event` volume keys do
-    NOT move the system volume and make a useless harness.
-  - **Changing a label's STRUCTURE needs a reload, not just an apply.** yasb splits the label on
-    `(<span...</span>)` and builds one QLabel per part at startup, so adding or removing a span
-    while it is running leaves the old widget list in place and the value freezes.
+- **The frozen volume readout is a yasb BUG, not this config - do not try to fix it in
+  config.** Verified 2026-09-16 on yasb **2.0.7** (latest; upstream `main`'s
+  `src/core/widgets/services/volume/service.py` is byte-identical to the shipped bytecode, and
+  no issue is open for it). Mechanism, read from `library.zip`:
+  - `AudioOutputService.register_widget()` calls `_register_callbacks()` **once**, only when the
+    FIRST volume widget registers. There is no retry and `VolumeConfig` has no `update_interval`
+    - the readout is purely COM-callback driven.
+  - Every failure path is `except Exception: pass` with **no log line**, so a dead callback
+    leaves `yasb.log` completely clean. Do not go looking for an error there.
+  - `_on_device_change()` assigns `self._volume_callback` BEFORE calling
+    `RegisterControlChangeNotify()`. If that raises - which is exactly what a default endpoint
+    disappearing mid-transition does - the attribute is left non-None while nothing is actually
+    registered, and `_register_callbacks()`'s `not self._volume_callback` guard then skips it
+    forever.
+  - This box's default device is **Speakers (Realtek USB Audio)**; a USB endpoint drops out on
+    dock/monitor sleep, so it hits that path routinely.
+  - **`yasbc reload` does NOT re-register it; `yasbc stop` then `yasbc start` does** - that is
+    what the `yasbr` function in `dot_config/powershell/profile.ps1` is for. Confirmed by
+    driving the real endpoint with yasb's own bundled pycaw (`library.zip` + `lib` on
+    `sys.path`; the loose `psutil._psutil_windows.pyd` must be preloaded by hand because psutil
+    itself is zipimported): frozen at 42% while the system went 100% -> 30%, then tracking
+    77% -> 25% after a restart. Synthetic `keybd_event` volume keys do NOT move the system
+    volume and make a useless harness.
+  - **The old "the volume label must be wrapped in a `<span>`" claim is WRONG** - `_update_label`
+    splits on `(<span.*?>.*?</span>)` and calls `setText` on the plain-text branch too, so
+    `V: {level}` updates fine when the callback is alive. The span only ever changed the timing
+    of a restart.
+- **Changing a label's STRUCTURE needs a reload, not just an apply.** yasb splits the label on
+  `(<span...</span>)` and builds one QLabel per part at startup, so adding or removing a span
+  while it is running leaves the old widget list in place and the value freezes.
 - History: `b1d8ccf`..`aef0e66` is an earlier rework that was reverted wholesale; everything
   from `d09e58e` on is the current design. `git show` those before re-litigating any of it.
 

@@ -62,6 +62,15 @@ if (Get-Command antigravity-ide -ErrorAction SilentlyContinue) {
   Set-Alias agide antigravity-ide
 }
 
+# ── yasb ──────────────────────────────────────────────────────────────────────────
+# `yasbr` is a full restart, NOT `yasbc reload`. yasb 2.0.7 registers its audio
+# endpoint callback exactly once and swallows every failure, so the volume readout
+# freezes for good after the default device drops out (USB audio, dock/monitor sleep).
+# Only stop+start re-registers it. See CLAUDE.md → yasb bar.
+if (Get-Command yasbc -ErrorAction SilentlyContinue) {
+  function yasbr { yasbc stop; Start-Sleep -Seconds 2; yasbc start }
+}
+
 # ── eza (ls replacement) ──────────────────────────────────────────────────────────
 if (Get-Command eza -ErrorAction SilentlyContinue) {
   # PowerShell resolves ALIASES before FUNCTIONS, so the shipped `ls`→Get-ChildItem
