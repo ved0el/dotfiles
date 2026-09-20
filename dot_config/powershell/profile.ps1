@@ -100,6 +100,24 @@ if (Get-Command rg -ErrorAction SilentlyContinue) {
   $env:RIPGREP_CONFIG_PATH = Join-Path $env:XDG_CONFIG_HOME 'ripgrep\ripgreprc'
 }
 
+# ── PSReadLine — history-based inline suggestions + bash-style Tab ───────────────
+# No Import-Module: the console host loads PSReadLine before $PROFILE runs, so testing
+# whether it is LOADED also skips the block in a non-interactive host (pwsh -Command with
+# piped stdin, e.g. Claude Code's tool shell) where there is no line editor to configure.
+# PredictionSource needs PSReadLine 2.1+; this profile is also dot-sourced from WinPS 5.1's
+# $PROFILE, which ships 2.0.0 and would throw on every launch. PredictionViewStyle is left
+# at its default (InlineView); set ListView here to get the multi-row picker instead.
+if ($psrl = Get-Module PSReadLine) {
+  # try/catch, not -ErrorAction: PSReadLine THROWS (terminating) when console output is
+  # redirected or lacks VT processing, so -EA SilentlyContinue does not suppress it. A
+  # cosmetic suggestion feature failing to turn on must not paint the profile red.
+  if ($psrl.Version -ge [version]'2.1') {
+    try { Set-PSReadLineOption -PredictionSource History } catch { }
+  }
+  # Complete = bash-style (common prefix, then list). MenuComplete for a navigable grid.
+  Set-PSReadLineKeyHandler -Key Tab -Function Complete
+}
+
 # ── fzf — env defaults; key-bindings need the PSFzf module (loaded if present) ──────
 if (Get-Command fzf -ErrorAction SilentlyContinue) {
   $env:FZF_DEFAULT_COMMAND = 'fd --type f'
@@ -124,9 +142,14 @@ if (Get-Command fzf -ErrorAction SilentlyContinue) {
   $env:FZF_CTRL_R_OPTS     = '--no-preview'
   $env:FZF_CTRL_T_COMMAND  = "rg --files --hidden --follow --glob '!.git/*'"
   $env:FZF_CTRL_T_OPTS     = '--preview "bat --style=numbers --color=always --line-range=:500 {}"'
+  # PSFzf binds fzf to PSReadLine chords (installed by the bootstrap, via pwsh — see
+  # CLAUDE.md). Ctrl+t file picker · Ctrl+r history · Alt+c cd into a subdirectory. It
+  # overrides PSReadLine's own Ctrl+r (ReverseSearchHistory) and Ctrl+t (SwapCharacters).
   if (Get-Module -ListAvailable -Name PSFzf) {
     Import-Module PSFzf
-    Set-PsFzfOption -PSReadlineChordProvider 'Ctrl+t' -PSReadlineChordReverseHistory 'Ctrl+r'
+    Set-PsFzfOption -PSReadlineChordProvider 'Ctrl+t' `
+                    -PSReadlineChordReverseHistory 'Ctrl+r' `
+                    -PSReadlineChordSetLocation 'Alt+c'
   }
 }
 

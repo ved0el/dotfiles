@@ -88,6 +88,18 @@ if (-not (scoop list 2>$null | Select-String -Quiet '(?im)^\s*JetBrainsMono-NF-M
   scoop install JetBrainsMono-NF-Mono
 }
 
+# --- PSFzf (fzf <-> PSReadLine chords: Ctrl+t / Ctrl+r / Alt+c) ---
+# PSReadLine itself needs nothing - it ships with pwsh 7 (2.4.x; WinPS 5.1's 2.0.0 is why
+# the profile version-gates PredictionSource). PSFzf does, and BOTH the check and the
+# install must run INSIDE pwsh: this script runs under WinPS 5.1, whose CurrentUser module
+# dir (~\Documents\WindowsPowerShell\Modules) is NOT on pwsh 7's PSModulePath, so a module
+# installed from here would be invisible to the shell that uses it. -TrustRepository is the
+# non-interactive flag (PSGallery is untrusted by default) and Install-PSResource ships with
+# pwsh 7.4+; on an older pre-existing pwsh this prints an error and setup continues.
+if (Get-Command pwsh -ErrorAction SilentlyContinue) {
+  pwsh -NoProfile -Command 'if (-not (Get-Module -ListAvailable PSFzf)) { Install-PSResource PSFzf -Scope CurrentUser -TrustRepository }'
+}
+
 # --- install tools/runtimes declared in ~/.config/mise/conf.d/*.toml ---
 # --cd $HOME: mise only auto-discovers the global conf.d/*.toml when CWD is inside the home
 # tree; chezmoi may run this script from elsewhere, so anchor it at $HOME or nothing installs.

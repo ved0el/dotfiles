@@ -253,6 +253,32 @@ Verify before apply:
   guard — the bootstrap never replaces one. The migration off scoop is proof the no-baked-path
   rule works: pwsh moved to `C:\Program Files\WindowsApps\Microsoft.PowerShell_<ver>_x64__…\`
   and `czcd` + the statusline kept working with no `chezmoi init` re-run.
+- **A PowerShell module the profile needs must be installed THROUGH `pwsh`, not by the
+  bootstrap process.** Each edition has its own CurrentUser module dir and neither sees the
+  other's: pwsh 7's `PSModulePath` holds `~\Documents\PowerShell\Modules` and the machine-wide
+  `Program Files\WindowsPowerShell\Modules`, but NOT `~\Documents\WindowsPowerShell\Modules`.
+  The bootstrap runs under WinPS 5.1 (`[interpreters.ps1]`), so a bare `Install-Module` there
+  lands where the profile's shell can never load it — and a bare `Get-Module -ListAvailable`
+  guard is blind for the same reason, so it would reinstall on every run. Hence **PSFzf** is
+  installed as `pwsh -NoProfile -Command '...Install-PSResource PSFzf -Scope CurrentUser
+  -TrustRepository'` — guard and install both inside pwsh. `-TrustRepository` is the
+  non-interactive flag (PSGallery is untrusted by default and would prompt);
+  `Install-PSResource` ships with pwsh 7.4+.
+- **The profile is dot-sourced from BOTH `$PROFILE`s, so gate anything newer than PSReadLine
+  2.0.0.** pwsh 7.6 ships 2.4.5, WinPS 5.1 ships **2.0.0**, which has no `-PredictionSource` —
+  ungated it throws on every 5.1 launch. (A box may have a newer one side-installed under
+  `~\Documents\WindowsPowerShell\Modules` — this one does — so testing on it proves nothing
+  about a fresh box; keep the gate.) The call is wrapped in `try/catch` (**not** `-ErrorAction SilentlyContinue`, which does not suppress it — the failure is terminating):
+  PSReadLine refuses PredictionSource outright when console output is redirected or lacks VT
+  processing, and a cosmetic feature must not paint the profile red. The block guards on `if ($psrl = Get-Module
+  PSReadLine)` rather than `Import-Module`: the console host loads PSReadLine before `$PROFILE`
+  runs, so testing for it LOADED also skips the block in a non-interactive host (`pwsh -Command`
+  with piped stdin — Claude Code's tool shell), where there is no line editor to configure.
+  `-PredictionViewStyle InlineView` is the DEFAULT — don't write it; `ListView` is the change.
+  Tab is `Complete` (bash-style common prefix) over the default `TabCompleteNext`.
+- **PSFzf's chords live inside the `fzf` guard**, not a block of their own — they are useless
+  without the binary. `Ctrl+t` provider, `Ctrl+r` history, `Alt+c` set-location; the first two
+  override PSReadLine's own `SwapCharacters` / `ReverseSearchHistory`.
 - **PowerShell profile**: managed at `dot_config/powershell/profile.ps1`
   (→ `~/.config/powershell/profile.ps1`). The bootstrap dot-sources it from the real
   `$PROFILE` (both pwsh 7 and WinPS 5.1 paths, via OneDrive-aware `GetFolderPath`).
