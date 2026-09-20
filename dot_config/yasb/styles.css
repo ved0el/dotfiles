@@ -39,6 +39,12 @@
   --base: #2b2e40;
   --mantle: #313244;
   --crust: #11111b;
+
+  /* Glass fill for the bar. rgba(), NOT 8-digit hex: yasb 2.0.7 defines
+     CSSProcessor._css_to_qt_hex_alpha (#RRGGBBAA -> #AARRGGBB) but never calls it from
+     process(), so #11111b8c would reach Qt raw and be read alpha-first as a 7% blue. */
+  --crust-glass: rgba(17, 17, 27, 0.55);
+  --glass-edge: rgba(205, 214, 244, 0.14);
 }
 
 /* --- Base Styles --- */
@@ -54,9 +60,12 @@
 /* --- Yasb Bar Itself --- */
 .yasb-bar {
   padding: 0 8px;
-  background-color: var(--crust);
+  /* Glass: the bar window already has WA_TranslucentBackground and enable_blur() runs
+     from blur_effect.enabled, so the DWM blur was always there - an opaque fill was
+     covering it. The alpha is the whole effect; the lit edge is what reads as a pane. */
+  background-color: var(--crust-glass);
   border-radius: 8px;
-  border: 1px solid var(--surface1);
+  border: 1px solid var(--glass-edge);
 }
 
 /* --- Individual Widgets --- */
@@ -114,14 +123,20 @@
   padding: 0;
 }
 
+/* 18px, not 17: at equal ink (15) this thin radial glyph reads SMALLER than the solid
+   layout icon beside it, so it carries +2 ink (17 vs 15) as optical compensation - the same
+   +2 the bar has always used here. No vertical padding: at 18px it already centres on
+   23.0, the same row the layout icon is padded up to. */
 .home-widget .icon {
-  font-size: 19px;
-  color: var(--overlay1);
+  font-size: 18px;
+  color: var(--text);
   padding-right: 4px;
 }
 
+/* Hover must go BRIGHTER than the base. The old pair was overlay1 -> overlay2; now that
+   the base is --text, overlay2 would have dimmed it on hover instead. */
 .home-widget .icon:hover {
-  color: var(--overlay2);
+  color: #ffffff;
 }
 
 .home-menu {
@@ -150,10 +165,14 @@
 /* ====================== */
 
 /* --- Komorebi Active Layout --- */
+/* padding-bottom lifts the glyph 1px, off the low row it sat on, onto the home icon's
+   centre (23.0). Qt eats half of any padding, so 2px written = 1px moved. padding-right is
+   NOT spare space here, it is the active-window title's left gap. */
 .komorebi-active-layout .label {
   font-size: 20px;
   padding: 0;
   padding-right: 6px;
+  padding-bottom: 2px;
   border-radius: 6px;
   outline: none;
 }
@@ -1207,5 +1226,5 @@
 .notification-widget .icon {
   padding-right: 4px;
   min-width: 14px;
-  font-size: 13px;
+  font-size: 16px;
 }

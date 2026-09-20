@@ -342,6 +342,31 @@ One text font and one icon font, both declared in `dot_config/yasb/styles.css`; 
 codepoints live in `dot_config/yasb/config.yaml.tmpl`. Run `yasbc reload` after any change here,
 and read the two restart traps at the end before concluding something is broken.
 
+- **The bar is glass, and that is a STYLESHEET setting, not a config one.** `Bar.__init__`
+  already sets `WA_TranslucentBackground` and already calls `enable_blur()` whenever
+  `blur_effect.enabled` is true, so the DWM blur was running all along - an opaque
+  `background-color` was simply painted over it. `.yasb-bar` therefore takes
+  `--crust-glass: rgba(17, 17, 27, 0.55)` over `--glass-edge` for the lit hairline; the alpha
+  IS the effect. Do NOT reach for `blur_effect.acrylic` to get this: 2.0.7's `enable_blur()`
+  takes no acrylic argument (it picks `ACCENT_ENABLE_BLURBEHIND` on build >= 22000,
+  `ACCENT_ENABLE_ACRYLICBLURBEHIND` below), and upstream marks the key
+  "no longer supported" - it is dead either way.
+- **Write bar alpha as `rgba()`, NEVER as 8-digit hex.** `CSSProcessor` defines
+  `_css_to_qt_hex_alpha` (`#RRGGBBAA` -> Qt's `#AARRGGBB`) but **`process()` never calls it** in
+  2.0.7 - confirmed by reading `process`'s own name table. So `#11111b8c` reaches Qt raw, is
+  read alpha-first, and silently renders as a ~7% blue instead of a 55% near-black. `rgba()`
+  needs no preprocessing at all; Qt accepts it, `rgba(r,g,b,55%)` and `#AARRGGBB` identically.
+  The popup menus (`.home-menu`, `.language-menu`, `.komorebi-layout-menu`) keep opaque
+  `--crust` on purpose - they are separate windows with no blur behind them, so alpha there
+  only reads as muddy.
+- **Verify a stylesheet change by driving yasb's OWN `CSSProcessor`, not by eye.** Put
+  `library.zip` on `sys.path` under **Python 3.14** (the bundled bytecode's magic; 3.13 fails
+  with "bad magic number"), call `CSSProcessor(path).process()`, and assert on the resolved
+  rule - that catches an unresolved `var()`, which Qt drops silently and which would leave the
+  bar fully transparent. To check a rendered result, screenshot the real bar and measure it;
+  `QWidget.render()` composites a frame more than once, so an alpha of 0.55 reads as ~0.8 there
+  and absolute pixel values from it mean nothing.
+
 - **Text = `Noto Sans JP`, icons = `JetBrainsMonoNL Nerd Font`, and the Nerd Font is also second
   in every text rule.** Noto is the only Google family installed here that covers everything the
   bar shows: Latin 95/95, **Vietnamese 90/90** (`U+1EA0`-`U+1EF9`), full Japanese (86 hiragana,
@@ -388,10 +413,10 @@ and read the two restart traps at the end before concluding something is broken.
   | `.media-widget .btn` | 18 | 12 | transport glyphs ink 8 at 13px |
   | `.systray .unpinned-visibility-btn` | 18 | 12 | chevrons, same |
   | `.pomodoro-widget .icon` | 15 | 13 | solid stopwatch `F13AB` |
-  | `.notification-widget .icon` | 13 | 13 | solid bell `F009A`; outline+badge `EB9A` reads smaller at the same height |
+  | `.notification-widget .icon` | 16 | 14 | solid bell `F009A`; outline+badge `EB9A` reads smaller at the same height |
   | `.language-widget .icon` | 14 | 12 | |
-  | `.home-widget .icon` | 19 | 18 | control; thin radial glyph, needs +2 over layout to LOOK equal |
-  | `.komorebi-active-layout .label` | 20 | 16 | control; its `padding-right` IS the window title's left gap |
+  | `.home-widget .icon` | 18 | 17 | control; thin radial glyph, needs +2 over layout to LOOK equal |
+  | `.komorebi-active-layout .label` | 20 | 15 | control; `padding-right` IS the window title's left gap, `padding-bottom: 2px` is its centring |
   | `.power-menu-widget .icon` | 23 | 17 | control; `F0425` uniquely sits at band bottom 0 at EVERY size |
 
   The first four are normalisation for glyphs that are unusually small in their em box - not the
@@ -399,6 +424,20 @@ and read the two restart traps at the end before concluding something is broken.
 - **Align by ink band, measured, not by eye.** `ascent - bbox` for the text cap and for the
   candidate glyph; one pixel off reads as visibly floating (`F0EE0` at `(-1, 12)` beside a
   neighbour at `(0, 11)`). Check the band the same way you check the `cmap`.
+- **Centre a glyph on the BAR, never on the icon next to it.** The bar body is rows `y 6..39`
+  (fill `7..38` plus a 1px border each side, at `height: 34` + `padding.top: 6`), so its centre
+  is **22.5**. The komorebi layout icon had always sat at 23.5-24.0; aligning the home icon to
+  *it* made the pair agree with each other and stay visibly low in the bar, which is the bug a
+  fresh pair of eyes reports. Measure the bar's own rows first - dump a pixel column at an x
+  with no glyph and read where the fill starts and stops - then align every icon to that.
+  A glyph with **even** ink lands on 22.5 exactly (bell 14, power 16); **odd** ink cannot, it
+  can only reach 22.0 or 23.0, so 0.5px is the floor there, not a miss worth chasing.
+- **Vertical padding moves ink by HALF what you write.** The padding grows the widget and the
+  bar re-centres it, eating the other half: `padding-top: 2px` shifted the home glyph exactly
+  1px, 4px shifted it 2px. Measure the 2px step before trusting the ratio on a new widget.
+  Also note shrinking `font-size` does NOT shrink a glyph about its centre - 19px->17px took
+  the home icon's band from `(15,31)` to `(15,29)`, i.e. it lost the 2px off the BOTTOM with
+  the top pinned, so a size change and a centring change are two separate steps.
 - **`min-width` lives on `.icon` alone, sized per widget to that icon's ink + 2.** A too-narrow
   icon QLabel clips the glyph's **LEFT** side, not its right: the wifi wedge inks 15px inside a
   9px advance and its label is right-aligned, so the overflow was cut off the leading edge.
@@ -420,6 +459,12 @@ and read the two restart traps at the end before concluding something is broken.
   14 -> 17 -> 22 -> 29 on `.power-menu-widget .label` with no visible change at all, because the
   glyph was still reading `.icon`'s 13px. Style a widget's icon with `.<widget> .icon`; writing
   it on `.label` fails silently - same trap for `color`, the red had to be restated on `.icon`.
+- **Raising an icon's base colour means raising its `:hover` too.** The home glyph ran
+  `--overlay1` -> `--overlay2` on hover, i.e. dim -> less dim. Lifting the base to `--text` and
+  leaving that pair would have made it go DARKER on hover; it is `--text` -> `#ffffff` now.
+  Brightness also changes what "the same size" looks like: the +2 ink this glyph carries was
+  calibrated while it was dim, and at full `--text` it briefly read oversized - the fix was
+  centring, not shrinking, so re-measure before trusting a size complaint after a colour change.
 - **cpu/memory/wifi/volume are the TEXT tags `C:` `R:` `W:` `V:`, not icons.** Every glyph in
   this font that sits in the text's ink band is some flavour of chip (`F061A`, `F035B`, `F0EE0`,
   `F0A0C` ...), so cpu and ram could never be told apart at bar size; the ones that ARE distinct
