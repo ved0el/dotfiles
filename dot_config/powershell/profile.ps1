@@ -114,7 +114,7 @@ if ($psrl = Get-Module PSReadLine) {
   if ($psrl.Version -ge [version]'2.1') {
     try { Set-PSReadLineOption -PredictionSource History } catch { }
   }
-  # Complete = bash-style (common prefix, then list). MenuComplete for a navigable grid.
+  # Complete = bash-style (common prefix, then list); the PSFzf block below swaps in fzf.
   Set-PSReadLineKeyHandler -Key Tab -Function Complete
 }
 
@@ -149,7 +149,14 @@ if (Get-Command fzf -ErrorAction SilentlyContinue) {
     Import-Module PSFzf
     Set-PsFzfOption -PSReadlineChordProvider 'Ctrl+t' `
                     -PSReadlineChordReverseHistory 'Ctrl+r' `
-                    -PSReadlineChordSetLocation 'Alt+c'
+                    -PSReadlineChordSetLocation 'Alt+c' `
+                    -TabCompletionPreviewWindow 'hidden|hidden'
+    # Tab -> fzf picker over PowerShell's own completions. Overrides the PSReadLine block's
+    # Tab=Complete, which stays as the fallback on a box without PSFzf/fzf.
+    # ponytail: tab preview hidden ('hidden|hidden' also pins ctrl-/) - PSFzf 2.7.12 passes {}
+    # to it, and each line carries a NUL delimiter, so exec fails ('cmd.exe: invalid
+    # argument'); its preview command is also empty on pwsh 7. Drop once upstream is fixed.
+    Set-PSReadLineKeyHandler -Key Tab -ScriptBlock { Invoke-FzfTabCompletion }
   }
 }
 

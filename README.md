@@ -61,9 +61,10 @@ macOS/Linux:
   (mise env injection, eza/zoxide/fzf wiring, chezmoi aliases). The bootstrap dot-sources
   it from your real `$PROFILE` for both PowerShell 7 and Windows PowerShell 5.1, so it
   survives OneDrive-redirected Documents.
-- **Line editing:** PSReadLine gives inline history suggestions (→ to accept) and `Tab`
-  completes bash-style. With `fzf` present, **PSFzf** adds `Ctrl+t` (file picker), `Ctrl+r`
-  (history search) and `Alt+c` (cd into a subdirectory) — the bootstrap installs the module.
+- **Line editing:** PSReadLine gives inline history suggestions (→ to accept). With `fzf`
+  present, **PSFzf** turns `Tab` into an fzf completion picker and adds `Ctrl+t` (file picker),
+  `Ctrl+r` (history search) and `Alt+c` (cd into a subdirectory) — the bootstrap installs the
+  module. Without PSFzf, `Tab` completes bash-style.
 - **`XDG_CONFIG_HOME`** is set to `~/.config` so mise and friends read the same config
   tree as Unix (mise would otherwise look in `%APPDATA%`).
 - **Window manager** (`wm` profile, default off): scoop installs `komorebi`, `whkd`, and

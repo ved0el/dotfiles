@@ -275,10 +275,24 @@ Verify before apply:
   runs, so testing for it LOADED also skips the block in a non-interactive host (`pwsh -Command`
   with piped stdin — Claude Code's tool shell), where there is no line editor to configure.
   `-PredictionViewStyle InlineView` is the DEFAULT — don't write it; `ListView` is the change.
-  Tab is `Complete` (bash-style common prefix) over the default `TabCompleteNext`.
+  Tab is `Complete` (bash-style common prefix) over the default `TabCompleteNext` — but only
+  as the FALLBACK: the PSFzf block rebinds Tab to `Invoke-FzfTabCompletion`. Order matters:
+  the PSReadLine block runs first, so the later fzf bind wins whenever PSFzf loads.
 - **PSFzf's chords live inside the `fzf` guard**, not a block of their own — they are useless
-  without the binary. `Ctrl+t` provider, `Ctrl+r` history, `Alt+c` set-location; the first two
+  without the binary. `Ctrl+t` provider, `Ctrl+r` history, `Alt+c` set-location, and `Tab`
+  → `Invoke-FzfTabCompletion` (fzf over PowerShell's own completion results); `Ctrl+t`/`Ctrl+r`
   override PSReadLine's own `SwapCharacters` / `ReverseSearchHistory`.
+- **PSFzf's Tab-completion preview is hidden (`-TabCompletionPreviewWindow 'hidden|hidden'`)
+  because it is broken upstream (2.7.12, also on `master`), twice over:** (1) its lines are
+  `CompletionText\0ListItemText` with `--delimiter '\0'`, and the preview passes `{}` = the
+  WHOLE line, NUL included, which Go's exec rejects → `cmd.exe: invalid argument` in the
+  preview pane; `{1}`/`{2}` would work (fzf strips the delimiter from fields). (2)
+  `$script:PowershellCmd` is only assigned on WinPS 5.1, so on pwsh 7 the preview command has
+  no program at all. Both measured in a real console by binding
+  `load:execute-silent(<cmd> > file)+abort` — use `load`, not `start`: at `start` there is no
+  item yet and fzf silently skips any command containing a placeholder, which fakes a
+  failure. `hidden|hidden` also pins `ctrl-/` so the pane can't be toggled back into the
+  error. `Ctrl+t` keeps its own bat preview (`FZF_CTRL_T_OPTS`) and is unaffected.
 - **PowerShell profile**: managed at `dot_config/powershell/profile.ps1`
   (→ `~/.config/powershell/profile.ps1`). The bootstrap dot-sources it from the real
   `$PROFILE` (both pwsh 7 and WinPS 5.1 paths, via OneDrive-aware `GetFolderPath`).
