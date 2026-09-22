@@ -1,8 +1,13 @@
 name: test
 
+# main + PRs only: pushing a PR branch used to run everything twice (push AND pull_request).
+# Docs-only commits (README/CLAUDE.md, most of this repo's history) skip CI entirely.
 on:
   push:
+    branches: [main]
+    paths-ignore: ['**.md']
   pull_request:
+    paths-ignore: ['**.md']
   workflow_dispatch:
 
 # Least privilege: this workflow only reads the repo. Override per-job if a step
@@ -10,13 +15,18 @@ on:
 permissions:
   contents: read
 
+# A newer push to the same ref makes the running one pointless.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  # Fast feedback on every push: templates render + dry-run, no package installs.
+  # Fast feedback: templates render + dry-run, no package installs. Gates the e2e jobs.
   lint:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install chezmoi
         run: |
           mkdir -p "$HOME/.local/bin"
@@ -32,7 +42,10 @@ jobs:
         run: chezmoi apply --dry-run --source "$PWD"
 
   # End-to-end: actually runs the bootstrap on clean runners (fresh-machine test).
+  # ubuntu-24.04-arm stands in for the Raspberry Pi: it is the only job that catches a mise
+  # tool with no linux-arm64 release asset.
   e2e:
+    needs: lint
     strategy:
       fail-fast: false
       matrix:
@@ -40,7 +53,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install chezmoi
         run: |
           mkdir -p "$HOME/.local/bin"
@@ -51,14 +64,22 @@ jobs:
         # wm stays off so yabai/skhd (GUI/SIP, impossible in CI) are skipped.
         run: chezmoi init --apply --source "$PWD" --promptDefaults --no-tty
       - name: Verify $HOME matches the repo
-        run: chezmoi verify --source "$PWD"
+        # verify alone exits 1 with no output; name what drifted before failing.
+        run: |
+          chezmoi verify --source "$PWD" && exit 0
+          chezmoi status --source "$PWD"
+          chezmoi diff --source "$PWD" | head -200
+          exit 1
 
   # End-to-end on Windows: scoop + mise bootstrap on a clean runner (fresh-machine test).
+  # The steps run in pwsh on purpose: chezmoi then launches the WinPS 5.1 bootstrap from a
+  # pwsh parent, the PSModulePath leak the bootstrap guards against.
   e2e-windows:
+    needs: lint
     runs-on: windows-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install chezmoi
         shell: pwsh
         run: |
@@ -72,4 +93,9 @@ jobs:
         run: chezmoi init --apply --source "$env:GITHUB_WORKSPACE" --promptDefaults --no-tty
       - name: Verify $HOME matches the repo
         shell: pwsh
-        run: chezmoi verify --source "$env:GITHUB_WORKSPACE"
+        run: |
+          chezmoi verify --source "$env:GITHUB_WORKSPACE"
+          if ($LASTEXITCODE -eq 0) { exit 0 }
+          chezmoi status --source "$env:GITHUB_WORKSPACE"
+          chezmoi diff --source "$env:GITHUB_WORKSPACE" | Select-Object -First 200
+          exit 1

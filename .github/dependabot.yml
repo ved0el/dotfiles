@@ -1,12 +1,13 @@
-# Keep GitHub Actions pinned-by-SHA references current and patched.
-# Dependabot reads the `# vX.Y.Z` comment next to each SHA pin and bumps both
-# the SHA and the comment when a new release lands.
+# The only pinned dependency in this repo is actions/checkout (by SHA). Dependabot reads
+# the `# vX.Y.Z` comment next to each SHA pin and bumps both when a release lands.
+# Monthly + one group = at most one PR a month. Everything else floats on purpose
+# (mise `latest`, scoop/brew/apt), so there is nothing for a bot to track there.
 version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
     commit-message:
       prefix: ci
     groups:

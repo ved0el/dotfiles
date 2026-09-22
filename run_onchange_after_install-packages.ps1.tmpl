@@ -5,6 +5,18 @@
 # and intentionally skipped here.
 $ErrorActionPreference = 'Stop'
 
+# This script runs under WinPS 5.1 ([interpreters.ps1]) but INHERITS PSModulePath from whoever
+# launched chezmoi. From pwsh 7 that list starts with pwsh's own module dirs, and 5.1 then
+# autoloads pwsh 7's Microsoft.PowerShell.Security and dies ("Get-ExecutionPolicy ... module
+# could not be loaded") at the first cmdlet from it - the scoop installer. It only bites when
+# pwsh's $PSHOME is readable: an MSI install (Program Files\PowerShell\7, e.g. GitHub's
+# runners) does, the Store/winget one (WindowsApps) is ACL-hidden from 5.1 and silently
+# skipped. Reset to 5.1's own list before any module loads.
+$env:PSModulePath = @(
+  (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'WindowsPowerShell\Modules')
+  [Environment]::GetEnvironmentVariable('PSModulePath', 'Machine')
+) -join ';'
+
 # --- env every later step + the PowerShell profile rely on (persisted for the user) ---
 $LocalBin = Join-Path $HOME '.local\bin'
 New-Item -ItemType Directory -Force -Path $LocalBin | Out-Null

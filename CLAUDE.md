@@ -253,6 +253,16 @@ Verify before apply:
   guard — the bootstrap never replaces one. The migration off scoop is proof the no-baked-path
   rule works: pwsh moved to `C:\Program Files\WindowsApps\Microsoft.PowerShell_<ver>_x64__…\`
   and `czcd` + the statusline kept working with no `chezmoi init` re-run.
+- **The bootstrap resets `PSModulePath` on its first line.** It runs under WinPS 5.1 but
+  inherits `PSModulePath` from whatever launched chezmoi. From pwsh 7 that list starts with
+  pwsh's own module dirs, so 5.1 autoloads pwsh 7's `Microsoft.PowerShell.Security` and dies
+  at the first cmdlet from it (`Get-ExecutionPolicy … module could not be loaded`, inside the
+  scoop installer). It only bites when pwsh's `$PSHOME` is READABLE by 5.1. An MSI install
+  (`Program Files\PowerShell\7`, as on GitHub's runners) is readable. A Store/winget install
+  (`WindowsApps`) is ACL-hidden, so 5.1 silently skips it, which is why this box never saw the
+  bug while `e2e-windows` failed on it every run. Reproduced locally by copying that module
+  into a readable dir at the front of `PSModulePath`. The fix sets the list to 5.1's own:
+  `Documents\WindowsPowerShell\Modules` plus the Machine-scope value.
 - **A PowerShell module the profile needs must be installed THROUGH `pwsh`, not by the
   bootstrap process.** Each edition has its own CurrentUser module dir and neither sees the
   other's: pwsh 7's `PSModulePath` holds `~\Documents\PowerShell\Modules` and the machine-wide
@@ -729,6 +739,25 @@ and read the two restart traps at the end before concluding something is broken.
   verb).
 - **yabai Space (workspace) binds need SIP partially disabled + the scripting addition** — with
   SIP on they silently no-op while every other bind still works (Accessibility only).
+
+### CI (`.github/`)
+- **`workflows/e2e.yml`**: `lint` runs in ~5s (renders both bootstraps and does
+  `apply --dry-run`) and gates the e2e jobs. `e2e` runs a real `chezmoi init --apply` on
+  ubuntu x64, ubuntu arm64 and macOS, and `e2e-windows` does the same on Windows. arm64 is kept
+  because it is the only job that catches a mise tool with no linux-arm64 asset, which is what
+  the Raspberry Pi needs. CI runs on pushes to `main` and on PRs, never on both for one PR
+  branch, skips commits that only touch `*.md`, and cancels a superseded run.
+- **The verify step prints `chezmoi status` and `chezmoi diff` before it fails.** A bare
+  `chezmoi verify` exits 1 with NO output, and that is why a red Ubuntu/macOS run went
+  undiagnosed from `8afea8e` onward. Read the step log first, not the bootstrap.
+- **`e2e-windows` runs its steps in `pwsh` on purpose.** That reproduces the PSModulePath leak
+  the bootstrap guards against (see Windows → Shell & env). Do not "simplify" the shell to
+  `powershell`, because that would hide the bug again.
+- **`dependabot.yml` is the only update bot, and Renovate is deliberately absent.** The repo
+  pins exactly one thing: `actions/checkout`, by SHA with a `# vX.Y.Z` comment. Every mise
+  tool is `latest`/`lts` and the OS package managers float, so a bot has nothing else to
+  track. Renovate would need its GitHub App installed and would manage the same single line.
+  The config is monthly with one group, so at most one PR a month.
 
 ## Before committing
 - ALWAYS update docs in the same commit as the change they describe:
