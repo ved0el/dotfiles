@@ -17,8 +17,8 @@ if (-not $env:XDG_CONFIG_HOME) { $env:XDG_CONFIG_HOME = Join-Path $HOME '.config
 # `mise ls` then shows no tools. We unset rather than just skip so a shell launched from a
 # parent that still carries a stale value (an older session, before the persisted User var was
 # cleared) self-heals.
-Remove-Item env:MISE_GLOBAL_CONFIG_FILE -ErrorAction SilentlyContinue
-Remove-Item env:MISE_CONFIG_DIR -ErrorAction SilentlyContinue
+Remove-Item env:MISE_GLOBAL_CONFIG_FILE -ErrorAction Ignore  # Ignore: no $Error record per launch
+Remove-Item env:MISE_CONFIG_DIR -ErrorAction Ignore
 # WM config homes (wm profile): komorebi/whkd/yasb read ~/.config/<tool>. komorebi
 # defaults to ~/komorebi.json and whkd to ~/.config/whkdrc, so these are needed. The
 # bootstrap persists them (User scope) for startup launches; this covers the session.
@@ -77,7 +77,7 @@ if (Get-Command eza -ErrorAction SilentlyContinue) {
   # alias shadows the function below and `ls` keeps the built-in output. Drop the alias
   # so `ls` runs eza. (la/ll/lt/lm/... have no built-in alias; `tree` is an .exe, which a
   # function already outranks.) -Force clears the read-only flag set on some PS builds.
-  Remove-Item Alias:ls -Force -ErrorAction SilentlyContinue
+  Remove-Item Alias:ls -Force -ErrorAction Ignore
   function ls  { eza --group-directories-first --icons=auto @args }
   function la  { eza --group-directories-first --icons=auto -a @args }
   function ll  { eza --group-directories-first --icons=auto -l --git --time-style=relative @args }
@@ -143,45 +143,93 @@ if (Get-Command fzf -ErrorAction SilentlyContinue) {
   $env:FZF_CTRL_T_COMMAND  = "rg --files --hidden --follow --glob '!.git/*'"
   $env:FZF_CTRL_T_OPTS     = '--preview "bat --style=numbers --color=always --line-range=:500 {}"'
   # PSFzf binds fzf to PSReadLine chords (installed by the bootstrap, via pwsh — see
-  # CLAUDE.md). Ctrl+t file picker · Ctrl+r history · Alt+c cd into a subdirectory. It
-  # overrides PSReadLine's own Ctrl+r (ReverseSearchHistory) and Ctrl+t (SwapCharacters).
-  if (Get-Module -ListAvailable -Name PSFzf) {
-    Import-Module PSFzf
-    Set-PsFzfOption -PSReadlineChordProvider 'Ctrl+t' `
-                    -PSReadlineChordReverseHistory 'Ctrl+r' `
-                    -PSReadlineChordSetLocation 'Alt+c' `
-                    -TabCompletionPreviewWindow 'hidden|hidden'
-    # Tab -> fzf picker over PowerShell's own completions. Overrides the PSReadLine block's
-    # Tab=Complete, which stays as the fallback on a box without PSFzf/fzf.
-    # ponytail: tab preview hidden ('hidden|hidden' also pins ctrl-/) - PSFzf 2.7.12 passes {}
-    # to it, and each line carries a NUL delimiter, so exec fails ('cmd.exe: invalid
-    # argument'); its preview command is also empty on pwsh 7. Drop once upstream is fixed.
-    Set-PSReadLineKeyHandler -Key Tab -ScriptBlock { Invoke-FzfTabCompletion }
+  # CLAUDE.md). Tab completion picker · Ctrl+t file picker · Ctrl+r history · Alt+c cd into a
+  # subdirectory. Ctrl+t/Ctrl+r override PSReadLine's own SwapCharacters/ReverseSearchHistory.
+  # LAZY: importing PSFzf costs ~150ms, a third of the whole profile, so the chords are bound
+  # here and the module loads on the FIRST keypress instead (PowerShell would auto-load it from
+  # the exported handler anyway; Use-PSFzf adds the one option and a fallback).
+  # Only when an interactive line editor is loaded (same gate as the PSReadLine block).
+  if (Get-Module PSReadLine) {
+    function global:Use-PSFzf {
+      if (Get-Module PSFzf) { return $true }
+      try { Import-Module PSFzf -Global -ErrorAction Stop } catch { return $false }
+      # ponytail: tab preview hidden ('hidden|hidden' also pins ctrl-/) - PSFzf 2.7.12 passes {}
+      # to it, and each line carries a NUL delimiter, so exec fails ('cmd.exe: invalid
+      # argument'); its preview command is also empty on pwsh 7. Drop once upstream is fixed.
+      Set-PsFzfOption -TabCompletionPreviewWindow 'hidden|hidden'
+      $true
+    }
+    # Tab and Ctrl+r fall back to PSReadLine's own function if PSFzf is missing or fails.
+    Set-PSReadLineKeyHandler -Key Tab -ScriptBlock {
+      if (Use-PSFzf) { Invoke-FzfTabCompletion } else { [Microsoft.PowerShell.PSConsoleReadLine]::Complete($null, $null) }
+    }
+    Set-PSReadLineKeyHandler -Chord Ctrl+r -ScriptBlock {
+      if (Use-PSFzf) { Invoke-FzfPsReadlineHandlerHistory } else { [Microsoft.PowerShell.PSConsoleReadLine]::ReverseSearchHistory($null, $null) }
+    }
+    Set-PSReadLineKeyHandler -Chord Ctrl+t -ScriptBlock { if (Use-PSFzf) { Invoke-FzfPsReadlineHandlerProvider } }
+    Set-PSReadLineKeyHandler -Chord Alt+c  -ScriptBlock { if (Use-PSFzf) { Invoke-FzfPsReadlineHandlerSetLocation } }
   }
 }
 
-# ── gh (GitHub CLI) completion ──────────────────────────────────────────────────────
-if (Get-Command gh -ErrorAction SilentlyContinue) {
-  $init = gh completion -s powershell 2>$null | Out-String
-  if ($init) { Invoke-Expression $init }
+# ── cached init scripts (gh / starship / zoxide) ──────────────────────────────────────
+# Each tool's generated init script is written ONCE to ~/.cache/pwsh and dot-sourced after
+# that: spawning the three tools on every launch cost ~180ms of a ~450ms profile. The cache
+# file is named after the exe's FULL PATH, and mise install paths embed the version
+# (...\installs\starship\1.26.0\starship.exe), so an upgrade is a new path = a fresh cache,
+# with no invalidation logic. -DependsOn adds a config file's mtime to the key, for a script
+# that bakes in something read from that config. -Transform post-processes the text once, at
+# generation. Delete ~/.cache/pwsh to force a rebuild. Returns the file to dot-source at THIS
+# scope (dot-sourcing inside the function would scope its definitions).
+$InitCacheDir = Join-Path $HOME '.cache\pwsh'
+function Get-InitScript([string]$Tool, [string[]]$InitArgs, [string]$DependsOn, [scriptblock]$Transform) {
+  $exe = (Get-Command $Tool -CommandType Application -ErrorAction Ignore | Select-Object -First 1).Source
+  if (-not $exe) { return }
+  $key = $exe
+  if ($DependsOn -and (Test-Path $DependsOn)) { $key += '_' + (Get-Item $DependsOn).LastWriteTimeUtc.Ticks }
+  $file = Join-Path $InitCacheDir (($key -replace '[^A-Za-z0-9._-]', '_') + '.ps1')
+  if (-not (Test-Path $file) -or (Get-Item $file).Length -eq 0) {
+    $text = & $exe @InitArgs 2>$null | Out-String
+    if (-not $text) { return }
+    if ($Transform) { $text = & $Transform $text $exe }
+    $null = New-Item -ItemType Directory -Force $InitCacheDir
+    # temp + rename so two windows opening at once never dot-source a half-written file;
+    # UTF-8 WITH BOM so WinPS 5.1 (which also loads this profile) reads it correctly.
+    $tmp = "$file.$PID"
+    [IO.File]::WriteAllText($tmp, $text, [Text.UTF8Encoding]::new($true))
+    Move-Item $tmp $file -Force
+  }
+  $file
 }
+# ponytail: superseded caches (old tool versions, old starship.toml edits) are never pruned
+# (~10KB each); rm the dir if it grows.
+
+# ── gh (GitHub CLI) completion ──────────────────────────────────────────────────────
+if ($f = Get-InitScript gh 'completion', '-s', 'powershell') { . $f }
 
 # ── starship (prompt; Windows uses it where Unix uses powerlevel10k) ──────────────────
-if (Get-Command starship -ErrorAction SilentlyContinue) {
-  $init = starship init powershell 2>$null | Out-String
-  if ($init) { Invoke-Expression $init }
+# `init powershell` only prints a one-liner that re-spawns starship with --print-full-init;
+# cache the full script directly. That script ALSO spawns `starship prompt --continuation` at
+# load time (~60ms) just to set PSReadLine's ContinuationPrompt, whose value depends only on
+# starship.toml - so bake the string in once, keyed on the config's mtime. If a future
+# starship reshapes that call the -replace simply matches nothing and the spawn stays.
+$StarshipConfig = if ($env:STARSHIP_CONFIG) { $env:STARSHIP_CONFIG } else { Join-Path $env:XDG_CONFIG_HOME 'starship.toml' }
+$f = Get-InitScript starship 'init', 'powershell', '--print-full-init' -DependsOn $StarshipConfig -Transform {
+  param($text, $exe)
+  $cont = (& $exe prompt --continuation) -join ''
+  $text -replace '(?s)Set-PSReadLineOption -ContinuationPrompt \(\s*Invoke-Native .*?"--continuation"\s*\)\s*\)',
+                 ("Set-PSReadLineOption -ContinuationPrompt '" + $cont.Replace("'", "''") + "'")
 }
+if ($f) { . $f }
 
 # ── zoxide (smart cd; defines z/zi, also maps cd/cdi) — MUST init AFTER starship ─────
 # zoxide records visited dirs via a hook that WRAPS the current `prompt` function. starship
 # REPLACES `prompt`, so if zoxide inits first, starship clobbers the hook and no directory
 # is ever recorded (`z foo` → "not found"). Initializing zoxide last makes it wrap starship's
 # prompt, so the prompt renders AND every cd gets tracked.
-if (Get-Command zoxide -ErrorAction SilentlyContinue) {
+# zoxide uses the shell-name `powershell` (NOT `pwsh`).
+if ($f = Get-InitScript zoxide 'init', 'powershell') {
   $env:_ZO_DOCTOR = '0'
-  # zoxide uses the shell-name `powershell` (NOT `pwsh`).
-  $init = zoxide init powershell 2>$null | Out-String
-  if ($init) { Invoke-Expression $init }
+  . $f
   # Mirror the zsh `alias cd="z"` / `alias cdi="zi"` so `cd <keyword>` jumps via zoxide
   # (the zsh conf.d does the same). __zoxide_z still cd's literally when the arg is a real
   # path (cd .., cd C:\, cd .\sub), and only fuzzy-jumps when it isn't — so nothing breaks.

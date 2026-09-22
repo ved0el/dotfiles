@@ -60,11 +60,14 @@ macOS/Linux:
 - **Shell:** a managed `~/.config/powershell/profile.ps1` mirrors the zsh config
   (mise env injection, eza/zoxide/fzf wiring, chezmoi aliases). The bootstrap dot-sources
   it from your real `$PROFILE` for both PowerShell 7 and Windows PowerShell 5.1, so it
-  survives OneDrive-redirected Documents.
+  survives OneDrive-redirected Documents. It loads in about 210ms: the starship/zoxide/gh init
+  scripts are cached in `~/.cache/pwsh` and rebuilt when a tool upgrades (delete the folder to
+  force a rebuild).
 - **Line editing:** PSReadLine gives inline history suggestions (→ to accept). With `fzf`
   present, **PSFzf** turns `Tab` into an fzf completion picker and adds `Ctrl+t` (file picker),
   `Ctrl+r` (history search) and `Alt+c` (cd into a subdirectory) — the bootstrap installs the
-  module. Without PSFzf, `Tab` completes bash-style.
+  module. PSFzf loads on the first of those keypresses, so the first one takes about 150ms
+  longer. Without PSFzf, `Tab` completes bash-style.
 - **`XDG_CONFIG_HOME`** is set to `~/.config` so mise and friends read the same config
   tree as Unix (mise would otherwise look in `%APPDATA%`).
 - **Window manager** (`wm` profile, default off): scoop installs `komorebi`, `whkd`, and
