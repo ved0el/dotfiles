@@ -778,12 +778,17 @@ and read the two restart traps at the end before concluding something is broken.
 - **`e2e-windows` runs its steps in `pwsh` on purpose.** That reproduces the PSModulePath leak
   the bootstrap guards against (see Windows → Shell & env). Do not "simplify" the shell to
   `powershell`, because that would hide the bug again.
-- **Renovate (`.github/renovate.json`) updates GitHub Actions and nothing else**
+- **Renovate (`renovate.json`) updates GitHub Actions and nothing else**
   (`enabledManagers: ["github-actions"]`). Dependabot was removed so that only one bot runs.
   mise tools are deliberately NOT managed by Renovate: they stay `latest`/`lts`, and each
   machine upgrades them itself. Details:
-  - **Location:** the file lives in `.github/`, not at the repo root. chezmoi applies every
-    non-dot root file to `~/`, so a root `renovate.json` would land in `$HOME`.
+  - **Location:** the file is at the repo root and is listed in `.chezmoiignore` beside
+    README/CLAUDE.md. chezmoi applies every non-dot root file to `~/`, so without that entry it
+    would land in `$HOME`. Check with `chezmoi managed | grep -c renovate`, which should print
+    0. (`.github/renovate.json` is read just as well; location has no effect on the dashboard.)
+  - **Dependency Dashboard:** it is on, because `config:recommended` enables it. It is one
+    issue that lists pending, rate-limited and major updates, and it is the only place a held
+    major shows up before you act on it.
   - **Pins:** `helpers:pinGitHubActionDigests` keeps every `uses:` pinned by SHA with a
     `# vX.Y.Z` comment. Renovate bumps both together.
   - **Automerge:** minor/patch/digest updates are grouped into one PR and merged by RENOVATE
@@ -797,7 +802,7 @@ and read the two restart traps at the end before concluding something is broken.
   - **`minimumReleaseAge: 3 days`** is a supply-chain cooldown, so a release that gets pulled
     back never merges itself.
   - **Validate edits** with `npx -y --package renovate -- renovate-config-validator
-    .github/renovate.json`.
+    renovate.json`.
   - **Needs the Mend Renovate GitHub App installed on the repo.** Without it this file does
     nothing.
 

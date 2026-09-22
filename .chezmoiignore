@@ -1,6 +1,7 @@
-# repo docs — never apply these to $HOME
+# repo files — never apply these to $HOME
 README.md
 CLAUDE.md
+renovate.json
 
 # Machine-local mise config — `mise use -g` writes here by default (no env var; never
 # set MISE_GLOBAL_CONFIG_FILE, it breaks conf.d discovery outside $HOME).
