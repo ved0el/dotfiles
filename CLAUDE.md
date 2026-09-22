@@ -761,6 +761,12 @@ and read the two restart traps at the end before concluding something is broken.
 - **The verify step prints `chezmoi status` and `chezmoi diff` before it fails.** A bare
   `chezmoi verify` exits 1 with NO output, and that is why a red Ubuntu/macOS run went
   undiagnosed from `8afea8e` onward. Read the step log first, not the bootstrap.
+- **e2e exports `GITHUB_TOKEN` (the job token) to every step.** mise resolves `latest` and
+  downloads `github:`/`aqua:` tools through the GitHub API. Unauthenticated, that allows 60
+  requests/hour **per IP**, and hosted runners share IPs. macOS died mid-`mise install` on "API
+  rate limit exceeded" before it had installed a single one of this repo's tools. With the
+  token the limit is 5000/hour, and it stays read-only per `permissions: contents: read`. Do
+  not drop it to "simplify".
 - **A second `chezmoi apply --force` runs before verify, on purpose.** Cause:
   `claude plugin marketplace add` rewrites a newly added marketplace's entry in the MANAGED
   `~/.claude/settings.json` and DROPS its `autoUpdate: true` (`ponytail`, `last30days-skill`).

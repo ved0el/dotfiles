@@ -27,6 +27,13 @@ on:
 permissions:
   contents: read
 
+# mise resolves `latest` and downloads github:/aqua: tools through the GitHub API. Unauthenticated
+# that is 60 requests/hour PER IP, and hosted runners share IPs: macOS runs died mid-install on
+# "API rate limit exceeded". The job token (read-only, per `permissions` above) lifts it to
+# 5000/hour; mise and gh both pick GITHUB_TOKEN up from the environment.
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
