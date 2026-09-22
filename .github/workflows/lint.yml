@@ -1,0 +1,38 @@
+name: lint
+
+# Every push to main and every PR: ~5s, no package installs. The heavy fresh-install test is
+# e2e.yml, which only runs when something that affects installation changes.
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md']
+  pull_request:
+    paths-ignore: ['**.md']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install chezmoi
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Init config from this commit (renders .chezmoi.toml.tmpl with defaults)
+        run: chezmoi init --source "$PWD" --promptDefaults --no-tty
+      - name: Bootstrap scripts render cleanly (sh + ps1)
+        run: |
+          chezmoi execute-template --source "$PWD" < run_onchange_after_install-packages.sh.tmpl
+          chezmoi execute-template --source "$PWD" < run_onchange_after_install-packages.ps1.tmpl
+      - name: Dry-run apply (no changes made)
+        run: chezmoi apply --dry-run --source "$PWD"

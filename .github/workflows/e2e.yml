@@ -1,51 +1,40 @@
-name: test
+name: e2e
 
-# main + PRs only: pushing a PR branch used to run everything twice (push AND pull_request).
-# Docs-only commits (README/CLAUDE.md, most of this repo's history) skip CI entirely.
+# Real fresh-machine installs (`chezmoi init --apply`) - minutes each and network-heavy, so
+# NOT on every push. Only when something that changes what gets installed moves:
+#   bootstrap/update scripts, chezmoi config/data/ignore, mise manifests, the Claude plugin
+#   list (the bootstrap renders its ids from settings.json.tmpl), tmux/sheldon plugin lists
+#   (the bootstrap clones them), and this file.
+# Plus weekly: every mise tool is `latest`, so an upstream release can break a fresh install
+# with no commit here at all.
 on:
   push:
     branches: [main]
-    paths-ignore: ['**.md']
+    paths: &install-paths
+      - 'run_*'
+      - '.chezmoi*'
+      - 'dot_config/mise/**'
+      - 'dot_config/sheldon/**'
+      - 'dot_tmux.conf'
+      - 'dot_claude/settings.json.tmpl'
+      - '.github/workflows/e2e.yml'
   pull_request:
-    paths-ignore: ['**.md']
+    paths: *install-paths
+  schedule:
+    - cron: '0 3 * * 1'
   workflow_dispatch:
 
-# Least privilege: this workflow only reads the repo. Override per-job if a step
-# ever needs more.
 permissions:
   contents: read
 
-# A newer push to the same ref makes the running one pointless.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  # Fast feedback: templates render + dry-run, no package installs. Gates the e2e jobs.
-  lint:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Install chezmoi
-        run: |
-          mkdir -p "$HOME/.local/bin"
-          sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin"
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-      - name: Init config from this commit (renders .chezmoi.toml.tmpl with defaults)
-        run: chezmoi init --source "$PWD" --promptDefaults --no-tty
-      - name: Bootstrap scripts render cleanly (sh + ps1)
-        run: |
-          chezmoi execute-template --source "$PWD" < run_onchange_after_install-packages.sh.tmpl
-          chezmoi execute-template --source "$PWD" < run_onchange_after_install-packages.ps1.tmpl
-      - name: Dry-run apply (no changes made)
-        run: chezmoi apply --dry-run --source "$PWD"
-
-  # End-to-end: actually runs the bootstrap on clean runners (fresh-machine test).
   # ubuntu-24.04-arm stands in for the Raspberry Pi: it is the only job that catches a mise
   # tool with no linux-arm64 release asset.
   e2e:
-    needs: lint
     strategy:
       fail-fast: false
       matrix:
@@ -63,6 +52,12 @@ jobs:
         # --promptDefaults => tools=true, develop=false, tmux=true, wm=false.
         # wm stays off so yabai/skhd (GUI/SIP, impossible in CI) are skipped.
         run: chezmoi init --apply --source "$PWD" --promptDefaults --no-tty
+      - name: Second apply (what the next `cza` does on a fresh box)
+        # The bootstrap's `claude plugin marketplace add` rewrites a new marketplace's entry in
+        # the managed ~/.claude/settings.json and drops its `autoUpdate` - first run only (the
+        # adds are skipped once registered). This apply restores the file; the bootstrap must
+        # NOT re-run (unchanged fingerprint), so verify below also proves the setup converges.
+        run: chezmoi apply --force --source "$PWD"
       - name: Verify $HOME matches the repo
         # verify alone exits 1 with no output; name what drifted before failing.
         run: |
@@ -71,11 +66,9 @@ jobs:
           chezmoi diff --source "$PWD" | head -200
           exit 1
 
-  # End-to-end on Windows: scoop + mise bootstrap on a clean runner (fresh-machine test).
   # The steps run in pwsh on purpose: chezmoi then launches the WinPS 5.1 bootstrap from a
   # pwsh parent, the PSModulePath leak the bootstrap guards against.
   e2e-windows:
-    needs: lint
     runs-on: windows-latest
     timeout-minutes: 30
     steps:
@@ -91,6 +84,10 @@ jobs:
         # --promptDefaults => tools=true, develop=false. tmux/wm are Windows-skipped.
         shell: pwsh
         run: chezmoi init --apply --source "$env:GITHUB_WORKSPACE" --promptDefaults --no-tty
+      - name: Second apply (what the next `cza` does on a fresh box)
+        # See the e2e job: marketplace add drops `autoUpdate` from settings.json on first run.
+        shell: pwsh
+        run: chezmoi apply --force --source "$env:GITHUB_WORKSPACE"
       - name: Verify $HOME matches the repo
         shell: pwsh
         run: |
