@@ -124,6 +124,16 @@
       "kind": "Exe",
       "id": "Palworld-Win64-Shipping.exe",
       "matching_strategy": "Equals"
+    },
+    {
+      "kind": "Exe",
+      "id": "DeltaForceClient-Win64-Shipping.exe",
+      "matching_strategy": "Equals"
+    },
+    {
+      "kind": "Exe",
+      "id": "DeltaForceClient.exe",
+      "matching_strategy": "Equals"
     }
   ]
 }

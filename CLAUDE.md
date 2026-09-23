@@ -434,6 +434,19 @@ apply only on Windows+wm (gated like skhd/yabai).
   `%LOCALAPPDATA%\BraveSoftware\Brave-Browser\User Data\Default\Extensions\` (its
   `_locales/en/messages.json` gives the display name) — only needed to narrow the rule to a
   SINGLE extension; the `_crx_` prefix rule needs no id at all.
+- **There is no "don't manage fullscreen windows" switch — games go in `ignore_rules` by exe.**
+  Checked against `komorebic static-config-schema` on 0.1.41: the schema has no `fullscreen`
+  key at all, and the only levers are the per-application rule lists plus `float_override`
+  (float EVERYTHING new, then force-manage the rest via `manage_rules`, i.e. an inverted model
+  this repo does not use). So each game gets an `Exe` entry: `Palworld-Win64-Shipping.exe`,
+  `DeltaForceClient-Win64-Shipping.exe` + its launcher `DeltaForceClient.exe` (CS2 is a `Title`
+  rule instead). A UE game ships the real window as `<Name>-Win64-Shipping.exe` under
+  `<install>\<Name>\Binaries\Win64\`, and the root-level exe is usually just the launcher —
+  add both, they are separate windows. The community `applications.json`
+  (`app_specific_configuration_path`) does NOT cover these; grep it before adding a rule.
+- **The generic escape hatch is `alt + ctrl + p` (`komorebic toggle-pause`)**, already bound in
+  `whkdrc`. It covers any game with no config edit, so a rule is only worth adding for one you
+  play often.
 - **Seelen UI conflict**: komorebi fights any concurrent tiling WM (`seelen-ui.exe`). Keep
   Seelen for its dock but turn OFF its window manager (this box has
   `@seelen/window-manager: enabled:false`), or neither tiles cleanly.
