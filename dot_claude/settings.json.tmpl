@@ -62,7 +62,8 @@
     "chrome-devtools-mcp@claude-plugins-official": true,
     "code-review@claude-plugins-official": true,
     "code-simplifier@claude-plugins-official": true,
-    "commit-commands@claude-plugins-official": true
+    "commit-commands@claude-plugins-official": true,
+    "cloudflare@cloudflare": true
   },
   "extraKnownMarketplaces": {
     "claude-plugins-official": {
@@ -96,10 +97,23 @@
         "source": "github",
         "repo": "thedotmack/claude-mem"
       }
+    },
+    "cloudflare": {
+      "source": {
+        "source": "github",
+        "repo": "cloudflare/skills"
+      }
     }
   },
   "advisorModel": "fable",
   "awaySummaryEnabled": false,
+  "pluginConfigs": {
+    "agents-md@builtin": {
+      "options": {
+        "instructionFiles": "claude-md-and-agents-md"
+      }
+    }
+  },
   "tui": "fullscreen",
   "timeFormat": "24-hour",
   "editorMode": "normal",
