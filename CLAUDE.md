@@ -525,7 +525,7 @@ and read the two restart traps at the end before concluding something is broken.
   | `.weather-widget .icon` | 17 | 12 | the cloud inks only 9 at 13px |
   | `.whkd-widget .icon` | 17 | 12 | keyboard, same |
   | `.media-widget .btn` | 18 | 12 | transport glyphs ink 8 at 13px |
-  | `.systray .unpinned-visibility-btn` | 18 | 12 | chevrons, same |
+  | `.systray .unpinned-visibility-btn` | 20 | ? | double chevrons `F013D`/`F013E`; ink not re-measured |
   | `.pomodoro-widget .icon` | 15 | 13 | solid stopwatch `F13AB` |
   | `.notification-widget .icon` | 16 | 14 | solid bell `F009A`; outline+badge `EB9A` reads smaller at the same height |
   | `.language-widget .icon` | 14 | 12 | |

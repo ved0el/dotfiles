@@ -839,15 +839,15 @@
 }
 
 .systray .unpinned-visibility-btn {
-  font-size: 18px;
+  font-size: 20px;
   font-family: 'JetBrainsMonoNL Nerd Font', sans-serif;
   border-radius: 4px;
-  padding: 0 4px;
-  color: var(--surface2);
+  padding: 0 1px 0 4px;
+  color: var(--subtext0);
 }
 
 .systray .unpinned-visibility-btn:hover {
-  color: var(--text);
+  color: #ffffff;
 }
 
 /* ====================== */
