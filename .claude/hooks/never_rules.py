@@ -122,6 +122,8 @@ def scan():
     files = subprocess.run(["git", "-C", SOURCE, "ls-files"], capture_output=True, text=True, check=True).stdout.split()
     bad = 0
     for rel in files:
+        if rel == ".claude/hooks/never_rules.py":  # its selftest cases ARE violations
+            continue
         try:
             with open(os.path.join(SOURCE, rel), encoding="utf-8") as f:
                 lines = f.read().splitlines()

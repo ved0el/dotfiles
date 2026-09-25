@@ -135,6 +135,12 @@ and read the two restart traps at the end before concluding something is broken.
   (`F4BC`, `F2DB`) sit 2-3px out of band and float. A tag is unambiguous AND aligned by
   construction, because it is text. Do not "improve" this back into icons without first finding
   two in-band glyphs a stranger can name.
+- **Any icon option left at its yasb DEFAULT is a Segoe Fluent codepoint and renders as the wrong
+  Nerd Font glyph.** `media_menu_icons` (the right-click popup) shipped E768/E769/E892/E893/E994/E74F,
+  which this font draws as `dev-clojure` and friends; it is now pinned to Material play/pause/
+  skip/volume. When a widget grows a new icon option, set it explicitly - read the defaults out of
+  `library.zip` (`core/validation/widgets/yasb/<widget>.pyc` consts) and check each against the
+  font's `cmap`.
 - **The icon set is Material (`nf-md-*`) throughout.** The rule is one STROKE WEIGHT, not one
   family - mixing is fine when the result stays coherent - but Material won every slot on
   comparison, including the komorebi layouts: its `view-*` block maps onto them exactly
