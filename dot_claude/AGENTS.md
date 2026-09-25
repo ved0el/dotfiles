@@ -59,13 +59,18 @@ Scoped notes for `dot_claude/` and the Claude sections of `run_onchange_after_in
 - **`false` in `enabledPlugins` = installed but OFF, not "not installed".** Both loops use
   `range $id, $_` and ignore the value, so a `false` plugin is still installed by `cza` and
   updated by `czu`. To get rid of a plugin, DELETE its line (and `claude plugin uninstall` it on
-  existing boxes); `false` is for opt-in plugins. **`ecc@ecc` (marketplace `affaan-m/ECC`) is the
-  one opt-in plugin:** off globally, turned on per project with `claude plugin enable ecc@ecc
-  --scope local` (writes that repo's gitignored `.claude/settings.local.json`; `--scope project`
+  existing boxes); `false` is for opt-in plugins. **Opt-in plugins: `ecc@ecc` (marketplace
+  `affaan-m/ECC`) and `cloudflare@cloudflare`** (14 skills in every session's listing, used once):
+  off globally, turned on per project with `claude plugin enable <id> --scope local` (writes that repo's gitignored `.claude/settings.local.json`; `--scope project`
   shares it via `.claude/settings.json`). Its rules are NOT part of the plugin, and once lived
   in `~/.claude/rules/ecc`, which loaded ~4.4k tokens into EVERY session. For a project that
   wants them, copy only the needed dirs from the plugin cache:
   `cp -r ~/.claude/plugins/cache/ecc/ecc/*/rules/{common,<lang>} .claude/rules/ecc/`.
+- **No `document-skills` plugin:** it duplicated the claude.ai-synced `anthropic-skills:*`
+  (docx/pdf/pptx/xlsx, under `~/.claude/skills/synced/`, account-level, not chezmoi-managed).
+  Likewise `design-taste-frontend` is off in favour of the official `frontend-design` plugin -
+  both auto-trigger on UI work with conflicting guidance. Rule: when two skills overlap, keep the
+  standard/official one.
 - `skillOverrides` (tracked) turns off skills that the `*` skill repos below install but that
   are never used. They stay on disk, and the skill listing no longer carries them.
 - **`claude-mem` (`thedotmack` marketplace) is fully plugin-managed — beyond the generic
