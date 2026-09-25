@@ -41,7 +41,7 @@ $env:XDG_CONFIG_HOME = $XdgConfig
 
 # NOTE: deliberately DO NOT set MISE_GLOBAL_CONFIG_FILE / MISE_CONFIG_DIR. They are redundant
 # (mise already defaults to ~/.config/mise) AND they stop mise auto-discovering the conf.d/*.toml
-# manifests when CWD is outside $HOME. The shell profiles unset them; see CLAUDE.md.
+# manifests when CWD is outside $HOME. The shell profiles unset them; see dot_config/mise/AGENTS.md.
 
 # Window-manager config homes — point komorebi/whkd/yasb at ~/.config/<tool>. These
 # MUST be persisted (User scope): the WM apps launch at startup, outside any shell
@@ -68,7 +68,7 @@ if (-not (Get-Command git -ErrorAction SilentlyContinue)) { scoop install git }
 # installs per-user with NO elevation and drops a `pwsh.exe` app alias into
 # %LOCALAPPDATA%\Microsoft\WindowsApps, which is on the user PATH by default. PATH resolution is
 # what matters: [cd] (`chezmoi cd`/`czcd`) and Claude Code's statusLine both invoke bare `pwsh`.
-# Nothing bakes an absolute path — see CLAUDE.md "never bake pwsh's path".
+# Nothing bakes an absolute path — see AGENTS.md "never bake pwsh's path".
 if (-not (Get-Command pwsh -ErrorAction SilentlyContinue)) {
   if (Get-Command winget -ErrorAction SilentlyContinue) {
     $wgArgs = @('install', '--id', 'Microsoft.PowerShell', '--exact', '--source', 'winget',

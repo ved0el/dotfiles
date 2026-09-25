@@ -56,7 +56,7 @@ if (-not (Get-Process whkd -ErrorAction SilentlyContinue)) {
 # when a reload can land.
 # NOTE: this does NOT help a window opened later in the session. An earlier revision of this
 # comment claimed it fixed the Bitwarden browser popup; it never could — that popup is created
-# minutes after logon. See CLAUDE.md "browser extension popups" for the actual cause and fix.
+# minutes after logon. See dot_config/komorebi/AGENTS.md "browser extension popups" for the actual cause and fix.
 for ($i = 0; $i -lt 60; $i++) {
   & $komorebicExe state *>$null
   if ($LASTEXITCODE -eq 0) {

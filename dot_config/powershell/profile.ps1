@@ -66,7 +66,7 @@ if (Get-Command antigravity-ide -ErrorAction SilentlyContinue) {
 # `yasbr` is a full restart, NOT `yasbc reload`. yasb 2.0.7 registers its audio
 # endpoint callback exactly once and swallows every failure, so the volume readout
 # freezes for good after the default device drops out (USB audio, dock/monitor sleep).
-# Only stop+start re-registers it. See CLAUDE.md → yasb bar.
+# Only stop+start re-registers it. See dot_config/yasb/AGENTS.md.
 if (Get-Command yasbc -ErrorAction SilentlyContinue) {
   function yasbr { yasbc stop; Start-Sleep -Seconds 2; yasbc start }
 }
@@ -143,7 +143,7 @@ if (Get-Command fzf -ErrorAction SilentlyContinue) {
   $env:FZF_CTRL_T_COMMAND  = "rg --files --hidden --follow --glob '!.git/*'"
   $env:FZF_CTRL_T_OPTS     = '--preview "bat --style=numbers --color=always --line-range=:500 {}"'
   # PSFzf binds fzf to PSReadLine chords (installed by the bootstrap, via pwsh — see
-  # CLAUDE.md). Tab completion picker · Ctrl+t file picker · Ctrl+r history · Alt+c cd into a
+  # AGENTS.md). Tab completion picker · Ctrl+t file picker · Ctrl+r history · Alt+c cd into a
   # subdirectory. Ctrl+t/Ctrl+r override PSReadLine's own SwapCharacters/ReverseSearchHistory.
   # LAZY: importing PSFzf costs ~150ms, a third of the whole profile, so the chords are bound
   # here and the module loads on the FIRST keypress instead (PowerShell would auto-load it from

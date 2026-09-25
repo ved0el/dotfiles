@@ -5,7 +5,7 @@
 # Pure PowerShell (no MSYS bash / jq / awk). Claude launches ONE native pwsh
 # process per render, so no Git Bash console window flashes on Windows. The bash
 # version (statusline.sh) stays the source of truth on macOS/Linux; keep the two
-# in sync. See the "statusline flash" gotcha in CLAUDE.md.
+# in sync. See the "statusline flash" gotcha in dot_claude/AGENTS.md.
 #
 # Line 1  WHERE:    📁 cwd  🔀 branch[✱] [↑↓]  +adds −dels  🌳 worktree
 # Line 2  ENGINE:   🪪 account  🤖 model  🎚️ effort  🎯 cache-hit%  🧠 used%
