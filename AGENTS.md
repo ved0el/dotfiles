@@ -256,6 +256,18 @@ komorebi/whkd: `dot_config/komorebi/AGENTS.md`. yasb: `dot_config/yasb/AGENTS.md
 ### CI (`.github/`)
 - Workflows, verify step, GITHUB_TOKEN, Renovate: `.github/AGENTS.md`.
 
+## Enforced NEVER rules (hook)
+`.claude/hooks/never_rules.py` is a PreToolUse hook (registered in the checked-in
+`.claude/settings.json`; chezmoi ignores the dot-dir, so it never reaches `$HOME`). It blocks an
+Edit/Write that ADDS a non-comment line breaking one of: set `MISE_GLOBAL_CONFIG_FILE`/
+`MISE_CONFIG_DIR`, a baked pwsh path in `.chezmoi.toml.tmpl`, `conhost --headless`, `claude-mem
+install`, a winget/brew/npm Claude Code install, NanaZip/`use_external_7zip`, fzf-tab `menu select`,
+8-digit hex alpha in yasb CSS. It also blocks editing a chezmoi-managed `$HOME` target and names the
+source file to edit instead. `*.md` and comments are never checked, so docs can quote the rules.
+- A new hard NEVER rule goes in `RULES` + a `selftest` case, next to its prose here.
+- `python3 .claude/hooks/never_rules.py --selftest` / `--scan` (whole repo) — CI `lint` runs both.
+- The hook only sees Edit/Write; a `sed -i` through Bash bypasses it, and CI `--scan` catches that.
+
 ## Before committing
 - ALWAYS update docs in the same commit as the change they describe:
   - `README.md` — anything user-facing (setup, usage, profiles, commands).

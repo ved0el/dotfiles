@@ -36,3 +36,7 @@ jobs:
           chezmoi execute-template --source "$PWD" < run_onchange_after_install-packages.ps1.tmpl
       - name: Dry-run apply (no changes made)
         run: chezmoi apply --dry-run --source "$PWD"
+      - name: NEVER rules (the Claude Code PreToolUse guard, run over the whole repo)
+        run: |
+          python3 .claude/hooks/never_rules.py --selftest
+          python3 .claude/hooks/never_rules.py --scan
