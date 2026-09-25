@@ -174,7 +174,7 @@ Verify before apply:
       "already latest".
   - **`claude-plugins-official` is declared in `extraKnownMarketplaces` even though it's the
     built-in one.** A fresh box does NOT have it registered (Claude Code adds it on first
-    interactive use), so without the declaration the add loop skips it and all 13
+    interactive use), so without the declaration the add loop skips it and all the
     `@claude-plugins-official` plugins fail to install. Declaring it costs nothing on an
     existing box (the presence check skips it) and keeps ONE loop instead of a hardcoded
     special case. Verified end to end against an empty `CLAUDE_CONFIG_DIR`: 5 marketplaces
@@ -186,6 +186,18 @@ Verify before apply:
     old `# settings fingerprint … | sha256sum` comment is gone). Add one by editing
     `enabledPlugins`/`extraKnownMarketplaces`, then `cza`. Every call is `|| echo` / `try/catch`
     so a network blip or a not-yet-installed `claude` never aborts setup.
+- **`false` in `enabledPlugins` = installed but OFF, not "not installed".** Both loops use
+  `range $id, $_` and ignore the value, so a `false` plugin is still installed by `cza` and
+  updated by `czu`. To get rid of a plugin, DELETE its line (and `claude plugin uninstall` it on
+  existing boxes); `false` is for opt-in plugins. **`ecc@ecc` (marketplace `affaan-m/ECC`) is the
+  one opt-in plugin:** off globally, turned on per project with `claude plugin enable ecc@ecc
+  --scope local` (writes that repo's gitignored `.claude/settings.local.json`; `--scope project`
+  shares it via `.claude/settings.json`). Its rules are NOT part of the plugin, and once lived
+  in `~/.claude/rules/ecc`, which loaded ~4.4k tokens into EVERY session. For a project that
+  wants them, copy only the needed dirs from the plugin cache:
+  `cp -r ~/.claude/plugins/cache/ecc/ecc/*/rules/{common,<lang>} .claude/rules/ecc/`.
+- `skillOverrides` (tracked) turns off skills that the `*` skill repos below install but that
+  are never used. They stay on disk, and the skill listing no longer carries them.
 - **`claude-mem` (`thedotmack` marketplace) is fully plugin-managed — beyond the generic
   `claude plugin install` above, the bootstrap needs NO claude-mem step.** Its own plugin `Setup` hook (`version-check.js`) version-checks and
   installs/updates the runtime per session, and its data lives in `~/.claude-mem/` (SQLite DB +
@@ -716,7 +728,7 @@ and read the two restart traps at the end before concluding something is broken.
     `extraKnownMarketplaces` blocks in the template, then commit.
   - Tracked = the curated shared state: `env` (`PONYTAIL_DEFAULT_MODE`), `defaultMode`, `hooks`
     (rtk), `statusLine` (per-OS), `permissions.allow` (Bash baseline + codegraph MCP),
-    `enabledPlugins`, `extraKnownMarketplaces`, UI prefs (`tui`, `timeFormat`, `editorMode`,
+    `enabledPlugins`, `extraKnownMarketplaces`, `skillOverrides`, UI prefs (`tui`, `timeFormat`, `editorMode`,
     `preferredNotifChannel`, `advisorModel`, the booleans).
   - Trips `chezmoi status`/`czd` and the `80-chezmoi-drift.zsh` nudge whenever Claude touches it
     — expected; `czd` to see what changed. Do NOT switch to symlink mode: Claude saves
