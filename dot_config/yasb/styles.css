@@ -415,6 +415,7 @@
 
 .media-menu .source {
   font-size: 12px;
+  /* dark on every accent badge: --text on --blue is ~1.5:1, --crust ~9:1 */
   color: var(--crust);
   font-weight: normal;
   border-radius: 3px;
@@ -425,17 +426,14 @@
 
 .media-menu .source.brave {
   background-color: var(--red);
-  color: var(--text);
 }
 
 .media-menu .source.spotify {
   background-color: var(--green);
-  color: var(--text);
 }
 
 .media-menu .source.comet {
   background-color: var(--blue);
-  color: var(--text);
 }
 
 .media-menu .btn {
