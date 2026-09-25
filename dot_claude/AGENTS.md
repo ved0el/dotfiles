@@ -141,7 +141,7 @@ Scoped notes for `dot_claude/` and the Claude sections of `run_onchange_after_in
     `extraKnownMarketplaces` blocks in the template, then commit.
   - Tracked = the curated shared state: `env` (`PONYTAIL_DEFAULT_MODE`), `defaultMode`, `hooks`
     (rtk), `statusLine` (per-OS), `permissions.allow` (Bash baseline + codegraph MCP),
-    `enabledPlugins`, `extraKnownMarketplaces`, `skillOverrides`, UI prefs (`tui`, `timeFormat`, `editorMode`,
+    `enabledPlugins`, `extraKnownMarketplaces`, `skillOverrides`, `model` (`default` — `cza` undoes a persisted `/model` pick), UI prefs (`tui`, `timeFormat`, `editorMode`,
     `preferredNotifChannel`, `advisorModel`, the booleans).
   - Trips `chezmoi status`/`czd` and the `80-chezmoi-drift.zsh` nudge whenever Claude touches it
     — expected; `czd` to see what changed. Do NOT switch to symlink mode: Claude saves
