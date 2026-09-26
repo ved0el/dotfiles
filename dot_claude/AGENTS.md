@@ -66,6 +66,9 @@ Scoped notes for `dot_claude/` and the Claude sections of `run_onchange_after_in
   in `~/.claude/rules/ecc`, which loaded ~4.4k tokens into EVERY session. For a project that
   wants them, copy only the needed dirs from the plugin cache:
   `cp -r ~/.claude/plugins/cache/ecc/ecc/*/rules/{common,<lang>} .claude/rules/ecc/`.
+- **No `model` key, on purpose.** Picking "Default" in `/model` DELETES the key rather than
+  writing `"default"`, so a tracked `"model": "default"` drifts on every such pick. Absent = the
+  account's default model; a `/model` pick of anything else persists until the next `cza`.
 - **No `document-skills` plugin:** it duplicated the claude.ai-synced `anthropic-skills:*`
   (docx/pdf/pptx/xlsx, under `~/.claude/skills/synced/`, account-level, not chezmoi-managed).
   Likewise `design-taste-frontend` is off in favour of the official `frontend-design` plugin -
@@ -146,7 +149,7 @@ Scoped notes for `dot_claude/` and the Claude sections of `run_onchange_after_in
     `extraKnownMarketplaces` blocks in the template, then commit.
   - Tracked = the curated shared state: `env` (`PONYTAIL_DEFAULT_MODE`), `defaultMode`, `hooks`
     (rtk), `statusLine` (per-OS), `permissions.allow` (Bash baseline + codegraph MCP),
-    `enabledPlugins`, `extraKnownMarketplaces`, `skillOverrides`, `model` (`default` — `cza` undoes a persisted `/model` pick), UI prefs (`tui`, `timeFormat`, `editorMode`,
+    `enabledPlugins`, `extraKnownMarketplaces`, `skillOverrides`, UI prefs (`tui`, `timeFormat`, `editorMode`,
     `preferredNotifChannel`, `advisorModel`, the booleans).
   - Trips `chezmoi status`/`czd` and the `80-chezmoi-drift.zsh` nudge whenever Claude touches it
     — expected; `czd` to see what changed. Do NOT switch to symlink mode: Claude saves
