@@ -3,7 +3,7 @@ name: e2e
 # Real fresh-machine installs (`chezmoi init --apply`) - minutes each and network-heavy, so
 # NOT on every push. Only when something that changes what gets installed moves:
 #   bootstrap/update scripts, chezmoi config/data/ignore, mise manifests, the Claude plugin
-#   list (the bootstrap renders its ids from settings.json.tmpl), tmux/sheldon plugin lists
+#   list (the bootstrap renders its ids from claude-settings.json), tmux/sheldon plugin lists
 #   (the bootstrap clones them), and this file.
 # Plus weekly: every mise tool is `latest`, so an upstream release can break a fresh install
 # with no commit here at all.
@@ -16,7 +16,7 @@ on:
       - 'dot_config/mise/**'
       - 'dot_config/sheldon/**'
       - 'dot_tmux.conf'
-      - 'dot_claude/settings.json.tmpl'
+      - 'dot_claude/modify_settings.json'
       - '.github/workflows/e2e.yml'
   pull_request:
     paths: *install-paths

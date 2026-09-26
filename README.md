@@ -98,7 +98,7 @@ chezmoi apply                # apply changes + re-run bootstrap if it changed
                              #   (installs any Claude plugin this box is missing)
 chezmoi update               # git pull, then apply (sync from another machine)
                              #   (the ONLY command that updates Claude plugins)
-chezmoi re-add ~/.claude/settings.json  # capture a $HOME edit back into the repo
+chezmoi re-add ~/.tmux.conf   # capture a $HOME edit back into the repo (not .tmpl/modify_ targets)
 chezmoi cd                   # drop into the source repo to commit/push
 chezmoi add ~/.config/foo    # start managing a new file
 chezmoi managed              # list everything chezmoi tracks
@@ -123,7 +123,7 @@ file that contains keys or tokens.
 ```
 dot_zshrc, dot_tmux.conf, dot_p10k.zsh        # ~/.zshrc, ~/.tmux.conf, ~/.p10k.zsh  (Unix)
 dot_config/powershell/profile.ps1             # ~/.config/powershell/profile.ps1     (Windows)
-dot_claude/                                   # ~/.claude/ (statusline.sh on Unix, statusline.ps1 on Windows; settings.json managed directly)
+dot_claude/                                   # ~/.claude/ (statusline.sh on Unix, statusline.ps1 on Windows; settings.json merged from .chezmoitemplates/claude-settings.json)
                                               #   (~/.claude/skills/ is NOT managed — the bootstrap installs those via the `skills` CLI)
 dot_config/                                   # ~/.config/  (gated per profile + OS)
 .chezmoi.toml.tmpl                            # profile prompts + per-OS data/interpreters

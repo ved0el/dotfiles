@@ -9,7 +9,7 @@
 # ~/.claude/plugins/cache/<marketplace>/<plugin>/<version> and moves only on `plugin update`,
 # so both steps are needed. `plugin update` takes ONE plugin, is idempotent and exits 0 when
 # already current ("already at the latest version").
-{{- $settings := includeTemplate "dot_claude/settings.json.tmpl" . | fromJson }}
+{{- $settings := includeTemplate "claude-settings.json" . | fromJson }}
 if command -v claude >/dev/null 2>&1; then
   claude plugin marketplace update || echo "[claude] marketplace update failed"
 {{- range $id, $_ := $settings.enabledPlugins }}

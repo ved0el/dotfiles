@@ -43,7 +43,7 @@ Verify before apply:
 | `dot_config/powershell/profile.ps1`, `dot_config/starship.toml` | Windows shell |
 | `dot_config/mise/conf.d/*.toml` | tool/runtime manifests (all OSes) |
 | `dot_config/{yabai,skhd}` / `dot_config/{komorebi,whkd,yasb}` | tiling WM: macOS / Windows |
-| `dot_claude/` | Claude Code `settings.json.tmpl` + both statuslines |
+| `dot_claude/`, `.chezmoitemplates/claude-settings.json` | Claude Code settings (merged via `modify_settings.json`), CLAUDE.md, both statuslines |
 | `dot_local/bin/` | tmux helper scripts (Unix only) |
 | `dot_tmux.conf` | tmux (`tmux` profile) |
 
@@ -115,7 +115,7 @@ Verify before apply:
   rtk's Claude Code command-rewrite hook globally. `--auto-patch` is REQUIRED: it patches
   `~/.claude/settings.json` without prompting, so the non-interactive bootstrap doesn't hang.
   Idempotent ("hook already present" on re-run); writes machine-local `~/.claude/RTK.md`. The rtk
-  PreToolUse hook also ships in the managed `dot_claude/settings.json`, so the run finds it already
+  PreToolUse hook also ships in the managed `settings.json`, so the run finds it already
   present — `--auto-patch` mainly handles RTK.md + acts as a safety net.
 - **`codegraph` (colbymchenry/codegraph)** — `github:colbymchenry/codegraph`, a release bundle
   with its own node runtime (no `develop` needed). Do NOT run its `codegraph install`: it writes
@@ -124,7 +124,7 @@ Verify before apply:
   mcp add-json --scope user` (`alwaysLoad: true`; on Windows `cmd /c codegraph …` since the
   launcher is a `.cmd`), and appends `.codegraph/` to git's default global excludes
   (`~/.config/git/ignore`, unmanaged because Claude Code appends to it). The permission
-  (`mcp__codegraph__*`) lives in `settings.json.tmpl`; the "run `codegraph init` in un-indexed
+  (`mcp__codegraph__*`) lives in `claude-settings.json`; the "run `codegraph init` in un-indexed
   repos" rule lives in the managed `dot_claude/CLAUDE.md`.
 - **`vivid` generates `LS_COLORS`** (mise `github:` backend). Its theme is the full upstream
   catppuccin-mocha with `red`→repo accent `#ff5189` (`dot_config/vivid/themes/
@@ -229,7 +229,7 @@ komorebi/whkd: `dot_config/komorebi/AGENTS.md`. yasb: `dot_config/yasb/AGENTS.md
   pipelines — so `[[ -z "$CLAUDECODE" ]]` / `-not $env:CLAUDECODE` keeps the real `cd` builtin
   there. (rtk's hook is NOT the culprit — it passes `cd` through untouched; the alias was.)
 ### Claude Code
-- Statusline per-OS port and the managed `settings.json.tmpl`: `dot_claude/AGENTS.md`.
+- Statusline per-OS port and the merged `settings.json`: `dot_claude/AGENTS.md`.
 
 ### tmux (Unix)
 - **Plugins install via `git clone` in the bootstrap — no tmux server.** Do NOT "fix" it to use

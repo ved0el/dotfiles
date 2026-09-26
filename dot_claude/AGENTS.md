@@ -52,8 +52,9 @@ Scoped notes for `dot_claude/` and the Claude sections of `run_onchange_after_in
   - **Every third-party marketplace carries `"autoUpdate": true`** (what `/plugin` → marketplace →
     "Enable auto-update" writes), so Claude Code refreshes it and its plugins at startup between
     `czu` runs. `claude-plugins-official` has no key — the official marketplace auto-updates by
-    default. Toggling it in `/plugin` edits the live file only; mirror it here or `cza` reverts it.
-  - Both scripts render their id lists from `dot_claude/settings.json.tmpl` via
+    default. Toggling it in `/plugin` edits the live file only; the merge keeps it there, but mirror it in
+    the template to share it.
+  - Both scripts render their id lists from `.chezmoitemplates/claude-settings.json` via
     `includeTemplate … | fromJson`, so that file stays the single source of truth and there is no
     duplicate list. The RENDERED ids are also the bootstrap's run_onchange fingerprint — it
     re-fires exactly when a marketplace/plugin is declared, not on unrelated settings churn (the
@@ -106,7 +107,7 @@ Scoped notes for `dot_claude/` and the Claude sections of `run_onchange_after_in
   method in each repo's own README. Humanizer ALSO offers a `/plugin marketplace add` path; it is
   deliberately NOT used, because archify has no marketplace at all, so the `skills` mechanism has
   to exist regardless — one mechanism for both beats splitting them, and it keeps
-  `settings.json.tmpl` (and its fingerprint) untouched. Every flag is load-bearing for a
+  `claude-settings.json` (and its fingerprint) untouched. Every flag is load-bearing for a
   non-interactive run and none may be dropped: `npx -y` skips **npx's own** "install skills?"
   prompt on a cold cache, the trailing `-y` skips the **CLI's** confirmation (two separate
   prompts, two separate flags), `--agent claude-code` suppresses the agent picker, `--skill`
@@ -139,27 +140,25 @@ Scoped notes for `dot_claude/` and the Claude sections of `run_onchange_after_in
   apps (pwsh, node, git) spawned the same way stay hidden. Fix: `dot_claude/statusline.ps1`, so
   Windows launches ONE hidden `pwsh.exe`. `dot_claude/executable_statusline.sh` stays the
   macOS/Linux version; **keep the two in sync.** Both are OS-gated in `.chezmoiignore` (`.sh`
-  ignored on Windows, `.ps1` on Unix), and `settings.json.tmpl` branches `statusLine.command`
+  ignored on Windows, `.ps1` on Unix), and `claude-settings.json` branches `statusLine.command`
   per-OS — a plain settings.json can't (one hardcoded command is always wrong on one OS: the
   clean-install-Windows bug). Bonus: the bash script's `echo -e` mangles Windows backslash paths
   (`\0` in `C:\Users\0x130` → NUL), so line 1 was already broken there.
-- **`~/.claude/settings.json` is a fully-managed template (`dot_claude/settings.json.tmpl`) —
-  chezmoi owns it, `apply` overwrites the live file.** It is a template ONLY so `statusLine` can
-  branch per-OS; every other key is static. Tradeoffs, know them:
-  - **`apply` CLOBBERS live machine-local keys.** Claude rewrites settings.json constantly
-    (plugin toggles, marketplaces, ad-hoc approved commands) and those edits revert on the next
-    `apply`. Because it's a `.tmpl`, `czra` does NOT round-trip (it would overwrite the `{{ }}`
-    with literal JSON) — capture such a change by hand-editing the `enabledPlugins`/
-    `extraKnownMarketplaces` blocks in the template, then commit.
-  - Tracked = the curated shared state: `env` (`PONYTAIL_DEFAULT_MODE`), `defaultMode`, `hooks`
-    (rtk), `statusLine` (per-OS), `permissions.allow` (Bash baseline + codegraph MCP),
-    `enabledPlugins`, `extraKnownMarketplaces`, `skillOverrides`, UI prefs (`tui`, `timeFormat`, `editorMode`,
-    `preferredNotifChannel`, `advisorModel`, the booleans).
-- **`~/.claude/CLAUDE.md` is managed (`dot_claude/CLAUDE.md`, plain file, not a template).** It
-  keeps the `@RTK.md` import line that `rtk init -g` would otherwise add (so rtk's run finds it
-  present) plus the global codegraph rule: `codegraph init --yes` in any source-code git repo
-  without `.codegraph/`, then `codegraph_explore` before Grep/Read. `RTK.md` itself stays
-  rtk-written and machine-local.
-  - Trips `chezmoi status`/`czd` and the `80-chezmoi-drift.zsh` nudge whenever Claude touches it
-    — expected; `czd` to see what changed. Do NOT switch to symlink mode: Claude saves
+- **`~/.claude/settings.json` is MERGED, not replaced: `dot_claude/modify_settings.json`**
+  (a `chezmoi:modify-template`) reads the live file on stdin and merges in the curated keys from
+  `.chezmoitemplates/claude-settings.json` (the source of truth; a template only so
+  `statusLine` can branch per-OS). Rules: object keys merge one level deep with the curated
+  entry winning (`enabledPlugins`, `extraKnownMarketplaces`, `env`, …); `permissions.allow` is a
+  union; `hooks` and scalars are replaced; keys only the live file has are KEPT.
+  - So machine-local edits (ad-hoc approved commands, a new plugin toggled in `/plugin`) survive
+    `cza`, and a curated value that Claude overwrote (e.g. a marketplace's `autoUpdate`) comes back.
+  - Consequence: deleting a curated entry does NOT delete it live — remove it by hand too (for a
+    plugin, `claude plugin uninstall`). To share a live change, copy it into the template.
+  - Output is `toPrettyJson` (sorted keys). The first apply after Claude reorders keys shows `M`;
+    content is what `chezmoi verify` compares. Do NOT switch to symlink mode: Claude saves
     atomically via rename, replacing any symlink.
+- **`~/.claude/CLAUDE.md` is managed (`dot_claude/CLAUDE.md`, plain file).** It keeps the
+  `@RTK.md` import line that `rtk init -g` would otherwise add (so rtk's run finds it present)
+  plus the global codegraph rule: `codegraph init --yes` in any source-code git repo without
+  `.codegraph/`, then `codegraph_explore` before Grep/Read. `RTK.md` stays rtk-written and
+  machine-local.

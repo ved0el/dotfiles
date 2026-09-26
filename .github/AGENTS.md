@@ -10,7 +10,7 @@ Scoped notes for `.github/workflows/*` and the root `renovate.json`.
     Windows. That takes minutes per OS and is network-heavy, so it is **path-filtered**: it
     runs only when something that changes WHAT GETS INSTALLED moves. That means `run_*`,
     `.chezmoi*`, the mise manifests, the sheldon and tmux plugin lists (the bootstrap clones
-    them), `dot_claude/settings.json.tmpl` (the bootstrap renders its plugin ids from it), and
+    them), `.chezmoitemplates/claude-settings.json` (the bootstrap renders its plugin ids from it), and
     the workflow file itself.
   - e2e also runs **weekly** (Mon 03:00 UTC) because every mise tool is `latest`, so an
     upstream release can break a fresh install without any commit here. It can also be

@@ -1,0 +1,22 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- /* Merge the curated keys from .chezmoitemplates/claude-settings.json into the LIVE
+     ~/.claude/settings.json instead of replacing it: Claude writes machine-local keys
+     (plugin toggles, approved commands) here all the time. Object-valued keys merge one
+     level deep with the curated entry winning; permissions.allow is a union; hooks and
+     scalars are replaced. Keys only the live file has are kept. */ -}}
+{{- $live := dict -}}
+{{- if .chezmoi.stdin -}}{{- $live = fromJson .chezmoi.stdin -}}{{- end -}}
+{{- $want := includeTemplate "claude-settings.json" . | fromJson -}}
+{{- range $k, $v := $want -}}
+{{-   $old := get $live $k -}}
+{{-   if and (kindIs "map" $v) (kindIs "map" $old) (ne $k "hooks") -}}
+{{-     $m := merge (deepCopy $v) $old -}}
+{{-     if eq $k "permissions" -}}
+{{-       $_ := set $m "allow" (concat (default list (get $v "allow")) (default list (get $old "allow")) | uniq) -}}
+{{-     end -}}
+{{-     $_ := set $live $k $m -}}
+{{-   else -}}
+{{-     $_ := set $live $k $v -}}
+{{-   end -}}
+{{- end -}}
+{{ toPrettyJson $live }}
