@@ -61,9 +61,7 @@ fi
 # `--skill` pins the selection, and `--copy` avoids symlinks (Windows symlinks need elevation,
 # which this bootstrap never takes). npx comes from mise's node ("develop" profile), so try PATH,
 # then mise, then warn — a tools-only box simply goes without.
-for _entry in blader/humanizer:humanizer:humanizer tt-a1i/archify:archify:archify \
-              vercel-labs/skills:find-skills:find-skills 'mattpocock/skills:*:ask-matt' \
-              'Leonxlnx/taste-skill:*:brandkit'; do
+for _entry in tt-a1i/archify:archify:archify 'mattpocock/skills:*:ask-matt'; do
   _repo="${_entry%%:*}"; _rest="${_entry#*:}"; _spec="${_rest%:*}"; _anchor="${_rest##*:}"
   if [ -e "$HOME/.claude/skills/$_anchor" ]; then continue; fi
   command -v npx >/dev/null 2>&1 && \
@@ -72,6 +70,18 @@ for _entry in blader/humanizer:humanizer:humanizer tt-a1i/archify:archify:archif
     echo "[skills] $_repo skipped — needs node/npx (the develop profile)"
 done
 unset _entry _repo _rest _spec _anchor
+
+# Retired skill repos (humanizer, find-skills, Leonxlnx/taste-skill): every skill they shipped
+# was switched off in skillOverrides, so they're gone. `skills remove` (not rm -rf) also drops
+# them from the CLI's lock, or czu's `skills update` would bring them back. Anchor-guarded.
+# ponytail: one-shot cleanup; delete this block once every box has applied it.
+if [ -e "$HOME/.claude/skills/brandkit" ] || [ -e "$HOME/.claude/skills/humanizer" ]; then
+  mise --cd "$HOME" exec -- npx -y skills remove -g -y humanizer find-skills brandkit \
+    design-taste-frontend design-taste-frontend-v1 full-output-enforcement gpt-taste \
+    high-end-visual-design image-to-code imagegen-frontend-mobile imagegen-frontend-web \
+    industrial-brutalist-ui minimalist-ui redesign-existing-projects stitch-design-taste \
+    || echo "[skills] retired-skill cleanup failed"
+fi
 
 {{ if .tools -}}
 # codegraph MCP server, user scope. alwaysLoad keeps codegraph_explore out of tool-search deferral.
