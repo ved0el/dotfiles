@@ -1,134 +1,79 @@
 # dotfiles
 
-My personal dotfiles + machine bootstrap, managed with [chezmoi](https://chezmoi.io).
-One command on a fresh machine syncs my config **and** installs the software and
-plugins it depends on.
+My dotfiles + machine bootstrap, managed with [chezmoi](https://chezmoi.io). One command on a
+fresh machine applies the config **and** installs the software and plugins it needs.
 
-## Quick start (new machine)
-
-**macOS / Linux** (installs chezmoi to `~/.local/bin`):
+## Quick start
 
 ```sh
+# macOS / Linux
 sh -c "$(curl -fsLS get.chezmoi.io/lb)" -- init --apply ved0el
 ```
 
-**Windows** (PowerShell — installs chezmoi to `~\.local\bin`):
-
 ```powershell
+# Windows (PowerShell)
 iex "&{$(irm 'https://get.chezmoi.io/ps1')} -b '$HOME/.local/bin'"; chezmoi init --apply ved0el
 ```
 
-This installs chezmoi, clones this repo, asks which profiles to enable, applies the
-dotfiles, then installs packages + plugins. That's it — the machine is set up.
-
-The OS is auto-detected (`.chezmoi.os`), so there's no OS prompt: macOS/Linux bootstrap
-with **brew/apt**, Windows with **scoop**. On Windows the tmux/zsh/sheldon stack is
-skipped (tmux isn't even prompted) and a PowerShell profile is used instead — see
-[Windows](#windows) below.
+It asks which profiles to enable, applies the dotfiles, then installs packages and plugins. The
+OS is auto-detected: brew/apt on macOS/Linux, scoop (+ winget for PowerShell 7) on Windows.
 
 ## Profiles
 
-Profiles are toggled per machine at `init` time (stored in
-`~/.config/chezmoi/chezmoi.toml`) and gate which files apply via `.chezmoiignore`.
+| Profile | Default | Adds |
+|---|---|---|
+| base | always | zsh + powerlevel10k + sheldon (Unix) or PowerShell + starship (Windows), mise, Claude Code + plugins + agent skills (skills need **develop** for node) |
+| **tools** | on | CLI tools via mise (bat, eza, fd, ripgrep, fzf, micro, rtk, codegraph, vivid, …), delta for git |
+| **develop** | off | language runtimes via mise (`conf.d/develop.toml`) |
+| **tmux** | on (not Windows) | tmux + TPM plugins |
+| **wm** | off (not Linux) | macOS: yabai + skhd · Windows: komorebi + whkd + yasb |
 
-| Profile     | When                 | Contents                                                                                       |
-| ----------- | -------------------- | ---------------------------------------------------------------------------------------------- |
-| **base**    | always               | zsh (+ powerlevel10k, sheldon), tmux (+ TPM plugins), mise, Claude config + agent skills (archify, all of mattpocock/skills — need **develop** for node); `git`, `tmux` |
-| **tools**   | prompt (default on)  | mise tool set (bat, eza, fd, ripgrep, bottom, sd, fzf, micro, rtk, codegraph, vivid, …) + zsh/pwsh aliases (incl. `tree`→eza); delta wired into git |
-| **develop** | prompt (default off) | language runtimes via mise (`conf.d/develop.toml`)                                             |
-| **macos**   | auto (Darwin only)   | mole (cleanup CLI); yabai + skhd via **wm**                                                     |
-| **windows** | auto (Windows only)  | scoop + mise + PowerShell profile; tmux/zsh/sheldon skipped                                     |
-| **wm**      | prompt (default off) | macOS: yabai + skhd · Windows: komorebi + whkd + yasb                                           |
-
-Re-run the prompts any time:
-
-```sh
-chezmoi init --data=false    # re-ask the profile questions, then
-chezmoi apply
-```
-
-## Windows
-
-Windows is gated off `.chezmoi.os == "windows"` (no extra prompt). Differences from
-macOS/Linux:
-
-- **Package manager:** [scoop](https://scoop.sh) (installed per-user, never elevated)
-  instead of brew/apt. `git`, `mise`, `openssh`, `openssl` and the `JetBrainsMono-NF-Mono`
-  Nerd Font come from scoop, PowerShell 7 from winget — each installed only if missing; the CLI
-  tool set (`bat`, `fd`, `ripgrep`, …) still comes from **mise** using the same
-  `conf.d/{tools,develop}.toml` manifests.
-- **Shell:** a managed `~/.config/powershell/profile.ps1` mirrors the zsh config
-  (mise env injection, eza/zoxide/fzf wiring, chezmoi aliases). The bootstrap dot-sources
-  it from your real `$PROFILE` for both PowerShell 7 and Windows PowerShell 5.1, so it
-  survives OneDrive-redirected Documents. It loads in about 210ms: the starship/zoxide/gh init
-  scripts are cached in `~/.cache/pwsh` and rebuilt when a tool upgrades (delete the folder to
-  force a rebuild).
-- **Line editing:** PSReadLine gives inline history suggestions (→ to accept). With `fzf`
-  present, **PSFzf** turns `Tab` into an fzf completion picker and adds `Ctrl+t` (file picker),
-  `Ctrl+r` (history search) and `Alt+c` (cd into a subdirectory) — the bootstrap installs the
-  module. PSFzf loads on the first of those keypresses, so the first one takes about 150ms
-  longer. Without PSFzf, `Tab` completes bash-style.
-- **`XDG_CONFIG_HOME`** is set to `~/.config` so mise and friends read the same config
-  tree as Unix (mise would otherwise look in `%APPDATA%`).
-- **Window manager** (`wm` profile, default off): scoop installs `komorebi`, `whkd`, and
-  `yasb` — the Windows counterpart of macOS yabai/skhd. whkd/komorebi configs are managed
-  under `~/.config`; start it with `komorebic start --whkd`.
-- **Prompt:** [starship](https://starship.rs) (Unix uses powerlevel10k). Configured by
-  `~/.config/starship.toml` — mainly `scan_timeout = 500` so a cold-cache shell stops
-  printing `Scanning current directory timed out`.
-- **Skipped:** tmux, sheldon, powerlevel10k.
-
-mise installs the tool set with `--yes`; pin or trim `conf.d/tools.toml` if a tool
-lacks a Windows build. Cross-platform tools use prebuilt backends (e.g.
-`aqua:eza-community/eza`) so they don't compile from source on Windows. Windows-only
-mise tools live in `conf.d/windows.toml` (e.g. starship).
-
-### Machine-local tools (not synced)
-
-`mise use -g <tool>` writes to `~/.config/mise/config.toml`, which chezmoi **ignores**
-(`MISE_GLOBAL_CONFIG_FILE` points there). Use it for per-machine tools you don't want in
-the repo — they survive `chezmoi apply` untouched. Tools you want everywhere go in the
-tracked `conf.d/*.toml` instead.
+Answers are stored in `~/.config/chezmoi/chezmoi.toml`. To change them:
+`chezmoi init --prompt`, then `chezmoi apply`.
 
 ## Daily use
 
 ```sh
-chezmoi edit ~/.tmux.conf    # edit a managed file in $EDITOR
-chezmoi apply                # apply changes + re-run bootstrap if it changed
-                             #   (installs any Claude plugin this box is missing)
-chezmoi update               # git pull, then apply (sync from another machine)
-                             #   (the ONLY command that updates Claude plugins)
-chezmoi re-add ~/.tmux.conf   # capture a $HOME edit back into the repo (not .tmpl/modify_ targets)
-chezmoi cd                   # drop into the source repo to commit/push
-chezmoi add ~/.config/foo    # start managing a new file
-chezmoi managed              # list everything chezmoi tracks
+chezmoi edit ~/.tmux.conf    # edit a managed file
+chezmoi apply                # apply; re-runs a bootstrap script if it changed
+chezmoi update               # git pull + apply; the only command that updates Claude plugins
+chezmoi re-add ~/.tmux.conf  # capture a $HOME edit (not for .tmpl / modify_ targets)
+chezmoi cd                   # open the source repo to commit/push
 ```
 
-## Add a package
+Shell aliases: `cz`, `cza`, `czd`, `czs`, `cze`, `czra`, `czu`, `czcd`.
 
-Edit the bootstrap for the OS family — `run_onchange_after_10-install-packages.sh.tmpl`
-(macOS/Linux) or `run_onchange_after_10-install-packages.ps1.tmpl` (Windows) — add the
-package to the right branch, then `chezmoi apply`. The script re-runs automatically
-because its content changed. Cross-platform CLI tools go in `conf.d/tools.toml`
-(mise) instead, so they install everywhere from one list.
+- **Add a package:** CLI tools go in `dot_config/mise/conf.d/tools.toml.tmpl` (all OSes).
+  OS packages go in `run_onchange_after_10-install-packages.{sh,ps1}.tmpl`.
+- **Machine-local tools:** `mise use -g <tool>` writes to `~/.config/mise/config.toml`, which
+  chezmoi ignores, so it survives `apply`.
+- **Claude settings:** `~/.claude/settings.json` is merged with the tracked keys, so changes
+  made in Claude Code survive `apply`. Copy a change into
+  `.chezmoitemplates/claude-settings.json` to share it.
+- **Secrets:** never commit them — use chezmoi `encrypted_` files or password-manager template
+  functions.
 
-## Secrets
+## Windows notes
 
-Never commit raw secrets. Use chezmoi's `encrypted_` files (age/gpg) or template
-functions like `{{ onepasswordRead "op://..." }}` / `{{ (bitwarden ...) }}` for any
-file that contains keys or tokens.
+- The PowerShell profile (`~/.config/powershell/profile.ps1`) is dot-sourced from both pwsh 7
+  and WinPS 5.1 `$PROFILE`s and loads in ~210ms (cached inits in `~/.cache/pwsh`).
+- With fzf, PSFzf gives `Tab` completion, `Ctrl+t`, `Ctrl+r`, `Alt+c` (loaded on first use).
+- `XDG_CONFIG_HOME=~/.config`, so tools read the same config tree as on Unix.
+- `wm`: komorebi starts at logon via a scheduled task; yasb via its own installer.
 
 ## Layout
 
 ```
-dot_zshrc, dot_tmux.conf, dot_p10k.zsh        # ~/.zshrc, ~/.tmux.conf, ~/.p10k.zsh  (Unix)
-dot_config/powershell/profile.ps1             # ~/.config/powershell/profile.ps1     (Windows)
-dot_claude/                                   # ~/.claude/ (statusline.sh on Unix, statusline.ps1 on Windows; settings.json merged from .chezmoitemplates/claude-settings.json)
-                                              #   (~/.claude/skills/ is NOT managed — the bootstrap installs those via the `skills` CLI)
-dot_config/                                   # ~/.config/  (gated per profile + OS)
-.chezmoi.toml.tmpl                            # profile prompts + per-OS data/interpreters
-.chezmoiignore                                # which files apply on this machine
-run_onchange_after_10-install-packages.{sh,ps1}.tmpl  # bootstrap 1: brew/apt or scoop + mise + wm
-run_onchange_after_20-install-claude.{sh,ps1}.tmpl    # bootstrap 2: Claude Code, plugins, skills
-run_after_update-claude-plugins.{sh,ps1}.tmpl # Claude plugin refresh (runs on `update` only)
+dot_zshrc, dot_p10k.zsh, dot_config/zsh/     # Unix shell
+dot_config/powershell/, dot_config/starship.toml   # Windows shell
+dot_config/mise/conf.d/                      # tools + runtimes (all OSes)
+dot_config/                                  # other tool configs, gated per profile + OS
+dot_tmux.conf, dot_local/bin/                # tmux (Unix)
+dot_claude/, .chezmoitemplates/              # Claude Code settings, CLAUDE.md, statuslines
+.chezmoi.toml.tmpl, .chezmoiignore           # profile prompts, what applies where
+run_onchange_after_10-install-packages.*     # bootstrap 1: OS packages, mise, wm
+run_onchange_after_20-install-claude.*       # bootstrap 2: Claude Code, plugins, skills
+run_after_update-claude-plugins.*            # plugin refresh (`chezmoi update` only)
 ```
+
+Agent/contributor rules: `AGENTS.md`.
