@@ -61,6 +61,10 @@ apply only on Windows+wm (gated like skhd/yabai).
   `<install>\<Name>\Binaries\Win64\`, and the root-level exe is usually just the launcher —
   add both, they are separate windows. The community `applications.json`
   (`app_specific_configuration_path`) does NOT cover these; grep it before adding a rule.
+- **`applications.json` is NOT tracked.** Bootstrap part 1 downloads it with `komorebic
+  fetch-app-specific-configuration` (alias `fetch-asc`); run that by hand to refresh. The tracked
+  copy it replaced had only gone stale (a typo'd Photoshop rule, 20+ apps missing). Own rules
+  go in `komorebi.json`, never in this file — the next fetch overwrites it.
 - **The generic escape hatch is `alt + ctrl + p` (`komorebic toggle-pause`)**, already bound in
   `whkdrc`. It covers any game with no config edit, so a rule is only worth adding for one you
   play often.

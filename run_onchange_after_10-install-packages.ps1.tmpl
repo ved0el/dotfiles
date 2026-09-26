@@ -158,6 +158,9 @@ foreach ($app in 'komorebi','whkd','yasb') {
 # suppress a console flash that actually came from `komorebic start` spawning pwsh; the launcher
 # now starts komorebi.exe/whkd.exe directly, so there is no flash left to suppress.
 if (Get-Command komorebic -ErrorAction SilentlyContinue) {
+  # Community app rules (komorebi.json's app_specific_configuration_path): downloaded, NOT
+  # tracked — the tracked copy only ever went stale. Writes $KOMOREBI_CONFIG_HOME/applications.json.
+  try { komorebic fetch-app-specific-configuration | Out-Null } catch { Write-Host "[wm] applications.json fetch failed - run: komorebic fetch-asc" }
   # Drop any legacy shell:startup shortcut so it doesn't race the task.
   Remove-Item (Join-Path ([Environment]::GetFolderPath('Startup')) 'komorebi.lnk') -Force -ErrorAction SilentlyContinue
   try {
