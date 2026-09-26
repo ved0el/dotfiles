@@ -49,6 +49,10 @@ Scoped notes for `dot_claude/` and the Claude sections of `run_onchange_after_in
     existing box (the presence check skips it) and keeps ONE loop instead of a hardcoded
     special case. Verified end to end against an empty `CLAUDE_CONFIG_DIR`: 5 marketplaces
     added, 17 plugins installed, zero failures; the second run is silent.
+  - **Every third-party marketplace carries `"autoUpdate": true`** (what `/plugin` → marketplace →
+    "Enable auto-update" writes), so Claude Code refreshes it and its plugins at startup between
+    `czu` runs. `claude-plugins-official` has no key — the official marketplace auto-updates by
+    default. Toggling it in `/plugin` edits the live file only; mirror it here or `cza` reverts it.
   - Both scripts render their id lists from `dot_claude/settings.json.tmpl` via
     `includeTemplate … | fromJson`, so that file stays the single source of truth and there is no
     duplicate list. The RENDERED ids are also the bootstrap's run_onchange fingerprint — it
