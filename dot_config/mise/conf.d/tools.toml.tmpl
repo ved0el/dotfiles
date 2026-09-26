@@ -27,6 +27,11 @@ ripgrep = "latest"
 # source build. Its Claude Code hook is set up by the bootstrap (`rtk init -g`).
 # Backend prefix goes in the KEY, like eza/micro.
 "github:rtk-ai/rtk" = "latest"
+# codegraph (colbymchenry/codegraph): local code knowledge graph served to Claude Code over
+# MCP, so agents query call paths instead of re-reading the repo. The release bundle ships
+# its own node runtime; the github backend exposes its bin/ launcher (codegraph.cmd on
+# Windows). MCP registration is in the bootstrap; per-repo `codegraph init` is ~/.claude/CLAUDE.md's.
+"github:colbymchenry/codegraph" = "latest"
 sd = "latest"
 # vivid: generates LS_COLORS from a YAML theme. github backend = prebuilt binary
 # (cross-platform), not the cargo source build. zsh uses it for file + completion

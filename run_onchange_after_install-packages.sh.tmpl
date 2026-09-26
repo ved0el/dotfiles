@@ -172,6 +172,18 @@ if command -v git >/dev/null 2>&1; then
   git config --global --get-all include.path 2>/dev/null | grep -qxF "$_delta_inc" \
     || git config --global --add include.path "$_delta_inc"
   unset _delta_inc
+  # codegraph: keep each repo's .codegraph/ index out of `git status` via git's default global
+  # excludes file (unmanaged — Claude Code appends to it too), idempotently.
+  _gi="${XDG_CONFIG_HOME:-$HOME/.config}/git/ignore"
+  grep -qxF '.codegraph/' "$_gi" 2>/dev/null || { mkdir -p "${_gi%/*}"; echo '.codegraph/' >> "$_gi"; }
+  unset _gi
+fi
+# codegraph MCP server, user scope. alwaysLoad keeps codegraph_explore out of tool-search deferral.
+if command -v claude >/dev/null 2>&1; then
+  claude mcp get codegraph >/dev/null 2>&1 || \
+    claude mcp add-json --scope user codegraph \
+      '{"type":"stdio","command":"codegraph","args":["serve","--mcp"],"alwaysLoad":true}' || \
+    echo "[codegraph] mcp add failed"
 fi
 {{ end -}}
 

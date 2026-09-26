@@ -117,6 +117,15 @@ Verify before apply:
   Idempotent ("hook already present" on re-run); writes machine-local `~/.claude/RTK.md`. The rtk
   PreToolUse hook also ships in the managed `dot_claude/settings.json`, so the run finds it already
   present — `--auto-patch` mainly handles RTK.md + acts as a safety net.
+- **`codegraph` (colbymchenry/codegraph)** — `github:colbymchenry/codegraph`, a release bundle
+  with its own node runtime (no `develop` needed). Do NOT run its `codegraph install`: it writes
+  the permission into the managed settings.json (reverted by `cza`) and a marker section into
+  CLAUDE.md. Instead the bootstrap (`tools`-gated) registers the MCP server itself with `claude
+  mcp add-json --scope user` (`alwaysLoad: true`; on Windows `cmd /c codegraph …` since the
+  launcher is a `.cmd`), and appends `.codegraph/` to git's default global excludes
+  (`~/.config/git/ignore`, unmanaged because Claude Code appends to it). The permission
+  (`mcp__codegraph__*`) lives in `settings.json.tmpl`; the "run `codegraph init` in un-indexed
+  repos" rule lives in the managed `dot_claude/CLAUDE.md`.
 - **`vivid` generates `LS_COLORS`** (mise `github:` backend). Its theme is the full upstream
   catppuccin-mocha with `red`→repo accent `#ff5189` (`dot_config/vivid/themes/
   catppuccin-mocha-red.yml`) — vivid needs a COMPLETE theme, a minimal override errors. zsh

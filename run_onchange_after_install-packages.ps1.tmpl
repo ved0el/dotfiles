@@ -191,6 +191,20 @@ if (Get-Command git -ErrorAction SilentlyContinue) {
   if (((git config --global --get-all include.path) 2>$null) -notcontains $deltaInc) {
     git config --global --add include.path $deltaInc
   }
+  # codegraph: keep each repo's .codegraph/ index out of `git status` via git's default global
+  # excludes file (unmanaged — Claude Code appends to it too), idempotently.
+  $gitIgnore = Join-Path $HOME '.config/git/ignore'
+  if (-not ((Test-Path $gitIgnore) -and (Select-String -Path $gitIgnore -SimpleMatch -Pattern '.codegraph/' -Quiet))) {
+    Add-Content -Path $gitIgnore -Value '.codegraph/'
+  }
+}
+# codegraph MCP server, user scope. `cmd /c` because the launcher is codegraph.cmd, which a
+# shell-less spawn can't run. alwaysLoad keeps codegraph_explore out of tool-search deferral.
+# WinPS 5.1 strips bare `"` from native args, hence the \" escaping.
+if (Get-Command claude -ErrorAction SilentlyContinue) { claude mcp get codegraph *> $null }
+if ((Get-Command claude -ErrorAction SilentlyContinue) -and $LASTEXITCODE -ne 0) {
+  $cgJson = @{ type = 'stdio'; command = 'cmd'; args = @('/c', 'codegraph', 'serve', '--mcp'); alwaysLoad = $true } | ConvertTo-Json -Compress
+  try { claude mcp add-json --scope user codegraph $cgJson.Replace('"', '\"') } catch { Write-Host "[codegraph] mcp add failed" }
 }
 {{ end -}}
 

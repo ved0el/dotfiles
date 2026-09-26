@@ -155,6 +155,11 @@ Scoped notes for `dot_claude/` and the Claude sections of `run_onchange_after_in
     (rtk), `statusLine` (per-OS), `permissions.allow` (Bash baseline + codegraph MCP),
     `enabledPlugins`, `extraKnownMarketplaces`, `skillOverrides`, UI prefs (`tui`, `timeFormat`, `editorMode`,
     `preferredNotifChannel`, `advisorModel`, the booleans).
+- **`~/.claude/CLAUDE.md` is managed (`dot_claude/CLAUDE.md`, plain file, not a template).** It
+  keeps the `@RTK.md` import line that `rtk init -g` would otherwise add (so rtk's run finds it
+  present) plus the global codegraph rule: `codegraph init --yes` in any source-code git repo
+  without `.codegraph/`, then `codegraph_explore` before Grep/Read. `RTK.md` itself stays
+  rtk-written and machine-local.
   - Trips `chezmoi status`/`czd` and the `80-chezmoi-drift.zsh` nudge whenever Claude touches it
     — expected; `czd` to see what changed. Do NOT switch to symlink mode: Claude saves
     atomically via rename, replacing any symlink.
