@@ -33,8 +33,12 @@ Verify before apply:
 - **Non-`dot_` files (README.md, AGENTS.md) apply to `~/` unless in `.chezmoiignore`.**
 - `run_after_update-claude-plugins.{sh,ps1}.tmpl` — refreshes Claude marketplaces/plugins;
   `.chezmoiignore` hides it from every command except `chezmoi update`.
-- `run_onchange_after_install-packages.{sh,ps1}.tmpl` — bootstrap (packages + plugins);
-  re-runs when its rendered content changes; `after_` = runs once files are applied.
+- Bootstrap = two `run_onchange_after_` scripts per OS family, run in name order once files are
+  applied, each re-running only when ITS rendered content changes:
+  `10-install-packages` (OS packages, mise, tmux/zsh plugins, git wiring, wm, profile) and
+  `20-install-claude` (Claude Code, marketplaces/plugins/skills, rtk hook, codegraph MCP) — so
+  declaring a plugin never re-runs the package install. Each is its own process: part 2 re-adds
+  `~/.local/bin` (+ scoop shims and `XDG_CONFIG_HOME` on Windows) to its env.
 
 | path | holds |
 |------|-------|
@@ -62,11 +66,10 @@ Verify before apply:
 
 ### OS gate (NOT a prompt — auto-detected via `.chezmoi.os`)
 - Three values: `windows` / `darwin` / `linux`. Never prompt for the OS; branch on it.
-- **Bootstrap is split by OS family, one script each:**
-  - `run_onchange_after_install-packages.sh.tmpl` — macOS (brew) + Linux (apt).
-  - `run_onchange_after_install-packages.ps1.tmpl` — Windows (scoop).
-  - `.chezmoiignore` ships exactly one (ignores `install-packages.ps1` on Unix and
-    `install-packages.sh` on Windows — script target names drop the `run_*`/`.tmpl`).
+- **Bootstrap is split by OS family:** `run_onchange_after_{10-install-packages,20-install-claude}`
+  as `.sh.tmpl` (macOS brew + Linux apt) and `.ps1.tmpl` (Windows scoop).
+  - `.chezmoiignore` ships exactly one set (ignores `*-install-*.ps1` on Unix and
+    `*-install-*.sh` on Windows — script target names drop the `run_*`/`.tmpl`).
     A `.sh` on Windows is unrunnable ("%1 is not a valid Win32 application"), so it MUST
     be ignored, not just rendered empty (the shebang line keeps it non-empty).
 - chezmoi runs `.ps1` via `[interpreters.ps1]` (set Windows-only in `.chezmoi.toml.tmpl`):

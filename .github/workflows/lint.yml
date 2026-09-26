@@ -32,8 +32,9 @@ jobs:
         run: chezmoi init --source "$PWD" --promptDefaults --no-tty
       - name: Bootstrap scripts render cleanly (sh + ps1)
         run: |
-          chezmoi execute-template --source "$PWD" < run_onchange_after_install-packages.sh.tmpl
-          chezmoi execute-template --source "$PWD" < run_onchange_after_install-packages.ps1.tmpl
+          for f in run_onchange_after_*.tmpl; do
+            chezmoi execute-template --source "$PWD" < "$f" > /dev/null
+          done
       - name: Dry-run apply (no changes made)
         run: chezmoi apply --dry-run --source "$PWD"
       - name: NEVER rules (the Claude Code PreToolUse guard, run over the whole repo)

@@ -3,7 +3,7 @@
 # EXISTS during `chezmoi update` (czu): .chezmoiignore gates it on `.chezmoi.command`, so
 # apply/diff/status never see it — apply just writes config, and an always-run script never
 # shows up as a permanent `R` in `chezmoi status`. Installing what's MISSING is the
-# bootstrap's job (run_onchange_after_install-packages.ps1), not this one.
+# bootstrap's job (run_onchange_after_20-install-claude.ps1), not this one.
 # `marketplace update` only pulls the marketplace clones; the installed plugin code lives in
 # ~/.claude/plugins/cache/<marketplace>/<plugin>/<version> and moves only on `plugin update`,
 # so both steps are needed. `plugin update` takes ONE plugin, is idempotent and exits 0 when

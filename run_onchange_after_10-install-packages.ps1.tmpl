@@ -1,5 +1,6 @@
-# Windows bootstrap: scoop (OS package manager) + mise (runtimes/CLI tools). The
-# analogue of run_onchange_after_install-packages.sh.tmpl for Unix. chezmoi runs this
+# Windows bootstrap, part 1 of 2: scoop + mise + wm + profile wiring (the analogue of
+# run_onchange_after_10-install-packages.sh.tmpl). Claude Code + plugins/skills are part 2,
+# run_onchange_after_20-install-claude.ps1.tmpl. chezmoi runs this
 # via the [interpreters.ps1] command set in .chezmoi.toml.tmpl. Re-runs automatically
 # whenever this file's rendered content changes. tmux / sheldon / TPM are Unix-only
 # and intentionally skipped here.
@@ -117,73 +118,6 @@ if (Get-Command pwsh -ErrorAction SilentlyContinue) {
 # tree; chezmoi may run this script from elsewhere, so anchor it at $HOME or nothing installs.
 mise --cd $HOME install --yes
 
-# rtk (rtk-ai/rtk) — install its Claude Code command-rewrite hook globally. --auto-patch
-# edits ~/.claude/settings.json without prompting, keeping this bootstrap non-interactive;
-# it's idempotent so re-runs are safe.
-try { mise --cd $HOME exec -- rtk init -g --auto-patch } catch { }
-
-# Claude Code itself — the marketplace step below is a no-op without it, and because the
-# run_onchange fingerprint wouldn't change afterwards it would never retry on a fresh box.
-# `irm https://claude.ai/install.ps1 | iex` is the official native install (the documented
-# "Native Install (Recommended)" one-liner) — verbatim, so it stays greppable against the docs.
-# It lands in ~/.local/bin (already on PATH from the top of this script) and AUTO-UPDATES from
-# then on, which `winget install Anthropic.ClaudeCode` does not. Run inside `& { }` so the
-# installer's own `Set-StrictMode` / `$ErrorActionPreference` stay in ITS scope, and try/catch
-# so a network blip can't abort setup.
-if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
-  try { & { irm https://claude.ai/install.ps1 | iex } }
-  catch { Write-Host "[claude] install failed: $($_.Exception.Message)" }
-}
-
-# Claude Code marketplaces + plugins — INSTALL ONLY WHAT'S MISSING. The ids below are
-# rendered straight out of .chezmoitemplates/claude-settings.json, so that file stays the single
-# source of truth and the rendered list doubles as this script's run_onchange fingerprint:
-# declaring a new marketplace/plugin re-fires the script, unrelated settings churn doesn't.
-# `plugin list`/`marketplace list` are local reads, so a box that already has everything
-# does no network work. Refreshing what IS installed is `chezmoi update`'s job — see
-# run_after_update-claude-plugins.ps1.
-{{- $settings := includeTemplate "claude-settings.json" . | fromJson }}
-if (Get-Command claude -ErrorAction SilentlyContinue) {
-  $haveMk = @(); try { $haveMk = @((claude plugin marketplace list --json | Out-String | ConvertFrom-Json).name) } catch { }
-{{- range $name, $mk := $settings.extraKnownMarketplaces }}
-  if ($haveMk -notcontains '{{ $name }}') { try { claude plugin marketplace add '{{ index $mk.source "repo" | default (index $mk.source "url") }}' } catch { Write-Host "[claude] marketplace add {{ $name }} failed" } }
-{{- end }}
-  # -y is mandatory: the install prompt has no TTY here and would otherwise hang.
-  $havePlugin = @(); try { $havePlugin = @((claude plugin list --json | Out-String | ConvertFrom-Json).id) } catch { }
-{{- range $id, $_ := $settings.enabledPlugins }}
-  if ($havePlugin -notcontains '{{ $id }}') { try { claude plugin install -y '{{ $id }}' } catch { Write-Host "[claude] install {{ $id }} failed" } }
-{{- end }}
-}
-
-# Agent skills from repos with no plugin marketplace — `skills` CLI, the official method in their
-# READMEs. Declared as `repo:skillspec:anchor`:
-#   skillspec - the `--skill` value. A name (repo basename is NOT always it: vercel-labs/skills
-#               ships `find-skills`), or `*` for "every skill this repo ships", which keeps up
-#               with upstream on its own (mattpocock/skills went 38 -> 37 names in three days,
-#               taste-skill 10 -> 13; a pinned name list would rot and fail on removed names).
-#   anchor    - the skill dir whose presence means "this repo is already done here". Exact for a
-#               single-skill entry; a representative one for a `*` entry, since knowing the full
-#               set of a `*` repo needs the network we are trying to avoid. Delete
-#               ~/.claude/skills/<anchor> to force a reinstall.
-# INSTALL ONLY WHAT'S MISSING - the CLI lands skills in the UNMANAGED ~/.claude/skills/<name>, so
-# `apply` never fights them and that dir is the check. Refreshing is `chezmoi update`'s job, see
-# run_after_update-claude-plugins.ps1. Flags are load-bearing for a non-interactive run: `npx -y`
-# skips npx's own prompt, the trailing `-y` the CLI's confirmation, `--agent claude-code` the
-# agent picker (WITHOUT it the skill installs for codex/gemini/copilot only and Claude never sees
-# it), `--skill` pins the selection, `--copy` avoids symlinks (they need elevation on Windows,
-# which this bootstrap never takes). npx comes from mise's node ("develop" profile) - hence
-# `mise exec`, same as rtk above; a tools-only box goes without.
-foreach ($entry in 'blader/humanizer:humanizer:humanizer', 'tt-a1i/archify:archify:archify',
-                   'vercel-labs/skills:find-skills:find-skills', 'mattpocock/skills:*:ask-matt',
-                   'Leonxlnx/taste-skill:*:brandkit') {
-  $repo, $spec, $anchor = $entry.Split(':')
-  if (Test-Path (Join-Path $HOME ".claude\skills\$anchor")) { continue }
-  # Empty catch = mise itself missing (CommandNotFound IS terminating, like the rtk line);
-  # $LASTEXITCODE = npx/node missing, which a native non-zero exit does NOT throw under WinPS 5.1.
-  try { mise --cd $HOME exec -- npx -y skills add $repo --skill $spec --agent claude-code -g -y --copy } catch { }
-  if ($LASTEXITCODE -ne 0) { Write-Host "[skills] $repo skipped - needs node/npx (the develop profile)" }
-}
-
 {{ if .tools -}}
 # delta: wire git via include.path (idempotent); identity stays in the unmanaged config.
 if (Get-Command git -ErrorAction SilentlyContinue) {
@@ -197,14 +131,6 @@ if (Get-Command git -ErrorAction SilentlyContinue) {
   if (-not ((Test-Path $gitIgnore) -and (Select-String -Path $gitIgnore -SimpleMatch -Pattern '.codegraph/' -Quiet))) {
     Add-Content -Path $gitIgnore -Value '.codegraph/'
   }
-}
-# codegraph MCP server, user scope. `cmd /c` because the launcher is codegraph.cmd, which a
-# shell-less spawn can't run. alwaysLoad keeps codegraph_explore out of tool-search deferral.
-# WinPS 5.1 strips bare `"` from native args, hence the \" escaping.
-if (Get-Command claude -ErrorAction SilentlyContinue) { claude mcp get codegraph *> $null }
-if ((Get-Command claude -ErrorAction SilentlyContinue) -and $LASTEXITCODE -ne 0) {
-  $cgJson = @{ type = 'stdio'; command = 'cmd'; args = @('/c', 'codegraph', 'serve', '--mcp'); alwaysLoad = $true } | ConvertTo-Json -Compress
-  try { claude mcp add-json --scope user codegraph $cgJson.Replace('"', '\"') } catch { Write-Host "[codegraph] mcp add failed" }
 }
 {{ end -}}
 

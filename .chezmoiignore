@@ -9,12 +9,13 @@ renovate.json
 # Never managed by chezmoi, so per-machine tool pins stay untracked + survive apply.
 .config/mise/config.toml
 
-# Bootstrap script: ship exactly one per platform family. The other would fail to
-# execute (a .sh can't run on Windows; a .ps1 is meaningless on Unix).
+# Bootstrap scripts (10-install-packages, 20-install-claude): ship exactly one set per
+# platform family. The other would fail to execute (a .sh can't run on Windows; a .ps1 is
+# meaningless on Unix).
 {{ if eq .chezmoi.os "windows" }}
-install-packages.sh
+*-install-*.sh
 {{ else }}
-install-packages.ps1
+*-install-*.ps1
 {{ end }}
 
 # Claude plugin refresh: an always-run script, so gate its very EXISTENCE on the chezmoi

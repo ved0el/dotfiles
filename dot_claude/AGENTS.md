@@ -1,6 +1,6 @@
 # AGENTS.md — Claude Code (dot_claude/ + the Claude parts of the bootstraps)
 
-Scoped notes for `dot_claude/` and the Claude sections of `run_onchange_after_install-packages.*` / `run_after_update-claude-plugins.*`. Repo-wide rules live in the root `AGENTS.md`.
+Scoped notes for `dot_claude/` and the Claude sections of `run_onchange_after_20-install-claude.*` / `run_after_update-claude-plugins.*`. Repo-wide rules live in the root `AGENTS.md`.
 
 ## Install, plugins, skills (bootstrap)
 - **Claude Code itself is installed by the bootstrap**, using the documented "Native Install
@@ -18,7 +18,7 @@ Scoped notes for `dot_claude/` and the Claude sections of `run_onchange_after_in
   bootstrap (verified: the outer preference is unchanged after the block returns).
 - **Claude marketplaces + plugins: `cza` INSTALLS WHAT'S MISSING, `czu` UPDATES WHAT'S THERE.**
   Two scripts, deliberately split:
-  - **Install (bootstrap, `run_onchange_after_install-packages.{sh,ps1}`)** — `marketplace add`
+  - **Install (bootstrap, `run_onchange_after_20-install-claude.{sh,ps1}`)** — `marketplace add`
     for every `extraKnownMarketplaces` entry not in `claude plugin marketplace list --json`, then
     `claude plugin install -y` for every `enabledPlugins` id not in `claude plugin list --json`.
     Both `list`s are local reads, so a box that already has everything does ZERO network work.

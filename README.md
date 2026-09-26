@@ -106,8 +106,8 @@ chezmoi managed              # list everything chezmoi tracks
 
 ## Add a package
 
-Edit the bootstrap for the OS family — `run_onchange_after_install-packages.sh.tmpl`
-(macOS/Linux) or `run_onchange_after_install-packages.ps1.tmpl` (Windows) — add the
+Edit the bootstrap for the OS family — `run_onchange_after_10-install-packages.sh.tmpl`
+(macOS/Linux) or `run_onchange_after_10-install-packages.ps1.tmpl` (Windows) — add the
 package to the right branch, then `chezmoi apply`. The script re-runs automatically
 because its content changed. Cross-platform CLI tools go in `conf.d/tools.toml`
 (mise) instead, so they install everywhere from one list.
@@ -128,7 +128,7 @@ dot_claude/                                   # ~/.claude/ (statusline.sh on Uni
 dot_config/                                   # ~/.config/  (gated per profile + OS)
 .chezmoi.toml.tmpl                            # profile prompts + per-OS data/interpreters
 .chezmoiignore                                # which files apply on this machine
-run_onchange_after_install-packages.sh.tmpl   # macOS/Linux bootstrap (brew/apt + mise)
-run_onchange_after_install-packages.ps1.tmpl  # Windows bootstrap (scoop + mise)
+run_onchange_after_10-install-packages.{sh,ps1}.tmpl  # bootstrap 1: brew/apt or scoop + mise + wm
+run_onchange_after_20-install-claude.{sh,ps1}.tmpl    # bootstrap 2: Claude Code, plugins, skills
 run_after_update-claude-plugins.{sh,ps1}.tmpl # Claude plugin refresh (runs on `update` only)
 ```
