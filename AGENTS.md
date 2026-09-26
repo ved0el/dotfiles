@@ -91,6 +91,9 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
 - A module the pwsh profile needs is installed **through `pwsh -NoProfile -Command`** (PSFzf via
   `Install-PSResource … -TrustRepository`): 5.1 and 7 don't see each other's CurrentUser modules.
 - WinPS 5.1 strips `"` from native args — escape JSON as `\"` (see the codegraph MCP add).
+- Under `$ErrorActionPreference = 'Stop'`, 5.1 turns a native command's REDIRECTED stderr
+  (`2>$null`, `*>`) into a terminating error. Probe native exit codes inside
+  `& { $ErrorActionPreference = 'Continue'; <cmd> 2>&1 | Out-Null; $LASTEXITCODE -eq 0 }`.
 - `XDG_CONFIG_HOME=~/.config` is persisted on Windows and exported on Unix (`10-env.zsh`).
 - `powershell.exe` "not recognized" = `System32\WindowsPowerShell\v1.0` fell off PATH; add it to
   the User PATH by hand (not a bootstrap step).

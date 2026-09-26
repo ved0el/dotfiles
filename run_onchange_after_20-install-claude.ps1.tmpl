@@ -102,8 +102,13 @@ if ((Test-Path (Join-Path $HOME '.claude\skills\brandkit')) -or (Test-Path (Join
 # codegraph MCP server, user scope. `cmd /c` because the launcher is codegraph.cmd, which a
 # shell-less spawn can't run. alwaysLoad keeps codegraph_explore out of tool-search deferral.
 # WinPS 5.1 strips bare `"` from native args, hence the \" escaping.
-if (Get-Command claude -ErrorAction SilentlyContinue) { claude mcp get codegraph *> $null }
-if ((Get-Command claude -ErrorAction SilentlyContinue) -and $LASTEXITCODE -ne 0) {
+# The probe runs under 'Continue': with 'Stop', 5.1 turns a native command's redirected stderr
+# ("No MCP server named …" on a fresh box) into a terminating error and kills the script.
+$cgHave = $true
+if (Get-Command claude -ErrorAction SilentlyContinue) {
+  $cgHave = & { $ErrorActionPreference = 'Continue'; claude mcp get codegraph 2>&1 | Out-Null; $LASTEXITCODE -eq 0 }
+}
+if (-not $cgHave) {
   $cgJson = @{ type = 'stdio'; command = 'cmd'; args = @('/c', 'codegraph', 'serve', '--mcp'); alwaysLoad = $true } | ConvertTo-Json -Compress
   try { claude mcp add-json --scope user codegraph $cgJson.Replace('"', '\"') } catch { Write-Host "[codegraph] mcp add failed" }
 }
