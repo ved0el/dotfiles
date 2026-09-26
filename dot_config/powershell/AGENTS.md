@@ -41,6 +41,15 @@ Scoped notes for `dot_config/powershell/profile.ps1` and `dot_config/starship.to
   item yet and fzf silently skips any command containing a placeholder, which fakes a
   failure. `hidden|hidden` also pins `ctrl-/` so the pane can't be toggled back into the
   error. `Ctrl+t` keeps its own bat preview (`FZF_CTRL_T_OPTS`) and is unaffected.
+- **NEVER put `--preview-window` in `FZF_DEFAULT_OPTS`** — it lives in `FZF_CTRL_T_OPTS`. fzf
+  MERGES a later `--preview-window` into the earlier one and keeps its `<90(...)` alternative
+  layout, so PSFzf's `hidden` did not stick: below 90 columns the Tab picker opened the broken
+  preview anyway (`fork/exec C:/Windows/system32/cmd.exe: invalid argument`).
+- **`cd`/`z` have a `-Native` argument completer** (local dirs + `zoxide query --list`).
+  `__zoxide_z` takes bare `$args`, so without it PowerShell only completes paths under CWD and
+  `cd ch<Tab>` returned nothing when no local dir matched. A `-Native` completer IS honored for
+  a function and REPLACES the path fallback, so it re-adds local dirs via
+  `CompletionCompleters::CompleteFilename`. Zoxide is skipped for path-like words (`\ / :`).
 - **PowerShell profile**: managed at `dot_config/powershell/profile.ps1`
   (→ `~/.config/powershell/profile.ps1`). The bootstrap dot-sources it from the real
   `$PROFILE` (both pwsh 7 and WinPS 5.1 paths, via OneDrive-aware `GetFolderPath`).

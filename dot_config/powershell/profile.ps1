@@ -129,8 +129,6 @@ if (Get-Command fzf -ErrorAction SilentlyContinue) {
     '--height=80% --min-height=20 --multi --layout=reverse --cycle'
     '--border=rounded --margin=0,1 --info=inline-right --scrollbar="█│" --separator="─"'
     '--prompt="❯ " --pointer="▶" --marker="✚"'
-    '--preview-window="right,60%,border-left,wrap,<90(down,60%,border-top)"'
-    '--bind="ctrl-/:change-preview-window(down,75%,border-top|hidden|)"'
     '--bind="ctrl-f:preview-page-down,ctrl-b:preview-page-up"'
     '--bind="shift-down:preview-down,shift-up:preview-up"'
     '--bind="alt-down:preview-bottom,alt-up:preview-top"'
@@ -141,7 +139,15 @@ if (Get-Command fzf -ErrorAction SilentlyContinue) {
   ) -join ' '
   $env:FZF_CTRL_R_OPTS     = '--no-preview'
   $env:FZF_CTRL_T_COMMAND  = "rg --files --hidden --follow --glob '!.git/*'"
-  $env:FZF_CTRL_T_OPTS     = '--preview "bat --style=numbers --color=always --line-range=:500 {}"'
+  # The preview layout lives HERE, not in FZF_DEFAULT_OPTS: fzf merges a later
+  # --preview-window into the earlier one and KEEPS its `<90(...)` alternative, so PSFzf's
+  # Tab picker ('hidden') still opened its broken preview in a narrow window
+  # ('fork/exec cmd.exe: invalid argument').
+  $env:FZF_CTRL_T_OPTS     = @(
+    '--preview "bat --style=numbers --color=always --line-range=:500 {}"'
+    '--preview-window="right,60%,border-left,wrap,<90(down,60%,border-top)"'
+    '--bind="ctrl-/:change-preview-window(down,75%,border-top|hidden|)"'
+  ) -join ' '
   # PSFzf binds fzf to PSReadLine chords (installed by the bootstrap, via pwsh — see
   # AGENTS.md). Tab completion picker · Ctrl+t file picker · Ctrl+r history · Alt+c cd into a
   # subdirectory. Ctrl+t/Ctrl+r override PSReadLine's own SwapCharacters/ReverseSearchHistory.
@@ -241,6 +247,21 @@ if ($f = Get-InitScript zoxide 'init', 'powershell') {
   if (-not $env:CLAUDECODE) {
     Set-Alias -Name cd  -Value __zoxide_z  -Option AllScope -Scope Global -Force
     Set-Alias -Name cdi -Value __zoxide_zi -Option AllScope -Scope Global -Force
+    # __zoxide_z takes bare $args, so PowerShell only completes paths under CWD: `cd ch<Tab>`
+    # found nothing when no local dir matched. Complete local dirs + zoxide's matches instead
+    # (a -Native completer is honored for functions and replaces the path fallback).
+    Register-ArgumentCompleter -Native -CommandName cd, z, __zoxide_z -ScriptBlock {
+      param($word)
+      $local = [System.Management.Automation.CompletionCompleters]::CompleteFilename($word) |
+        Where-Object ResultType -eq ProviderContainer
+      $local
+      if ($word -and $word -notmatch '[\\/:]') {
+        $seen = @($local.ListItemText)
+        zoxide query --list --exclude $PWD.ProviderPath -- $word 2>$null |
+          Where-Object { (Split-Path $_ -Leaf) -notin $seen } |
+          ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ProviderContainer', $_) }
+      }
+    }
   }
 }
 
