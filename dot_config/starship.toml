@@ -1,16 +1,69 @@
 # starship — prompt config (Windows only; Unix uses powerlevel10k).
+# Base: `starship preset pure-preset`, recolored with catppuccin mocha (text colors only).
 #
-# WHY THIS FILE EXISTS: the default scan_timeout of 30ms is marginal on Windows.
-# starship globs the CWD ONCE per prompt to decide which language modules apply; on
-# the first shell after boot that hits a cold filesystem cache (+ Defender), blows
-# 30ms, and prints:
+# scan_timeout: the default 30ms is marginal on Windows. starship globs the CWD once per prompt;
+# a cold FS cache (+ Defender) after boot blows 30ms and prints
 #   [WARN] - (starship::context): Scanning current directory timed out.
-# It is a CEILING, not a cost — `starship timings` shows the warm scan finishing in
-# ~1ms, so raising it slows nothing down; it only stops the bail-out on a cold read.
+# It is a CEILING, not a cost (warm scan ~1ms).
 scan_timeout = 500
+palette = 'catppuccin_mocha'
+"$schema" = 'https://starship.rs/config-schema.json'
 
-# docker_context was the single most expensive module here (3ms of a ~5ms prompt) and
-# renders NOTHING unless you're on a non-default docker context. Re-enable if you
-# actually switch contexts.
-[docker_context]
-disabled = true
+format = """
+$username\
+$hostname\
+$directory\
+$git_branch\
+$git_state\
+$git_status\
+$cmd_duration\
+$line_break\
+$python\
+$character"""
+
+[directory]
+style = "blue"
+
+[character]
+success_symbol = "[❯](mauve)"
+error_symbol = "[❯](red)"
+vimcmd_symbol = "[❮](green)"
+
+[git_branch]
+format = "[$branch]($style)"
+style = "overlay0"
+
+[git_status]
+format = "[[(*$conflicted$untracked$modified$staged$renamed$deleted)](pink) ($ahead_behind$stashed)]($style)"
+style = "sky"
+conflicted = "​"
+untracked = "​"
+modified = "​"
+staged = "​"
+renamed = "​"
+deleted = "​"
+stashed = "≡"
+
+[git_state]
+format = '\([$state( $progress_current/$progress_total)]($style)\) '
+style = "overlay0"
+
+[cmd_duration]
+format = "[$duration]($style) "
+style = "yellow"
+
+[python]
+format = "[$virtualenv]($style) "
+style = "overlay0"
+detect_extensions = []
+detect_files = []
+
+[palettes.catppuccin_mocha]
+red = "#f38ba8"
+pink = "#f5c2e7"
+mauve = "#cba6f7"
+yellow = "#f9e2af"
+green = "#a6e3a1"
+sky = "#89dceb"
+blue = "#89b4fa"
+overlay0 = "#6c7086"

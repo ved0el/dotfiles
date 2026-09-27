@@ -48,7 +48,10 @@ pwsh/WinPS rules are in the root `AGENTS.md`. The "why" behind each rule is in i
 - `cd` → `__zoxide_z` alias is skipped under `CLAUDECODE` (root `AGENTS.md`).
 
 ## starship
+- Theme = `starship preset pure-preset` recolored with a trimmed catppuccin mocha palette. No
+  version modules (no `--version` spawns); `python` shows only an active venv.
 - `scan_timeout = 500` — a ceiling, not a cost (a cold FS cache blows the 30ms default).
 - Inside a git repo ~70ms is fixed repo-discovery cost billed to the first git-aware module;
-  moving it saves nothing. `git_status` (~30ms) stays on. `docker_context` is disabled.
+  moving it saves nothing. `git_status` (~30ms) stays on. The top-level `format` lists modules explicitly —
+  a module not in it never runs.
 - Measure with `starship timings`, never by guessing.
