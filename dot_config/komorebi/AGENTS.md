@@ -28,6 +28,11 @@ commit (`git log -S`).
 - **Chromium extension popups are titled `_crx_<id>`**, owned by the browser exe. One rule —
   `floating_applications` / `Title` / `StartsWith` / `_crx_` — covers every extension; a rule on
   the extension's name never matches.
+- **Revit popups share the main window's class** (`HwndWrapper[...]`, WPF). One composite
+  `floating_applications` rule — `Exe` `Revit.exe` AND `Title` `DoesNotStartWith` `Autodesk Revit`
+  — floats every dialog/detached view and keeps the main window tiled. The main window is
+  shown BEFORE it gets its `Autodesk Revit` title, so `Revit.exe` must also be in
+  `object_name_change_applications` (re-evaluated on title change) or it is never managed.
 - Get real identifiers from `%TEMP%\komorebi_plaintext.log*` (`hwnd`, `title`, `exe`, `class`).
   FLOATED windows are logged, IGNORED ones are not — never delete an `ignore_rules` entry on log
   silence.

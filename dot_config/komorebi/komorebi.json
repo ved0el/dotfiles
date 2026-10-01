@@ -60,6 +60,11 @@
       "kind": "Exe",
       "id": "brave.exe",
       "matching_strategy": "Equals"
+    },
+    {
+      "kind": "Exe",
+      "id": "Revit.exe",
+      "matching_strategy": "Equals"
     }
   ],
   "floating_applications": [
@@ -82,7 +87,19 @@
       "kind": "Title",
       "id": "_crx_",
       "matching_strategy": "StartsWith"
-    }
+    },
+    [
+      {
+        "kind": "Exe",
+        "id": "Revit.exe",
+        "matching_strategy": "Equals"
+      },
+      {
+        "kind": "Title",
+        "id": "Autodesk Revit",
+        "matching_strategy": "DoesNotStartWith"
+      }
+    ]
   ],
   "ignore_rules": [
     {
