@@ -11,12 +11,18 @@ sh -c "$(curl -fsLS get.chezmoi.io/lb)" -- init --apply ved0el
 ```
 
 ```powershell
-# Windows (PowerShell)
-iex "&{$(irm 'https://get.chezmoi.io/ps1')} -b '$HOME/.local/bin'"; chezmoi init --apply ved0el
+# Windows (PowerShell) — installs chezmoi to ~/.local/bin and puts it on PATH (this
+# session + persisted), so `chezmoi` works right away and in every new terminal
+$b = "$HOME\.local\bin"; iex "&{$(irm 'https://get.chezmoi.io/ps1')} -b '$b'"
+[Environment]::SetEnvironmentVariable('Path', "$b;" + [Environment]::GetEnvironmentVariable('Path', 'User'), 'User'); $env:Path = "$b;$env:Path"
+chezmoi init --apply ved0el
 ```
 
 It asks which profiles to enable, applies the dotfiles, then installs packages and plugins. The
 OS is auto-detected: brew/apt on macOS/Linux, scoop (+ winget for PowerShell 7) on Windows.
+On Windows it also asks for the scoop and mise install dirs (default `~/.local/share/scoop`,
+`~/.local/share/mise`; persisted as User `SCOOP` / `MISE_DATA_DIR`, shims put on PATH). An
+existing scoop/mise elsewhere is kept, not moved.
 
 ## Profiles
 
@@ -25,7 +31,7 @@ OS is auto-detected: brew/apt on macOS/Linux, scoop (+ winget for PowerShell 7) 
 | base | always | zsh + powerlevel10k + sheldon (Unix) or PowerShell + starship (Windows), mise, Claude Code + plugins + agent skills (skills need **develop** for node) |
 | **tools** | on | CLI tools via mise (bat, eza, fd, ripgrep, fzf, micro, rtk, codegraph, vivid, …), delta for git |
 | **develop** | off | language runtimes via mise (`conf.d/develop.toml`) |
-| **tmux** | on (not Windows) | tmux + TPM plugins |
+| **tmux** | on | tmux + TPM plugins · Windows: psmux (same `~/.tmux.conf`, `tmux` works) + psmux-plugins |
 | **wm** | off (not Linux) | macOS: yabai + skhd · Windows: komorebi + whkd + yasb |
 
 Answers are stored in `~/.config/chezmoi/chezmoi.toml`. To change them:
@@ -60,6 +66,11 @@ Shell aliases: `cz`, `cza`, `czd`, `czs`, `cze`, `czra`, `czu`, `czcd`.
 - With fzf, PSFzf gives `Tab` completion, `Ctrl+t`, `Ctrl+r`, `Alt+c` (loaded on first use).
 - `XDG_CONFIG_HOME=~/.config`, so tools read the same config tree as on Unix.
 - `wm`: komorebi starts at logon via a scheduled task; yasb via its own installer.
+- Windows Terminal: 2 profiles (pwsh, cmd), Catppuccin schemes (Mocha default), JetBrainsMonoNL
+  Nerd Font 14 — merged into the live `settings.json`, so changes made in WT's UI survive `apply`.
+- Typing `powershell` in pwsh opens pwsh; WinPS 5.1 stays (an OS component chezmoi's bootstrap runs on).
+- `gsudo` (scoop) for elevation; ssh = Windows' built-in OpenSSH (git uses it via `core.sshCommand`).
+- psmux: same keys as tmux. Not ported: `C-a f` (sessionizer); status shows the login user.
 
 ## Layout
 
@@ -68,7 +79,8 @@ dot_zshrc, dot_p10k.zsh, dot_config/zsh/     # Unix shell
 dot_config/powershell/, dot_config/starship.toml   # Windows shell
 dot_config/mise/conf.d/                      # tools + runtimes (all OSes)
 dot_config/                                  # other tool configs, gated per profile + OS
-dot_tmux.conf, dot_local/bin/                # tmux (Unix)
+dot_tmux.conf.tmpl, dot_local/bin/           # tmux (Unix) / psmux (Windows)
+AppData/…/WindowsTerminal…/LocalState/       # Windows Terminal settings (merged)
 dot_claude/, .chezmoitemplates/              # Claude Code settings, CLAUDE.md, statuslines
 .chezmoi.toml.tmpl, .chezmoiignore           # profile prompts, what applies where
 run_onchange_after_10-install-packages.*     # bootstrap 1: OS packages, mise, wm

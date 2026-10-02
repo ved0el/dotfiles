@@ -55,11 +55,31 @@ foreach ($wm in 'komorebi','whkd','yasb') {
   Set-Item "env:$var" $home_
 }
 
-# --- scoop (package manager) — installs per-user; must NOT run elevated ---
-if (-not (Get-Command scoop -ErrorAction SilentlyContinue)) {
-  Invoke-RestMethod -Uri 'https://get.scoop.sh' | Invoke-Expression
-  $env:Path = "$env:USERPROFILE\scoop\shims;$env:Path"
+# --- install roots: SCOOP + MISE_DATA_DIR (User scope, prompted by `chezmoi init`) ---
+# Set BEFORE installing: the scoop installer and mise read them. An existing install elsewhere
+# wins — scoop can't be moved in place (shims/junctions hold absolute paths), and a new
+# MISE_DATA_DIR would silently re-download every tool — so warn and keep it.
+function Resolve-Root([string]$Name, [string]$Want, [string]$Have) {
+  $Want = $Want -replace '/', '\'
+  if ($Have -and ($Have.TrimEnd('\') -ne $Want.TrimEnd('\'))) {
+    Write-Host "[$Name] already at $Have (configured: $Want) - keeping it."
+    return $Have
+  }
+  $Want
 }
+$scoopCmd = Get-Command scoop -ErrorAction SilentlyContinue
+$ScoopDir = Resolve-Root 'scoop' '{{ .scoopDir | default (printf "%s/.local/share/scoop" .chezmoi.homeDir) }}' $(if ($scoopCmd) { Split-Path (Split-Path $scoopCmd.Source) })
+$MiseDir  = Resolve-Root 'mise'  '{{ .miseDataDir | default (printf "%s/.local/share/mise" .chezmoi.homeDir) }}' ([Environment]::GetEnvironmentVariable('MISE_DATA_DIR', 'User'))
+foreach ($kv in @(@('SCOOP', $ScoopDir), @('MISE_DATA_DIR', $MiseDir))) {
+  [Environment]::SetEnvironmentVariable($kv[0], $kv[1], 'User')
+  Set-Item "env:$($kv[0])" $kv[1]
+}
+
+# --- scoop (package manager) — installs per-user; must NOT run elevated ---
+if (-not $scoopCmd) {
+  Invoke-RestMethod -Uri 'https://get.scoop.sh' | Invoke-Expression
+}
+Add-UserPath (Join-Path $ScoopDir 'shims')
 
 # git via scoop (per-user, no elevation); curl ships with Windows 10+.
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) { scoop install git }
@@ -88,15 +108,22 @@ if (-not (Get-Command pwsh -ErrorAction SilentlyContinue)) {
 if (-not (Get-Command mise -ErrorAction SilentlyContinue)) {
   scoop install mise
 }
+# mise's shims, for what runs outside the profile's `mise env` injection (GUI apps, tasks).
+Add-UserPath (Join-Path $MiseDir 'shims')
 
-# Windows-only scoop extras. openssh/openssl provide commands, so guard on the command (an ssh
-# from Git-for-Windows or the Windows optional feature already satisfies it). A font ships NO
-# command, so that one is guarded on `scoop list`; JetBrainsMono-NF-Mono needs the nerd-fonts
-# bucket, and the -Mono variant is the single-width one terminals want. Fonts install per-user
-# (HKCU) — no elevation.
-if (-not (Get-Command ssh     -ErrorAction SilentlyContinue)) { scoop install openssh }
+# Windows-only scoop extras, guarded on the command. gsudo (also ships a `sudo` shim; where
+# Windows' own sudo is enabled, System32\sudo.exe wins — `gsudo` always works). A font ships NO
+# command, so that one is guarded on `scoop list` (through Out-String: Select-String on its
+# objects never matches); JetBrainsMono-NF-Mono needs the nerd-fonts bucket, and the -Mono
+# variant is the single-width one terminals want. Fonts install per-user (HKCU) — no elevation.
 if (-not (Get-Command openssl -ErrorAction SilentlyContinue)) { scoop install openssl }
-if (-not (scoop list 2>$null | Select-String -Quiet '(?im)^\s*JetBrainsMono-NF-Mono\b')) {
+if (-not (Get-Command gsudo   -ErrorAction SilentlyContinue)) { scoop install gsudo }
+# ssh = Windows' built-in OpenSSH (pairs with the ssh-agent service; Windows Update patches it),
+# not scoop's. Enabling the optional feature needs admin, so only say how.
+if (-not (Test-Path "$env:SystemRoot\System32\OpenSSH\ssh.exe")) {
+  Write-Host "[ssh] Windows OpenSSH client missing - as admin: Add-WindowsCapability -Online -Name OpenSSH.Client~~~~0.0.1.0"
+}
+if ((scoop list 2>$null | Out-String) -notmatch '(?im)^\s*JetBrainsMono-NF-Mono\b') {
   if ((scoop bucket list 2>$null | Out-String) -notmatch 'nerd-fonts') { scoop bucket add nerd-fonts }
   scoop install JetBrainsMono-NF-Mono
 }
@@ -112,6 +139,30 @@ if ((scoop list 2>$null | Out-String) -notmatch '(?im)^\s*psfzf\b') {
   scoop install psfzf
 }
 
+{{ if .tmux -}}
+# --- psmux (tmux for Windows; reads the same ~/.tmux.conf) — the `tmux` profile ---
+# Ships psmux/pmux/tmux.exe shims. Plugins are copied like the Unix TPM clones (no live server,
+# no Prefix+I): one shallow clone of the psmux-plugins monorepo, then each missing plugin dir
+# into ~/.psmux/plugins/ (their plugin.conf files hardcode that path). Keep this list in sync
+# with the Windows @plugin lines in dot_tmux.conf.tmpl.
+if (-not (Get-Command psmux -ErrorAction SilentlyContinue)) { scoop install psmux }
+$psmuxPlugins = Join-Path $HOME '.psmux\plugins'
+$wanted = 'ppm','psmux-resurrect','psmux-continuum','psmux-cpu','psmux-prefix-highlight'
+$missing = $wanted | Where-Object { -not (Test-Path (Join-Path $psmuxPlugins $_)) }
+if ($missing) {
+  $tmp = Join-Path $env:TEMP "psmux-plugins-$PID"
+  git clone --quiet --depth 1 https://github.com/psmux/psmux-plugins.git $tmp
+  if ($LASTEXITCODE -eq 0) {
+    New-Item -ItemType Directory -Force -Path $psmuxPlugins | Out-Null
+    foreach ($p in $missing) { Copy-Item -Recurse (Join-Path $tmp $p) (Join-Path $psmuxPlugins $p) }
+    Write-Host "[psmux] plugins installed: $($missing -join ', ')"
+  } else {
+    Write-Host "[psmux] plugin clone failed - re-run cza, or press Prefix+I inside psmux."
+  }
+  Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue
+}
+{{ end -}}
+
 # --- install tools/runtimes declared in ~/.config/mise/conf.d/*.toml ---
 # --cd $HOME: mise only auto-discovers the global conf.d/*.toml when CWD is inside the home
 # tree; chezmoi may run this script from elsewhere, so anchor it at $HOME or nothing installs.
@@ -123,6 +174,12 @@ if (Get-Command git -ErrorAction SilentlyContinue) {
   $deltaInc = Join-Path $HOME '.config/git/delta.gitconfig'
   if (((git config --global --get-all include.path) 2>$null) -notcontains $deltaInc) {
     git config --global --add include.path $deltaInc
+  }
+  # git over Windows' OpenSSH, so it shares the ssh-agent service's keys (Git's bundled ssh
+  # doesn't talk to it). Only if unset — a machine-local choice wins.
+  $winSsh = "$env:SystemRoot\System32\OpenSSH\ssh.exe"
+  if ((Test-Path $winSsh) -and -not ((git config --global --get core.sshCommand) 2>$null)) {
+    git config --global core.sshCommand ($winSsh -replace '\\', '/')
   }
   # codegraph: keep each repo's .codegraph/ index out of `git status` via git's default global
   # excludes file (unmanaged — Claude Code appends to it too), idempotently.

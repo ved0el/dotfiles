@@ -30,25 +30,37 @@
 #   - macOS: No additional packages needed (uses pbcopy)
 #   - Linux: Install xsel or xclip (apt install xsel / yum install xsel)
 #   - WSL: No additional packages needed (uses clip.exe)
+#
+# Windows: the same file drives psmux (scoop; `tmux` is its shim). The bootstrap
+# copies the psmux-plugins (ppm instead of TPM); Windows-only differences are the
+# chezmoi os-gated template blocks below. Not ported: C-a f (sessionizer).
 # =============================================================================
 
 # =============================================================================
 # Core Settings
 # =============================================================================
+{{ if eq .chezmoi.os "windows" -}}
+# No terminfo on Windows (Windows Terminal is truecolor already); SHELL is unset.
+set -g default-shell pwsh
+{{- else -}}
 set -g default-terminal "tmux-256color"
 set -g default-shell "${SHELL}"
 # 24-bit truecolor passthrough — without this, neovim/modern TUI themes render
 # washed-out inside tmux. Applies to any 256-colour outer terminal.
 set -ga terminal-overrides ",*256col*:Tc"
+{{- end }}
 
 # Performance
 set -s escape-time 0
-set -g repeat-time 1000
 set -g history-limit 50000
 set -g status-interval 5
 set -g focus-events on
 set -g aggressive-resize on
+{{- if ne .chezmoi.os "windows" }}
+# Unknown to psmux (it warns at startup).
+set -g repeat-time 1000
 set -sg buffer-limit 20
+{{- end }}
 # Keep window numbers contiguous when one closes (pairs with base-index 1).
 set -g renumber-windows on
 
@@ -161,6 +173,11 @@ bind-key . set-option -p -u @pane_name
 # Note: Sessions auto-save every 5 minutes and auto-restore on tmux start
 #
 bind-key s choose-session
+{{ if eq .chezmoi.os "windows" -}}
+# psmux-resurrect's own scripts (its plugin.conf also binds C-s / C-r).
+bind-key S run-shell 'pwsh -NoProfile -ExecutionPolicy Bypass -File "~/.psmux/plugins/psmux-resurrect/scripts/save.ps1"'
+bind-key R run-shell 'pwsh -NoProfile -ExecutionPolicy Bypass -File "~/.psmux/plugins/psmux-resurrect/scripts/restore.ps1"'
+{{- else -}}
 bind-key S run-shell '~/.tmux/plugins/tmux-resurrect/scripts/save.sh'
 bind-key R run-shell '~/.tmux/plugins/tmux-resurrect/scripts/restore.sh'
 
@@ -170,6 +187,7 @@ bind-key R run-shell '~/.tmux/plugins/tmux-resurrect/scripts/restore.sh'
 #            use C-a s for the classic session list.) Falls back to a message if
 #            fzf is absent. Script: ~/.local/bin/tmux-sessionizer.
 bind-key f display-popup -E -w 75% -h 70% "tmux-sessionizer"
+{{- end }}
 
 # =============================================================================
 # Copy Mode
@@ -211,7 +229,12 @@ set -g status-style bg=default,fg=colour240
 # Using tmux-cpu plugin for CPU and RAM display
 # User: live foreground user of the active pane (tracks sudo -i / su -), not the
 # tmux server's login — see ~/.local/bin/tmux-user. status-interval (1s) refreshes it.
+{{ if eq .chezmoi.os "windows" -}}
+# Windows: no tty to inspect — the login user, baked in at apply time.
+set -g status-left ' #[fg=grey]User: {{ .chezmoi.username | splitList "\\" | last }}@#h#[fg=default] | Window: #W #{prefix_highlight}#[fg=default] '
+{{- else -}}
 set -g status-left ' #[fg=grey]User: #(~/.local/bin/tmux-user "#{pane_tty}")@#h#[fg=default] | Window: #W #{prefix_highlight}#[fg=default] '
+{{- end }}
 
 # Right side: Window list | CPU | RAM | Time (right-aligned)
 set -g status-right '#{cpu_fg_color} CPU: #{cpu_percentage}#[fg=default] | #{ram_fg_color}RAM: #{ram_percentage}#[fg=default] | #[fg=grey] %H:%M #[fg=yellow] '
@@ -243,6 +266,29 @@ bind-key r source-file ~/.tmux.conf\; display-message "Config reloaded"
 # =============================================================================
 # Plugins
 # =============================================================================
+# Options first: psmux sources each plugin's plugin.conf at its @plugin line.
+# tmux-resurrect & continuum
+set -g @resurrect-capture-pane-contents 'on'
+set -g @continuum-save-interval '5'
+set -g @continuum-restore 'on'
+set -g @continuum-boot 'off'
+
+{{ if eq .chezmoi.os "windows" -}}
+# psmux-plugins, copied into ~/.psmux/plugins by the bootstrap (keep its list in sync).
+# No yank plugin: psmux writes the Windows clipboard natively. No psmux-sensible: it uses
+# plain `set -g` + binds (escape-time 50, `R` → ~/.psmux.conf, `|`/`-` without the cwd),
+# overriding this file — everything else it sets is already set above.
+set -g @plugin 'psmux-plugins/ppm'
+set -g @plugin 'psmux-plugins/psmux-resurrect'
+set -g @plugin 'psmux-plugins/psmux-continuum'
+set -g @plugin 'psmux-plugins/psmux-cpu'
+set -g @plugin 'psmux-plugins/psmux-prefix-highlight'
+
+# =============================================================================
+# Initialize
+# =============================================================================
+run '~/.psmux/plugins/ppm/ppm.ps1'
+{{- else -}}
 set -g @plugin 'tmux-plugins/tpm'
 set -g @plugin 'tmux-plugins/tmux-sensible'
 set -g @plugin 'tmux-plugins/tmux-yank'
@@ -259,18 +305,13 @@ set -g @yank_selection_mouse 'clipboard'
 set -g @yank_action 'copy-pipe'
 # Disable auto-copy on mouse drag release — press y to copy after selecting
 set -g @yank_with_mouse 'off'
-
-# tmux-resurrect & continuum
-set -g @resurrect-capture-pane-contents 'on'
 set -g @resurrect-save-bash-history 'on'
-set -g @continuum-save-interval '5'
-set -g @continuum-restore 'on'
-set -g @continuum-boot 'off'
 
 # =============================================================================
 # Initialize
 # =============================================================================
 run '~/.tmux/plugins/tpm/tpm'
+{{- end }}
 
 # =============================================================================
 # Custom Key Bindings (After Plugin Load)

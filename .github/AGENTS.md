@@ -9,7 +9,8 @@ its commit (`git log -S`).
 - **`e2e.yml`**: real `chezmoi init --apply` on ubuntu x64, ubuntu arm64 (the Raspberry Pi's
   only check for missing linux-arm64 assets), macOS and Windows. **Path-filtered** to what changes
   installs: `run_*`, `.chezmoi*` (incl. `.chezmoitemplates/`), mise manifests, sheldon/tmux
-  plugin lists, `dot_claude/modify_settings.json`, the workflow. A new file the bootstrap reads
+  plugin lists (`dot_tmux.conf.tmpl`), `dot_claude/modify_settings.json`, `AppData/**` (Windows
+  Terminal), the workflow. A new file the bootstrap reads
   goes into `paths`. Also weekly (every mise tool is `latest`) and `workflow_dispatch`.
 - Both cancel a superseded run.
 - **The verify step prints `chezmoi status` + `diff` before failing** — bare `chezmoi verify`

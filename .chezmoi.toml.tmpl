@@ -1,9 +1,17 @@
 {{- $tools   := promptBoolOnce . "tools"   "Install productivity tools (ex: bat, fd, ripgrep, etc)" true -}}
 {{- $develop := promptBoolOnce . "develop" "Install development tools (ex: nodejs, golang, python, etc)" false -}}
-{{- $tmux := false -}}
 {{- $wm   := false -}}
+{{- $scoopDir    := "" -}}
+{{- $miseDataDir := "" -}}
+{{- $tmux := false -}}
 {{- if ne .chezmoi.os "windows" -}}
 {{-   $tmux = promptBoolOnce . "tmux" "Install tmux + plugins (and manage ~/.tmux.conf)" true -}}
+{{- else -}}
+{{-   $tmux = promptBoolOnce . "tmux" "Install psmux (tmux for Windows) + plugins (and manage ~/.tmux.conf)" true -}}
+{{- /* User-scope install roots (SCOOP / MISE_DATA_DIR). Enter keeps the default; an existing
+       scoop/mise root elsewhere is kept by the bootstrap regardless (they can't be moved). */ -}}
+{{-   $scoopDir    = promptStringOnce . "scoopDir"    "Scoop install dir"    (printf "%s/.local/share/scoop" .chezmoi.homeDir) -}}
+{{-   $miseDataDir = promptStringOnce . "miseDataDir" "mise data dir (tools)" (printf "%s/.local/share/mise" .chezmoi.homeDir) -}}
 {{- end -}}
 {{- if eq .chezmoi.os "darwin" -}}
 {{-   $wm = promptBoolOnce . "wm" "Install the macOS window manager (yabai + skhd) and its config" false -}}
@@ -15,6 +23,8 @@
     develop = {{ $develop }}
     tmux    = {{ $tmux }}
     wm      = {{ $wm }}
+    scoopDir    = {{ $scoopDir | toToml }}
+    miseDataDir = {{ $miseDataDir | toToml }}
 {{ if eq .chezmoi.os "windows" }}
 # Windows: run the .ps1 bootstrap via Windows PowerShell 5.1 — ALWAYS. 5.1 lives at a fixed
 # %SystemRoot%\System32\... path that never moves, so it works on a fresh box (no pwsh yet) and

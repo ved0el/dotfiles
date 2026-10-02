@@ -15,8 +15,9 @@ on:
       - '.chezmoi*'
       - 'dot_config/mise/**'
       - 'dot_config/sheldon/**'
-      - 'dot_tmux.conf'
+      - 'dot_tmux.conf.tmpl'
       - 'dot_claude/modify_settings.json'
+      - 'AppData/**'
       - '.github/workflows/e2e.yml'
   pull_request:
     paths: *install-paths

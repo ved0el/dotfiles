@@ -8,6 +8,8 @@ Scoped to `dot_config/mise/`. The NEVER rule is repeated in the root `AGENTS.md`
   With it set, mise stops discovering `conf.d/*.toml` whenever CWD is outside `$HOME` (symptom:
   `mise ls` shows tools with a blank config source). `profile.ps1` and `10-env.zsh` unset both
   at shell start; a persisted User-scope value must be deleted by hand.
+- `MISE_DATA_DIR` (where tools install) IS allowed: the Windows bootstrap persists it (User scope,
+  prompted, default `~/.local/share/mise`) and part 2 reloads it — it doesn't affect config discovery.
 - `.config/mise/config.toml` is chezmoi-ignored and is where `mise use -g` writes by default, so
   per-machine pins survive `apply`. Never let `mise use -g` write into a tracked `conf.d/*.toml`.
 - Global `conf.d` is only discovered with CWD inside `$HOME`: scripts run `mise --cd $HOME …`

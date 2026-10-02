@@ -45,10 +45,12 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
 | `dot_config/mise/conf.d/*.toml` | tools/runtimes, all OSes |
 | `dot_config/{yabai,skhd}` / `{komorebi,whkd,yasb}` | tiling WM: macOS / Windows |
 | `dot_claude/`, `.chezmoitemplates/claude-settings.json` | Claude settings (merged), CLAUDE.md, statuslines |
-| `dot_tmux.conf`, `dot_local/bin/` | tmux + its helper scripts (Unix) |
+| `dot_tmux.conf.tmpl`, `dot_local/bin/` | tmux + its helper scripts (Unix); psmux reads the same file (Windows blocks) |
+| `AppData/…/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/modify_settings.json`, `.chezmoitemplates/windows-terminal.json` | Windows Terminal (merged into the live file) |
 
 ## Profiles & OS
-- Profile keys `tools`, `develop`, `tmux` (not Windows), `wm` (macOS + Windows) are prompted by
+- Profile keys `tools`, `develop`, `tmux` (Windows = psmux), `wm` (macOS + Windows) — plus the
+  Windows-only strings `scoopDir`/`miseDataDir` — are prompted by
   `chezmoi init` (`.chezmoi.toml.tmpl` → `~/.config/chezmoi/chezmoi.toml`, which overrides
   `.chezmoidata.yaml`). `apply` never re-prompts: re-run `init` or edit that file.
 - `.chezmoidata.yaml` must define every key — templates error on a missing one.
@@ -63,8 +65,11 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   extras in `windows.toml`). Prefer prebuilt backends (`aqua:`/`github:`) over source builds;
   the backend prefix goes in the KEY. `eza` is `aqua:` on Windows only (registry default is cargo).
 - OS package managers only for what mise can't do, installed only if missing: brew/apt `git curl
-  tmux` (+`zsh` on Linux, `mole`/`yabai`/`skhd` on macOS); scoop `git mise openssh openssl
-  JetBrainsMono-NF-Mono`; winget `Microsoft.PowerShell`. Guard on the COMMAND (a font: on `scoop list`).
+  tmux` (+`zsh` on Linux, `mole`/`yabai`/`skhd` on macOS); scoop `git mise openssl gsudo
+  JetBrainsMono-NF-Mono psfzf` (+`psmux` for `tmux`); winget `Microsoft.PowerShell`. Guard on the
+  COMMAND (a font/module: on `scoop list | Out-String` — `Select-String` on its objects never matches).
+- **ssh on Windows = the built-in OpenSSH** (System32, pairs with the `ssh-agent` service), never
+  scoop `openssh`; git uses it via `core.sshCommand` (set only if unset).
 - `chsh` is never run (password prompt hangs the bootstrap); the script prints the command.
 - **NanaZip / the archive extractor is NOT managed** — no `scoop install nanazip`, no 7z shim,
   no `use_external_7zip`. scoop pulling its own 7zip is fine.
@@ -83,6 +88,18 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
 - Claude install / plugins / skills: read `dot_claude/AGENTS.md` before editing them.
 
 ## Windows
+- **`SCOOP` / `MISE_DATA_DIR` are User scope, set BEFORE installing** (the installers read them;
+  default `~/.local/share/{scoop,mise}`); their shims go on User PATH. An existing root elsewhere
+  is kept with a warning — never moved (scoop's shims/junctions hold absolute paths). Part 2 is a
+  separate process: it reloads both from User env. `MISE_DATA_DIR` is NOT a NEVER var.
+- **Windows Terminal is merged, never replaced** (`modify_` + `fromJsonc` — a WT-written file has
+  `//` comments): curated keys win, lists are replaced, `profiles.list` is the curated profiles
+  merged per `guid` over the live ones (icons survive). Its font must be one the bootstrap installs.
+- **psmux** reads `~/.tmux.conf`; Windows-only lines are `{{ if eq .chezmoi.os "windows" }}` blocks
+  in `dot_tmux.conf.tmpl`. Plugins are copied from the `psmux/psmux-plugins` monorepo into
+  `~/.psmux/plugins/` (their `plugin.conf` hardcodes that path) — keep the bootstrap list and the
+  `@plugin` lines in sync. Not ported: the sessionizer (`C-a f`), `tmux-user`.
+- WinPS 5.1 is an OS component — never "remove" it; pwsh's profile only aliases `powershell` → `pwsh`.
 - scoop is per-user and never elevated. **pwsh 7 comes from winget** (MSIX, per-user, no admin);
   flags `--silent --accept-package-agreements --accept-source-agreements --disable-interactivity`.
   An existing pwsh is never replaced.

@@ -1,0 +1,22 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- /* Merge the curated keys from .chezmoitemplates/windows-terminal.json into the LIVE Windows
+     Terminal settings.json instead of replacing it: WT rewrites this file itself (new keys,
+     UI edits). Objects merge deep with the curated value winning, lists are replaced, and keys
+     only the live file has are kept. profiles.list = exactly the curated profiles, each merged
+     over the live entry with the same guid so machine-local fields (icon, startingDirectory)
+     survive. fromJsonc: a WT-generated file carries // comments. */ -}}
+{{- $live := dict -}}
+{{- if .chezmoi.stdin -}}{{- $live = fromJsonc .chezmoi.stdin -}}{{- end -}}
+{{- $want := includeTemplate "windows-terminal.json" . | fromJson -}}
+{{- $old := list -}}
+{{- if hasKey $live "profiles" -}}{{- $old = default list (get $live.profiles "list") -}}{{- end -}}
+{{- $profiles := list -}}
+{{- range $p := $want.profiles.list -}}
+{{-   $merged := deepCopy $p -}}
+{{-   range $o := $old -}}
+{{-     if eq (get $o "guid") $p.guid -}}{{- $merged = mergeOverwrite (deepCopy $o) $p -}}{{- end -}}
+{{-   end -}}
+{{-   $profiles = append $profiles $merged -}}
+{{- end -}}
+{{- $_ := set $want.profiles "list" $profiles -}}
+{{ mergeOverwrite $live $want | toPrettyJson }}

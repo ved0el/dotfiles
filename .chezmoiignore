@@ -43,6 +43,7 @@ update-claude-plugins.ps1
 .claude/statusline.sh
 {{ else }}
 .config/powershell
+AppData
 .config/mise/conf.d/windows.toml
 .config/starship.toml
 .claude/statusline.ps1

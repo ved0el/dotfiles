@@ -91,6 +91,11 @@ if (Get-Command eza -ErrorAction SilentlyContinue) {
   function lz  { eza --group-directories-first --icons=auto -l --sort=size --reverse @args }
 }
 
+# ── powershell → pwsh (typing only) ───────────────────────────────────────────────
+# pwsh 7 only (5.1 dot-sources this same file). Scripts and full-path powershell.exe calls
+# (chezmoi's bootstrap, the komorebi logon task) still get 5.1 — it can't be uninstalled.
+if ($PSVersionTable.PSVersion.Major -ge 7) { Set-Alias powershell pwsh }
+
 # ── bat / fd / ripgrep — point tools at the ~/.config tree ─────────────────────────
 if (Get-Command bat -ErrorAction SilentlyContinue) {
   $env:BAT_CONFIG_PATH = Join-Path $env:XDG_CONFIG_HOME 'bat\config'

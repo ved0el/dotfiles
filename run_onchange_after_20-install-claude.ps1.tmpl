@@ -17,9 +17,15 @@ $env:PSModulePath = @(
 
 # Separate process from part 1, whose $env:Path edits are gone: on a fresh box the persisted
 # User PATH isn't in chezmoi's environment yet, so put ~/.local/bin (claude) and scoop's shims
-# (mise) back for this run, plus XDG_CONFIG_HOME so `mise exec` finds ~/.config/mise/conf.d.
+# (mise) back for this run, plus XDG_CONFIG_HOME so `mise exec` finds ~/.config/mise/conf.d and
+# part 1's SCOOP / MISE_DATA_DIR (else mise looks for its tools in the default dir).
 $env:XDG_CONFIG_HOME = Join-Path $HOME '.config'
-foreach ($dir in (Join-Path $HOME '.local\bin'), (Join-Path $env:USERPROFILE 'scoop\shims')) {
+foreach ($var in 'SCOOP', 'MISE_DATA_DIR') {
+  $val = [Environment]::GetEnvironmentVariable($var, 'User')
+  if ($val) { Set-Item "env:$var" $val }
+}
+$scoopRoot = if ($env:SCOOP) { $env:SCOOP } else { Join-Path $env:USERPROFILE 'scoop' }
+foreach ($dir in (Join-Path $HOME '.local\bin'), (Join-Path $scoopRoot 'shims')) {
   if ($env:Path -notlike "*$dir*") { $env:Path = "$dir;$env:Path" }
 }
 

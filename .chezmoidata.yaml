@@ -3,5 +3,7 @@
 # OVERRIDES these defaults. Per-machine overrides live in ~/.config/chezmoi/chezmoi.toml.
 tools: true     # CLI tools via mise
 develop: false  # language runtimes via mise
-tmux: true      # tmux + TPM plugins, and ~/.tmux.conf
+tmux: true      # tmux + TPM plugins (Windows: psmux + ppm plugins), and ~/.tmux.conf
+scoopDir: ""    # Windows: SCOOP root (prompted; "" = bootstrap default ~/.local/share/scoop)
+miseDataDir: "" # Windows: MISE_DATA_DIR (prompted; "" = bootstrap default ~/.local/share/mise)
 wm: false       # tiling WM: macOS yabai+skhd / Windows komorebi+whkd+yasb (off on Linux)
