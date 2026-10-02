@@ -61,11 +61,16 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   moves between install sources. `[cd]` uses bare `pwsh`, resolved on PATH at runtime.
 
 ## Tools
-- CLI tools + runtimes → **mise** (`conf.d/tools.toml.tmpl`, `develop.toml`; Windows-only
-  extras in `windows.toml`). Prefer prebuilt backends (`aqua:`/`github:`) over source builds;
-  the backend prefix goes in the KEY. `eza` is `aqua:` on Windows only (registry default is cargo).
+- **mise is the main manager — one tool list for every OS.** Every cross-platform CLI tool and
+  runtime goes there (`conf.d/tools.toml.tmpl`, `develop.toml`); a cross-platform tool that only
+  needs a different BACKEND on Windows goes in `windows.toml` (`eza` is `aqua:` there; registry
+  default is cargo). Prefer prebuilt backends (`aqua:`/`github:`); the prefix goes in the KEY.
+- **scoop/brew/apt (+winget) only for tools ONE OS needs** (starship, psfzf, psmux, gsudo, fonts,
+  WMs, mole, zsh, …) **and bootstrap prerequisites** that must exist before mise runs (git, curl,
+  mise itself; gh on Windows — `gh auth login` is the fix when `mise install` hits the GitHub
+  rate limit). Never move a cross-platform tool off mise on one OS: the lists drift.
 - OS package managers only for what mise can't do, installed only if missing: brew/apt `git curl
-  tmux` (+`zsh` on Linux, `mole`/`yabai`/`skhd` on macOS); scoop `git gh mise openssl gsudo
+  tmux` (+`zsh` on Linux, `mole`/`yabai`/`skhd` on macOS); scoop `git gh mise openssl starship gsudo
   JetBrainsMono-NF-Mono psfzf` (+`psmux` for `tmux`); winget `Microsoft.PowerShell`. Guard on the
   COMMAND (a font/module: on `scoop list | Out-String` — `Select-String` on its objects never matches).
 - **ssh on Windows = the built-in OpenSSH** (System32, pairs with the `ssh-agent` service), never

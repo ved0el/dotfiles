@@ -1,11 +1,9 @@
-# Windows-only mise tools — applied only on Windows (gated in .chezmoiignore).
-# Cross-platform tools live in tools.toml / develop.toml; this file is for tools that
-# only make sense on Windows (e.g. a prompt, since Unix uses powerlevel10k).
+# Windows-specific mise tools — applied only on Windows (gated in .chezmoiignore).
+# For a CROSS-PLATFORM tool that needs a different backend here (eza: the registry default is a
+# cargo source build). A tool only Windows uses at all goes to scoop instead (part 1 bootstrap).
 #
 # Ad-hoc, machine-specific additions go in ~/.config/mise/config.toml — that file is
 # NOT managed by chezmoi, and `mise use -g` writes there by default, so
-# experiments never pollute these tracked files. Put tools you want on EVERY Windows
-# machine here instead.
+# experiments never pollute these tracked files.
 [tools]
-"aqua:starship/starship" = "latest"  # shell prompt (Unix uses powerlevel10k)
 "aqua:eza-community/eza" = "latest"   # eza prebuilt binary (macOS/Linux use plain `eza`)
