@@ -17,10 +17,11 @@ $env:PSModulePath = @(
 
 # Separate process from part 1, whose $env:Path edits are gone: on a fresh box the persisted
 # User PATH isn't in chezmoi's environment yet, so put ~/.local/bin (claude) and scoop's shims
-# (mise) back for this run, plus XDG_CONFIG_HOME so `mise exec` finds ~/.config/mise/conf.d and
-# part 1's SCOOP / MISE_DATA_DIR (else mise looks for its tools in the default dir).
+# (mise, gh) back for this run, plus XDG_CONFIG_HOME so `mise exec` finds ~/.config/mise/conf.d,
+# part 1's SCOOP / MISE_DATA_DIR (else mise looks for its tools in the default dir) and
+# CLAUDE_CODE_GIT_BASH_PATH (the claude CLI needs Git Bash).
 $env:XDG_CONFIG_HOME = Join-Path $HOME '.config'
-foreach ($var in 'SCOOP', 'MISE_DATA_DIR') {
+foreach ($var in 'SCOOP', 'MISE_DATA_DIR', 'CLAUDE_CODE_GIT_BASH_PATH') {
   $val = [Environment]::GetEnvironmentVariable($var, 'User')
   if ($val) { Set-Item "env:$var" $val }
 }
@@ -29,10 +30,21 @@ foreach ($dir in (Join-Path $HOME '.local\bin'), (Join-Path $scoopRoot 'shims'))
   if ($env:Path -notlike "*$dir*") { $env:Path = "$dir;$env:Path" }
 }
 
-# rtk (rtk-ai/rtk) — install its Claude Code command-rewrite hook globally. --auto-patch
-# edits ~/.claude/settings.json without prompting, keeping this bootstrap non-interactive;
-# it's idempotent so re-runs are safe.
-try { mise --cd $HOME exec -- rtk init -g --auto-patch } catch { }
+{{ template "bootstrap-steps.ps1" . }}
+
+# Part 1 stopped early (admin terminal, winget not ready, no scoop): everything here needs its
+# scoop/mise, so stop too instead of piling up follow-on failures. Not recorded -> re-runs.
+if (-not (Get-Command mise -ErrorAction SilentlyContinue)) {
+  Write-Host "[part 2] skipped - part 1 didn't finish (see above). Fix it, then run: chezmoi apply" -ForegroundColor Red
+  exit 1
+}
+
+{{ if .tools -}}
+# rtk (rtk-ai/rtk, a `tools` mise tool) — install its Claude Code command-rewrite hook globally.
+# --auto-patch edits ~/.claude/settings.json without prompting, keeping this bootstrap
+# non-interactive; it's idempotent so re-runs are safe.
+Invoke-Step 'rtk hook' { mise --cd $HOME exec -- rtk init -g --auto-patch }
+{{ end -}}
 
 # Claude Code itself — the marketplace step below is a no-op without it, and because the
 # run_onchange fingerprint wouldn't change afterwards it would never retry on a fresh box.
@@ -40,11 +52,13 @@ try { mise --cd $HOME exec -- rtk init -g --auto-patch } catch { }
 # "Native Install (Recommended)" one-liner) — verbatim, so it stays greppable against the docs.
 # It lands in ~/.local/bin (already on PATH from the top of this script) and AUTO-UPDATES from
 # then on, which `winget install Anthropic.ClaudeCode` does not. Run inside `& { }` so the
-# installer's own `Set-StrictMode` / `$ErrorActionPreference` stay in ITS scope, and try/catch
-# so a network blip can't abort setup.
+# installer's own `Set-StrictMode` / `$ErrorActionPreference` stay in ITS scope (Invoke-Step's
+# scriptblock is its own scope); a failure is recorded, so the next apply retries it.
 if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
-  try { & { irm https://claude.ai/install.ps1 | iex } }
-  catch { Write-Host "[claude] install failed: $($_.Exception.Message)" }
+  Invoke-Step 'claude' {
+    irm https://claude.ai/install.ps1 | iex
+    if (-not (Get-Command claude -ErrorAction SilentlyContinue)) { throw 'claude not on PATH after install' }
+  }
 }
 
 # Claude Code marketplaces + plugins — INSTALL ONLY WHAT'S MISSING. The ids below are
@@ -58,12 +72,12 @@ if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
 if (Get-Command claude -ErrorAction SilentlyContinue) {
   $haveMk = @(); try { $haveMk = @((claude plugin marketplace list --json | Out-String | ConvertFrom-Json).name) } catch { }
 {{- range $name, $mk := $settings.extraKnownMarketplaces }}
-  if ($haveMk -notcontains '{{ $name }}') { try { claude plugin marketplace add '{{ index $mk.source "repo" | default (index $mk.source "url") }}' } catch { Write-Host "[claude] marketplace add {{ $name }} failed" } }
+  if ($haveMk -notcontains '{{ $name }}') { Invoke-Step 'marketplace {{ $name }}' { claude plugin marketplace add '{{ index $mk.source "repo" | default (index $mk.source "url") }}' } }
 {{- end }}
   # -y is mandatory: the install prompt has no TTY here and would otherwise hang.
   $havePlugin = @(); try { $havePlugin = @((claude plugin list --json | Out-String | ConvertFrom-Json).id) } catch { }
 {{- range $id, $_ := $settings.enabledPlugins }}
-  if ($havePlugin -notcontains '{{ $id }}') { try { claude plugin install -y '{{ $id }}' } catch { Write-Host "[claude] install {{ $id }} failed" } }
+  if ($havePlugin -notcontains '{{ $id }}') { Invoke-Step 'plugin {{ $id }}' { claude plugin install -y '{{ $id }}' } }
 {{- end }}
 }
 
@@ -83,15 +97,13 @@ if (Get-Command claude -ErrorAction SilentlyContinue) {
 # skips npx's own prompt, the trailing `-y` the CLI's confirmation, `--agent claude-code` the
 # agent picker (WITHOUT it the skill installs for codex/gemini/copilot only and Claude never sees
 # it), `--skill` pins the selection, `--copy` avoids symlinks (they need elevation on Windows,
-# which this bootstrap never takes). npx comes from mise's node ("develop" profile) - hence
-# `mise exec`, same as rtk above; a tools-only box goes without.
+# which this bootstrap never takes). npx is mise's node, so skills belong to the `develop` profile
+# (hence `mise exec`, same as rtk above).
+{{ if .develop -}}
 foreach ($entry in 'tt-a1i/archify:archify:archify', 'mattpocock/skills:*:ask-matt') {
   $repo, $spec, $anchor = $entry.Split(':')
   if (Test-Path (Join-Path $HOME ".claude\skills\$anchor")) { continue }
-  # Empty catch = mise itself missing (CommandNotFound IS terminating, like the rtk line);
-  # $LASTEXITCODE = npx/node missing, which a native non-zero exit does NOT throw under WinPS 5.1.
-  try { mise --cd $HOME exec -- npx -y skills add $repo --skill $spec --agent claude-code -g -y --copy } catch { }
-  if ($LASTEXITCODE -ne 0) { Write-Host "[skills] $repo skipped - needs node/npx (the develop profile)" }
+  Invoke-Step "skills $repo" { mise --cd $HOME exec -- npx -y skills add $repo --skill $spec --agent claude-code -g -y --copy }
 }
 
 # Retired skill repos (humanizer, find-skills, Leonxlnx/taste-skill) - see the .sh twin.
@@ -101,8 +113,9 @@ if ((Test-Path (Join-Path $HOME '.claude\skills\brandkit')) -or (Test-Path (Join
                'full-output-enforcement', 'gpt-taste', 'high-end-visual-design', 'image-to-code',
                'imagegen-frontend-mobile', 'imagegen-frontend-web', 'industrial-brutalist-ui',
                'minimalist-ui', 'redesign-existing-projects', 'stitch-design-taste')
-  try { mise --cd $HOME exec -- npx -y skills remove -g -y @retired } catch { Write-Host "[skills] retired-skill cleanup failed" }
+  Invoke-Step 'skills cleanup' { mise --cd $HOME exec -- npx -y skills remove -g -y @retired }
 }
+{{ end -}}
 
 {{ if .tools -}}
 # codegraph MCP server, user scope. `cmd /c` because the launcher is codegraph.cmd, which a
@@ -116,6 +129,12 @@ if (Get-Command claude -ErrorAction SilentlyContinue) {
 }
 if (-not $cgHave) {
   $cgJson = @{ type = 'stdio'; command = 'cmd'; args = @('/c', 'codegraph', 'serve', '--mcp'); alwaysLoad = $true } | ConvertTo-Json -Compress
-  try { claude mcp add-json --scope user codegraph $cgJson.Replace('"', '\"') } catch { Write-Host "[codegraph] mcp add failed" }
+  Invoke-Step 'codegraph mcp' { claude mcp add-json --scope user codegraph $cgJson.Replace('"', '\"') }
 }
 {{ end -}}
+
+# What a fresh install can't do from inside its own process: the CURRENT terminal still has the
+# old PATH/env, and a Windows Terminal that was open during apply hasn't loaded the new font.
+# Nothing above depends on that - this is only for the user's next session.
+Write-Host "`n[bootstrap] Finished. Open a NEW terminal (close and reopen Windows Terminal) to load PATH, fonts and the PowerShell profile."
+Complete-Bootstrap 'part 2'

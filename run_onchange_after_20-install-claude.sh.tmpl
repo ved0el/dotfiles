@@ -59,8 +59,9 @@ fi
 # trailing `-y` skips the CLI's confirmation, `--agent claude-code` stops it asking which agent
 # (WITHOUT it the skill installs for codex/gemini/copilot only and Claude never sees it),
 # `--skill` pins the selection, and `--copy` avoids symlinks (Windows symlinks need elevation,
-# which this bootstrap never takes). npx comes from mise's node ("develop" profile), so try PATH,
-# then mise, then warn — a tools-only box simply goes without.
+# which this bootstrap never takes). npx comes from mise's node, so skills belong to the
+# `develop` profile; try PATH, then mise, then warn.
+{{ if .develop -}}
 for _entry in tt-a1i/archify:archify:archify 'mattpocock/skills:*:ask-matt'; do
   _repo="${_entry%%:*}"; _rest="${_entry#*:}"; _spec="${_rest%:*}"; _anchor="${_rest##*:}"
   if [ -e "$HOME/.claude/skills/$_anchor" ]; then continue; fi
@@ -82,6 +83,7 @@ if [ -e "$HOME/.claude/skills/brandkit" ] || [ -e "$HOME/.claude/skills/humanize
     industrial-brutalist-ui minimalist-ui redesign-existing-projects stitch-design-taste \
     || echo "[skills] retired-skill cleanup failed"
 fi
+{{ end -}}
 
 {{ if .tools -}}
 # codegraph MCP server, user scope. alwaysLoad keeps codegraph_explore out of tool-search deferral.

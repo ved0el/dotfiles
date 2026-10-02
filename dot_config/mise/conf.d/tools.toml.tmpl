@@ -14,7 +14,11 @@ eza = "latest"
 {{ end -}}
 fd = "latest"
 fzf = "latest"
+# gh: Windows gets it from scoop BEFORE `mise install` — `gh auth login` is the fix for mise
+# hitting the GitHub API rate limit, so it can't depend on mise there.
+{{ if ne .chezmoi.os "windows" -}}
 gh = "latest"
+{{ end -}}
 jq = "latest"
 # micro: terminal editor (replaces nano). Pin the aqua prebuilt binary — the registry
 # default builds from source and has no cross-platform binary; aqua ships one per OS

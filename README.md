@@ -11,12 +11,22 @@ sh -c "$(curl -fsLS get.chezmoi.io/lb)" -- init --apply ved0el
 ```
 
 ```powershell
-# Windows (PowerShell) — installs chezmoi to ~/.local/bin and puts it on PATH (this
-# session + persisted), so `chezmoi` works right away and in every new terminal
+# Windows (PowerShell, NOT as administrator) — installs chezmoi to ~/.local/bin and puts it on
+# PATH (this session + persisted), so `chezmoi` works right away and in every new terminal.
+# TLS 1.2: older Windows 10 PowerShell 5.1 defaults to TLS 1.0. --keep-going: one failed
+# bootstrap part doesn't skip the other.
+[Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor 'Tls12'
 $b = "$HOME\.local\bin"; iex "&{$(irm 'https://get.chezmoi.io/ps1')} -b '$b'"
 [Environment]::SetEnvironmentVariable('Path', "$b;" + [Environment]::GetEnvironmentVariable('Path', 'User'), 'User'); $env:Path = "$b;$env:Path"
-chezmoi init --apply ved0el
+chezmoi init --apply --keep-going ved0el
 ```
+
+Windows: a step that fails (network, GitHub rate limit, …) is reported in red at the end and
+the bootstrap exits non-zero, so the next `chezmoi apply` retries only what's missing — fix and
+re-run until it's clean. It stops up front, before changing anything, when run as administrator
+or when winget isn't ready yet (a new account: update "App Installer" in Microsoft Store). Hit the
+GitHub rate limit? `gh auth login` (gh is installed first, via scoop), then `chezmoi apply`.
+When it's done, open a new terminal (restart Windows Terminal) to load PATH, fonts and profile.
 
 It asks which profiles to enable, applies the dotfiles, then installs packages and plugins. The
 OS is auto-detected: brew/apt on macOS/Linux, scoop (+ winget for PowerShell 7) on Windows.
@@ -28,9 +38,9 @@ existing scoop/mise elsewhere is kept, not moved.
 
 | Profile | Default | Adds |
 |---|---|---|
-| base | always | zsh + powerlevel10k + sheldon (Unix) or PowerShell + starship (Windows), mise, Claude Code + plugins + agent skills (skills need **develop** for node) |
+| base | always | zsh + powerlevel10k + sheldon (Unix) or PowerShell + starship (Windows), mise, Claude Code + plugins |
 | **tools** | on | CLI tools via mise (bat, eza, fd, ripgrep, fzf, micro, rtk, codegraph, vivid, …), delta for git |
-| **develop** | off | language runtimes via mise (`conf.d/develop.toml`) |
+| **develop** | off | language runtimes via mise (`conf.d/develop.toml`) + Claude agent skills (need node) |
 | **tmux** | on | tmux + TPM plugins · Windows: psmux (same `~/.tmux.conf`, `tmux` works) + psmux-plugins |
 | **wm** | off (not Linux) | macOS: yabai + skhd · Windows: komorebi + whkd + yasb |
 
@@ -70,6 +80,8 @@ Shell aliases: `cz`, `cza`, `czd`, `czs`, `cze`, `czra`, `czu`, `czcd`.
   Nerd Font 14 — merged into the live `settings.json`, so changes made in WT's UI survive `apply`.
 - Typing `powershell` in pwsh opens pwsh; WinPS 5.1 stays (an OS component chezmoi's bootstrap runs on).
 - `gsudo` (scoop) for elevation; ssh = Windows' built-in OpenSSH (git uses it via `core.sshCommand`).
+- `gh` comes from scoop on Windows (mise elsewhere). Claude Code finds scoop's Git Bash through
+  `CLAUDE_CODE_GIT_BASH_PATH`; WinPS 5.1 gets `RemoteSigned` for CurrentUser (its default blocks scripts).
 - psmux: same keys as tmux. Not ported: `C-a f` (sessionizer); status shows the login user.
 
 ## Layout

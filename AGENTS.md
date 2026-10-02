@@ -65,7 +65,7 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   extras in `windows.toml`). Prefer prebuilt backends (`aqua:`/`github:`) over source builds;
   the backend prefix goes in the KEY. `eza` is `aqua:` on Windows only (registry default is cargo).
 - OS package managers only for what mise can't do, installed only if missing: brew/apt `git curl
-  tmux` (+`zsh` on Linux, `mole`/`yabai`/`skhd` on macOS); scoop `git mise openssl gsudo
+  tmux` (+`zsh` on Linux, `mole`/`yabai`/`skhd` on macOS); scoop `git gh mise openssl gsudo
   JetBrainsMono-NF-Mono psfzf` (+`psmux` for `tmux`); winget `Microsoft.PowerShell`. Guard on the
   COMMAND (a font/module: on `scoop list | Out-String` — `Select-String` on its objects never matches).
 - **ssh on Windows = the built-in OpenSSH** (System32, pairs with the `ssh-agent` service), never
@@ -88,6 +88,22 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
 - Claude install / plugins / skills: read `dot_claude/AGENTS.md` before editing them.
 
 ## Windows
+- **A failed step must fail the script** — chezmoi records a `run_onchange` script that exits 0
+  and never re-runs it, so a swallowed failure (try/catch + Write-Host, an unchecked
+  `$LASTEXITCODE`) leaves that tool missing for good. Every install/network step goes through
+  `Invoke-Step` (`.chezmoitemplates/bootstrap-steps.ps1`: runs under `Continue`, counts a throw
+  or non-zero exit) and each part ends with `Complete-Bootstrap` (`exit 1` if any failed). Steps
+  stay idempotent so the retry only redoes what's missing. README's one-liner uses `--keep-going`
+  so a failed part 1 doesn't skip part 2; part 2 itself stops when part 1 left no mise.
+- **Preflight, before changing anything** (part 1): exit on an elevated terminal (scoop's
+  installer `break`s out mid-way; `$env:CI` is exempt, as in scoop's own check) and, when pwsh is
+  missing, on a winget that isn't ready (new account) — NO scoop-pwsh fallback; the user updates
+  App Installer and re-runs.
+- Part 1 also sets: CurrentUser `RemoteSigned` for WinPS 5.1 (default Restricted blocks its
+  profile + scoop shims), `CLAUDE_CODE_GIT_BASH_PATH` → scoop's `bash.exe` (Claude can't derive it
+  from the `git.exe` shim) — both only if unset. **gh comes from scoop on Windows, before
+  `mise install`** (`gh auth login` is the rate-limit fix; tools.toml skips it there).
+  `bootstrap-steps.ps1` exports `gh auth token` as `GITHUB_TOKEN` when logged in.
 - **`SCOOP` / `MISE_DATA_DIR` are User scope, set BEFORE installing** (the installers read them;
   default `~/.local/share/{scoop,mise}`); their shims go on User PATH. An existing root elsewhere
   is kept with a warning — never moved (scoop's shims/junctions hold absolute paths). Part 2 is a

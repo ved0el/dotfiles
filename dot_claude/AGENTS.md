@@ -60,7 +60,8 @@ behind each rule is in its commit (`git log -S`). Repo-wide rules: root `AGENTS.
 - `npx -y skills add <repo> --skill <spec> --agent claude-code -g -y --copy` — every flag is
   load-bearing: two different prompts need `npx -y` and `-y`; **without `--agent claude-code`
   Claude never sees the skill**; `--copy` because Windows symlinks need elevation.
-- npx is mise's node (`develop`), so the step is guarded (PATH → `mise exec` → warn).
+- npx is mise's node, so skills are part of the **`develop` profile** (template-gated in both
+  part 2s); on Unix the step tries PATH → `mise exec` → warn, on Windows a failure fails part 2.
   `~/.claude/skills/` is not chezmoi-managed.
 - `skillOverrides` turns off unused `mattpocock/skills` entries. A repo whose skills would ALL be
   off is dropped instead (humanizer, find-skills, taste-skill; part 2 has a one-shot
