@@ -16,7 +16,11 @@
 # -ShimsDir: scoop's shims directory (holds komorebi.exe), resolved at task-registration time
 # when PATH is intact and passed in here. A broken login/task environment can't discover scoop's
 # root on its own — scoop can live anywhere (this box uses D:\scoop and doesn't set $env:SCOOP).
-param([string]$ShimsDir)
+#
+# -Restart: stop komorebi + whkd first, then run the normal start sequence (whkd's alt+ctrl+o and
+# yasb's reload_command). Must run as its OWN process: `komorebic stop --whkd` kills whkd, and a
+# `stop; start` chain run inside whkd's shell dies with it before `start` ever runs.
+param([string]$ShimsDir, [switch]$Restart)
 
 $ErrorActionPreference = 'SilentlyContinue'
 
@@ -36,6 +40,14 @@ $cfg = Join-Path $HOME '.config\komorebi\komorebi.json'
 $komorebiExe  = if ($ShimsDir -and (Test-Path (Join-Path $ShimsDir 'komorebi.exe')))  { Join-Path $ShimsDir 'komorebi.exe' }  else { 'komorebi.exe' }
 $whkdExe      = if ($ShimsDir -and (Test-Path (Join-Path $ShimsDir 'whkd.exe')))      { Join-Path $ShimsDir 'whkd.exe' }      else { 'whkd.exe' }
 $komorebicExe = if ($ShimsDir -and (Test-Path (Join-Path $ShimsDir 'komorebic.exe'))) { Join-Path $ShimsDir 'komorebic.exe' } else { 'komorebic.exe' }
+
+if ($Restart) {
+  & $komorebicExe stop --whkd *>$null
+  # Wait for both to exit, or the loop below sees the dying komorebi and never starts a new one.
+  for ($i = 0; $i -lt 20 -and (Get-Process komorebi, whkd -ErrorAction SilentlyContinue); $i++) {
+    Start-Sleep -Milliseconds 500
+  }
+}
 
 # Start komorebi ASAP — no up-front wait, fire on the very first iteration. An early start can
 # still exit before the shell is ready, so keep (re)starting until it sticks, polling every 1s,

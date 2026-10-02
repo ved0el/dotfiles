@@ -21,6 +21,15 @@ commit (`git log -S`).
     working on demand. Diagnose with `(Get-ScheduledTaskInfo -TaskName komorebi).LastTaskResult`
     after a reboot. No VBScript/mshta launcher, no shell:startup shortcut (the bootstrap deletes
     `komorebi.lnk`).
+- **Restart = `autostart.ps1 -Restart` in its OWN process** (whkd `alt+ctrl+o`, yasb
+  `reload_command`). Never chain `komorebic stop --whkd; komorebic start` inside whkd: `stop --whkd`
+  kills whkd and its shell, so `start` never runs.
+- `display_index_preferences` keys monitors by **`serial_number_id`** (`komorebic
+  monitor-information`), not `device_id`: the device_id changes whenever Windows re-enumerates the
+  monitor (e.g. after it is removed in Device Manager), silently dropping the workspace config.
+- Removed/absent monitor devnodes (`Get-PnpDevice -Class Monitor` all `Present=False`) → komorebi
+  sees one `DISPLAY1`/`UNKNOWN` monitor and yasb (bound to screen names) shows no bar. Fix:
+  elevated `pnputil /scan-devices`, then restart komorebi + `yasbc stop`/`start`.
 - yasb autostarts via its own installer; `config.yaml.tmpl` builds user paths from
   `{{ .chezmoi.homeDir | replace "/" "\\" }}` — never hardcode the username.
 

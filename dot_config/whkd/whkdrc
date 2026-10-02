@@ -15,7 +15,7 @@
 
 # Reload whkd configuration / restart komorebi
 alt + o                 : taskkill /f /im whkd.exe; Start-Process whkd -WindowStyle hidden
-alt + ctrl + o          : komorebic stop --whkd; komorebic start --whkd;
+alt + ctrl + o          : Start-Process powershell.exe -WindowStyle Hidden -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File',"$HOME\.config\komorebi\autostart.ps1",'-Restart'
 
 # --- Close / minimize -------------------------------------------------------
 alt + q                 : komorebic close
