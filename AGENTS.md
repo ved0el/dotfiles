@@ -67,10 +67,9 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   default is cargo). Prefer prebuilt backends (`aqua:`/`github:`); the prefix goes in the KEY.
 - **scoop/brew/apt (+winget) only for tools ONE OS needs** (starship, psfzf, psmux, gsudo, fonts,
   WMs, mole, zsh, …) **and bootstrap prerequisites** that must exist before mise runs (git, curl,
-  mise itself; gh on Windows — `gh auth login` is the fix when `mise install` hits the GitHub
-  rate limit). Never move a cross-platform tool off mise on one OS: the lists drift.
+  mise itself). Never move a cross-platform tool off mise on one OS — not even gh: the lists drift.
 - OS package managers only for what mise can't do, installed only if missing: brew/apt `git curl
-  tmux` (+`zsh` on Linux, `mole`/`yabai`/`skhd` on macOS); scoop `git gh mise openssl starship gsudo
+  tmux` (+`zsh` on Linux, `mole`/`yabai`/`skhd` on macOS); scoop `git mise openssl starship gsudo
   JetBrainsMono-NF-Mono psfzf` (+`psmux` for `tmux`); winget `Microsoft.PowerShell`. Guard on the
   COMMAND (a font/module: on `scoop list | Out-String` — `Select-String` on its objects never matches).
 - **ssh on Windows = the built-in OpenSSH** (System32, pairs with the `ssh-agent` service), never
@@ -106,9 +105,9 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   App Installer and re-runs.
 - Part 1 also sets: CurrentUser `RemoteSigned` for WinPS 5.1 (default Restricted blocks its
   profile + scoop shims), `CLAUDE_CODE_GIT_BASH_PATH` → scoop's `bash.exe` (Claude can't derive it
-  from the `git.exe` shim) — both only if unset. **gh comes from scoop on Windows, before
-  `mise install`** (`gh auth login` is the rate-limit fix; tools.toml skips it there).
-  `bootstrap-steps.ps1` exports `gh auth token` as `GITHUB_TOKEN` when logged in.
+  from the `git.exe` shim) — both only if unset. `bootstrap-steps.ps1`'s `Set-GitHubToken`
+  exports a logged-in gh's token (gh = a mise tool) as `GITHUB_TOKEN` for mise's API calls;
+  part 1 calls it again right before `mise install`, once mise's shims are on PATH.
 - **`SCOOP` / `MISE_DATA_DIR` are User scope, set BEFORE installing** (the installers read them;
   default `~/.local/share/{scoop,mise}`); their shims go on User PATH. An existing root elsewhere
   is kept with a warning — never moved (scoop's shims/junctions hold absolute paths). Part 2 is a

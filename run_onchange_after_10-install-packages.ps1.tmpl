@@ -141,10 +141,6 @@ if (-not (Get-Command pwsh -ErrorAction SilentlyContinue)) {
   } 'update App Installer in Microsoft Store'
 }
 
-# gh (GitHub CLI) from scoop, BEFORE mise: `gh auth login` is the fix for mise hitting the
-# GitHub API rate limit, so it can't be one of the tools mise installs (tools.toml skips it here).
-if (-not (Get-Command gh -ErrorAction SilentlyContinue)) { Invoke-Step 'gh' { scoop install gh } }
-
 # --- mise (runtimes + CLI tools, cross-platform — drives the tools/develop profiles) ---
 if (-not (Get-Command mise -ErrorAction SilentlyContinue)) { Invoke-Step 'mise' { scoop install mise } }
 # mise's shims, for what runs outside the profile's `mise env` injection (GUI apps, tasks).
@@ -212,6 +208,7 @@ if ($missing) {
 # --cd $HOME: mise only auto-discovers the global conf.d/*.toml when CWD is inside the home
 # tree; chezmoi may run this script from elsewhere, so anchor it at $HOME or nothing installs.
 if (Get-Command mise -ErrorAction SilentlyContinue) {
+  Set-GitHubToken  # again: mise's shims (a gh from an earlier run) are on PATH only from here
   Invoke-Step 'mise install' { mise --cd $HOME install --yes } $GhHint
 }
 

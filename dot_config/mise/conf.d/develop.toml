@@ -7,3 +7,7 @@ python = "latest"
 go = "latest"
 bun = "latest"
 pnpm = "latest"
+uv = "latest"
+# npm backend: needs node (above). If a fresh box's first `mise install` races it, the bootstrap
+# reports the failure and the next `chezmoi apply` installs it.
+"npm:cf" = "latest"

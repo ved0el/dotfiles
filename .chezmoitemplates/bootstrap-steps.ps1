@@ -33,9 +33,12 @@ function Complete-Bootstrap([string]$Part) {
 }
 
 # mise resolves github:/aqua: tools through the GitHub API: 60 requests/hour unauthenticated, easy
-# to hit on a fresh box (shared IP, a re-run). A logged-in gh (scoop, part 1) lifts it to 5000.
-if (-not $env:GITHUB_TOKEN -and (Get-Command gh -ErrorAction SilentlyContinue)) {
+# to hit on a fresh box (shared IP, a re-run). A token lifts it to 5000: GITHUB_TOKEN if set, else
+# a logged-in gh (itself a mise tool, so present from the first run that got that far).
+function Set-GitHubToken {
+  if ($env:GITHUB_TOKEN -or -not (Get-Command gh -ErrorAction SilentlyContinue)) { return }
   $ghToken = & { $ErrorActionPreference = 'Continue'; gh auth token 2>$null }
   if ($LASTEXITCODE -eq 0 -and $ghToken) { $env:GITHUB_TOKEN = "$ghToken".Trim() }
 }
-$GhHint = 'GitHub rate limit? run: gh auth login - then chezmoi apply'
+Set-GitHubToken
+$GhHint = 'GitHub rate limit? run: gh auth login (or set GITHUB_TOKEN) - then chezmoi apply'

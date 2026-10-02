@@ -25,7 +25,7 @@ Windows: a step that fails (network, GitHub rate limit, …) is reported in red 
 the bootstrap exits non-zero, so the next `chezmoi apply` retries only what's missing — fix and
 re-run until it's clean. It stops up front, before changing anything, when run as administrator
 or when winget isn't ready yet (a new account: update "App Installer" in Microsoft Store). Hit the
-GitHub rate limit? `gh auth login` (gh is installed first, via scoop), then `chezmoi apply`.
+GitHub rate limit? `gh auth login` (gh is a mise tool) or set `GITHUB_TOKEN`, then `chezmoi apply`.
 When it's done, open a new terminal (restart Windows Terminal) to load PATH, fonts and profile.
 
 It asks which profiles to enable, applies the dotfiles, then installs packages and plugins. The
@@ -40,7 +40,7 @@ existing scoop/mise elsewhere is kept, not moved.
 |---|---|---|
 | base | always | zsh + powerlevel10k + sheldon (Unix) or PowerShell + starship (Windows), mise, Claude Code + plugins |
 | **tools** | on | CLI tools via mise (bat, eza, fd, ripgrep, fzf, micro, rtk, codegraph, vivid, …), delta for git |
-| **develop** | off | language runtimes via mise (`conf.d/develop.toml`) + Claude agent skills (need node) |
+| **develop** | off | language runtimes via mise (`conf.d/develop.toml`: node, python, go, bun, pnpm, uv, `npm:cf`) + Claude agent skills (need node) |
 | **tmux** | on | tmux + TPM plugins · Windows: psmux (same `~/.tmux.conf`, `tmux` works) + psmux-plugins |
 | **wm** | off (not Linux) | macOS: yabai + skhd · Windows: komorebi + whkd + yasb |
 
@@ -80,7 +80,7 @@ Shell aliases: `cz`, `cza`, `czd`, `czs`, `cze`, `czra`, `czu`, `czcd`.
   Nerd Font 14 — merged into the live `settings.json`, so changes made in WT's UI survive `apply`.
 - Typing `powershell` in pwsh opens pwsh; WinPS 5.1 stays (an OS component chezmoi's bootstrap runs on).
 - `gsudo` (scoop) for elevation; ssh = Windows' built-in OpenSSH (git uses it via `core.sshCommand`).
-- `gh` comes from scoop on Windows (mise elsewhere). Claude Code finds scoop's Git Bash through
+- Claude Code finds scoop's Git Bash through
   `CLAUDE_CODE_GIT_BASH_PATH`; WinPS 5.1 gets `RemoteSigned` for CurrentUser (its default blocks scripts).
 - psmux: same keys as tmux. Not ported: `C-a f` (sessionizer); status shows the login user.
 

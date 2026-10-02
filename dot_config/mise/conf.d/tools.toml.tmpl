@@ -14,16 +14,12 @@ eza = "latest"
 {{ end -}}
 fd = "latest"
 fzf = "latest"
-# gh: Windows gets it from scoop BEFORE `mise install` — `gh auth login` is the fix for mise
-# hitting the GitHub API rate limit, so it can't depend on mise there.
-{{ if ne .chezmoi.os "windows" -}}
 gh = "latest"
-{{ end -}}
 jq = "latest"
 # micro: terminal editor (replaces nano). Pin the aqua prebuilt binary — the registry
 # default builds from source and has no cross-platform binary; aqua ships one per OS
 # (incl. Windows), so the same line works everywhere. Backend prefix goes in the KEY
-# (like eza/starship in windows.toml), NOT the version value.
+# (like eza in windows.toml), NOT the version value.
 "aqua:micro-editor/micro" = "latest"
 ripgrep = "latest"
 # rtk (rtk-ai/rtk): AI-agent command toolkit, single Rust binary. The github backend
