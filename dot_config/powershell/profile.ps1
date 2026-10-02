@@ -148,8 +148,8 @@ if (Get-Command fzf -ErrorAction SilentlyContinue) {
     '--preview-window="right,60%,border-left,wrap,<90(down,60%,border-top)"'
     '--bind="ctrl-/:change-preview-window(down,75%,border-top|hidden|)"'
   ) -join ' '
-  # PSFzf binds fzf to PSReadLine chords (installed by the bootstrap, via pwsh — see
-  # AGENTS.md). Tab completion picker · Ctrl+t file picker · Ctrl+r history · Alt+c cd into a
+  # PSFzf binds fzf to PSReadLine chords (scoop `psfzf`, installed by the bootstrap
+  # — see AGENTS.md). Tab completion picker · Ctrl+t file picker · Ctrl+r history · Alt+c cd into a
   # subdirectory. Ctrl+t/Ctrl+r override PSReadLine's own SwapCharacters/ReverseSearchHistory.
   # LAZY: importing PSFzf costs ~150ms, a third of the whole profile, so the chords are bound
   # here and the module loads on the FIRST keypress instead (PowerShell would auto-load it from

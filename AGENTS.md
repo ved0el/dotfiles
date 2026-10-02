@@ -88,8 +88,9 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   An existing pwsh is never replaced.
 - Every `.ps1` bootstrap **resets `PSModulePath` to 5.1's own list first** — inherited from pwsh
   7, 5.1 autoloads pwsh's modules and dies (only when pwsh's `$PSHOME` is readable, e.g. CI).
-- A module the pwsh profile needs is installed **through `pwsh -NoProfile -Command`** (PSFzf via
-  `Install-PSResource … -TrustRepository`): 5.1 and 7 don't see each other's CurrentUser modules.
+- A module the pwsh profile needs comes **from scoop** (PSFzf = extras `psfzf`): scoop's
+  `<scoop>\modules` is on the USER PSModulePath, seen by both 5.1 and 7. NEVER `Install-Module`/
+  `Install-PSResource` from the 5.1 bootstrap — 5.1 and 7 don't see each other's CurrentUser modules.
 - WinPS 5.1 strips `"` from native args — escape JSON as `\"` (see the codegraph MCP add).
 - Under `$ErrorActionPreference = 'Stop'`, 5.1 turns a native command's REDIRECTED stderr
   (`2>$null`, `*>`) into a terminating error. Probe native exit codes inside
