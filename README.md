@@ -81,7 +81,7 @@ Shell aliases: `cz`, `cza`, `czd`, `czs`, `cze`, `czra`, `czu`, `czcd`.
 - `XDG_CONFIG_HOME=~/.config`, so tools read the same config tree as on Unix.
 - `wm`: komorebi starts at logon via a scheduled task; yasb via its own installer.
 - Windows Terminal: 2 profiles (pwsh, cmd), Catppuccin schemes (Mocha default), JetBrainsMonoNL
-  Nerd Font 14 — merged into the live `settings.json`, so changes made in WT's UI survive `apply`.
+  Nerd Font 14, copy-on-select (selecting text copies it; right-click pastes) — merged into the live `settings.json`, so changes made in WT's UI survive `apply`.
 - Typing `powershell` in pwsh opens pwsh; WinPS 5.1 stays (an OS component chezmoi's bootstrap runs on).
 - Visual C++ 2015-2022 runtimes (x64 + x86) from winget, upgraded to the newest on every
   bootstrap run — the one step that shows a UAC prompt (a system-wide runtime).
