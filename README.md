@@ -5,21 +5,25 @@ fresh machine applies the config **and** installs the software and plugins it ne
 
 ## Quick start
 
+Copy the line for your OS into a terminal and press Enter.
+
+**macOS / Linux** (Terminal):
+
 ```sh
-# macOS / Linux
 sh -c "$(curl -fsLS get.chezmoi.io/lb)" -- init --apply ved0el
 ```
 
+**Windows** (PowerShell — a normal window, **not** "Run as administrator"; the built-in
+Windows PowerShell is fine on a new machine):
+
 ```powershell
-# Windows (PowerShell, NOT as administrator) — installs chezmoi to ~/.local/bin and puts it on
-# PATH (this session + persisted), so `chezmoi` works right away and in every new terminal.
-# TLS 1.2: older Windows 10 PowerShell 5.1 defaults to TLS 1.0. --keep-going: one failed
-# bootstrap part doesn't skip the other.
-[Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor 'Tls12'
-$b = "$HOME\.local\bin"; iex "&{$(irm 'https://get.chezmoi.io/ps1')} -b '$b'"
-[Environment]::SetEnvironmentVariable('Path', "$b;" + [Environment]::GetEnvironmentVariable('Path', 'User'), 'User'); $env:Path = "$b;$env:Path"
-chezmoi init --apply --keep-going ved0el
+[Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12; $b = "$HOME\.local\bin"; iex "&{$(irm 'https://get.chezmoi.io/ps1')} -b '$b'"; $p = [Environment]::GetEnvironmentVariable('Path', 'User'); if (($p -split ';') -notcontains $b) { [Environment]::SetEnvironmentVariable('Path', "$b;$p", 'User') }; $env:Path = "$b;$env:Path"; chezmoi init --apply --keep-going ved0el
 ```
+
+What the Windows line does, in order: enables TLS 1.2 (older Windows 10 defaults to TLS 1.0),
+installs chezmoi into `~/.local/bin`, puts that dir on PATH (persisted once, and for this
+window, so `chezmoi` works right away), then runs `chezmoi init --apply --keep-going`
+(`--keep-going`: a failed bootstrap part doesn't skip the other). Safe to paste again.
 
 Windows: a step that fails (network, GitHub rate limit, …) is reported in red at the end and
 the bootstrap exits non-zero, so the next `chezmoi apply` retries only what's missing — fix and
