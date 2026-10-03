@@ -1,7 +1,7 @@
 # AGENTS.md — Claude Code (dot_claude/ + the Claude parts of the bootstraps)
 
 Scoped to `dot_claude/`, `.chezmoitemplates/claude-settings.json`,
-`run_onchange_after_20-install-claude.*` and `run_after_update-claude-plugins.*`. The "why"
+and `run_onchange_after_20-install-claude.*`. The "why"
 behind each rule is in its commit (`git log -S`). Repo-wide rules: root `AGENTS.md`.
 
 ## Settings
@@ -26,16 +26,15 @@ behind each rule is in its commit (`git log -S`). Repo-wide rules: root `AGENTS.
 - On Windows it runs inside `& { … }` so the installer's `StrictMode`/`Stop` stay in its scope.
 - It must exist before the plugin loop: that loop is guarded on `claude` and would never retry.
 
-## Marketplaces & plugins — `cza` installs what's missing, `czu` updates what's there
+## Marketplaces & plugins — the bootstrap installs what's missing, never updates
 - **Install (part 2):** `marketplace add` for each `extraKnownMarketplaces` entry missing from
   `claude plugin marketplace list --json`, then `claude plugin install -y` for each missing
   `enabledPlugins` id. Both lists are local reads (zero network when complete). `-y` is required
   (no TTY). Every call is `|| echo` / `try/catch`.
-- **Update (`run_after_update-claude-plugins.*`):** `claude plugin marketplace update` + `claude
-  plugin update <id>` per plugin. Its existence is gated in `.chezmoiignore` on
-  `.chezmoi.command == "update"`, so `cza` stays offline and `status` shows no permanent `R`.
-- `marketplace update` alone does neither job: it doesn't read `extraKnownMarketplaces` ("No
-  marketplaces configured" on a fresh box) and doesn't move installed plugin code.
+- **Updating is the user's, inside Claude — NOT `czu`** (`czu` = git pull + apply, i.e. install
+  what's missing). Marketplaces auto-update (below); by hand: `claude plugin marketplace update`
+  then `claude plugin update <id>` (`marketplace update` alone doesn't move installed plugin code),
+  and `npx -y skills update -g -y` for skills. Don't re-add an update script to chezmoi.
 - **`claude-plugins-official` IS declared** in `extraKnownMarketplaces`: a fresh box doesn't have
   it registered, and every `@claude-plugins-official` install would fail.
 - Every third-party marketplace has `"autoUpdate": true`; the official one auto-updates by default.
@@ -66,7 +65,7 @@ behind each rule is in its commit (`git log -S`). Repo-wide rules: root `AGENTS.
 - `skillOverrides` turns off unused `mattpocock/skills` entries. A repo whose skills would ALL be
   off is dropped instead (humanizer, find-skills, taste-skill; part 2 has a one-shot
   `skills remove` for them).
-- `czu` runs one `npx -y skills update -g -y`. Remove a skill with `skills remove -g`, never `rm`
+- Update skills by hand: `npx -y skills update -g -y`. Remove a skill with `skills remove -g`, never `rm`
   — the lock (`~/.agents/.skill-lock.json`) would make `update` restore it.
 
 ## Statusline

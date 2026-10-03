@@ -24,8 +24,8 @@ command -v claude >/dev/null 2>&1 || \
 # source of truth and the rendered list doubles as this script's run_onchange fingerprint:
 # declaring a new marketplace/plugin re-fires the script, unrelated settings churn doesn't.
 # `plugin list`/`marketplace list` are local reads, so a box that already has everything
-# does no network work. Refreshing what IS installed is `chezmoi update`'s job — see
-# run_after_update-claude-plugins.sh. grep -F over the --json dump keeps this jq-free.
+# does no network work. Updating what IS installed is the user's, inside Claude (marketplaces
+# auto-update; dot_claude/AGENTS.md). grep -F over the --json dump keeps this jq-free.
 {{- $settings := includeTemplate "claude-settings.json" . | fromJson }}
 if command -v claude >/dev/null 2>&1; then
   have_mk=$(claude plugin marketplace list --json 2>/dev/null || true)
@@ -53,8 +53,8 @@ fi
 #               set of a `*` repo needs the network we are trying to avoid. Delete
 #               ~/.claude/skills/<anchor> to force a reinstall.
 # INSTALL ONLY WHAT'S MISSING — the CLI lands skills in ~/.claude/skills/<name>, which chezmoi
-# does NOT manage, so `apply` never fights them and that dir is the check. Refreshing is
-# `chezmoi update`'s job, see run_after_update-claude-plugins.sh. Every flag is load-bearing for
+# does NOT manage, so `apply` never fights them and that dir is the check. Updating them is the
+# user's (`npx -y skills update -g -y`). Every flag is load-bearing for
 # a non-interactive run: `npx -y` skips npx's own "install skills?" prompt on a cold cache, the
 # trailing `-y` skips the CLI's confirmation, `--agent claude-code` stops it asking which agent
 # (WITHOUT it the skill installs for codex/gemini/copilot only and Claude never sees it),
@@ -74,7 +74,7 @@ unset _entry _repo _rest _spec _anchor
 
 # Retired skill repos (humanizer, find-skills, Leonxlnx/taste-skill): every skill they shipped
 # was switched off in skillOverrides, so they're gone. `skills remove` (not rm -rf) also drops
-# them from the CLI's lock, or czu's `skills update` would bring them back. Anchor-guarded.
+# them from the CLI's lock, or a later `skills update` would bring them back. Anchor-guarded.
 # ponytail: one-shot cleanup; delete this block once every box has applied it.
 if [ -e "$HOME/.claude/skills/brandkit" ] || [ -e "$HOME/.claude/skills/humanizer" ]; then
   mise --cd "$HOME" exec -- npx -y skills remove -g -y humanizer find-skills brandkit \

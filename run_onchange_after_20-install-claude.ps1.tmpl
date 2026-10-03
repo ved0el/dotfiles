@@ -66,8 +66,8 @@ if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
 # source of truth and the rendered list doubles as this script's run_onchange fingerprint:
 # declaring a new marketplace/plugin re-fires the script, unrelated settings churn doesn't.
 # `plugin list`/`marketplace list` are local reads, so a box that already has everything
-# does no network work. Refreshing what IS installed is `chezmoi update`'s job — see
-# run_after_update-claude-plugins.ps1.
+# does no network work. Updating what IS installed is the user's, inside Claude (marketplaces
+# auto-update; dot_claude/AGENTS.md) — never this bootstrap.
 {{- $settings := includeTemplate "claude-settings.json" . | fromJson }}
 if (Get-Command claude -ErrorAction SilentlyContinue) {
   $haveMk = @(); try { $haveMk = @((claude plugin marketplace list --json | Out-String | ConvertFrom-Json).name) } catch { }
@@ -92,8 +92,8 @@ if (Get-Command claude -ErrorAction SilentlyContinue) {
 #               set of a `*` repo needs the network we are trying to avoid. Delete
 #               ~/.claude/skills/<anchor> to force a reinstall.
 # INSTALL ONLY WHAT'S MISSING - the CLI lands skills in the UNMANAGED ~/.claude/skills/<name>, so
-# `apply` never fights them and that dir is the check. Refreshing is `chezmoi update`'s job, see
-# run_after_update-claude-plugins.ps1. Flags are load-bearing for a non-interactive run: `npx -y`
+# `apply` never fights them and that dir is the check. Updating them is the user's
+# (`npx -y skills update -g -y`). Flags are load-bearing for a non-interactive run: `npx -y`
 # skips npx's own prompt, the trailing `-y` the CLI's confirmation, `--agent claude-code` the
 # agent picker (WITHOUT it the skill installs for codex/gemini/copilot only and Claude never sees
 # it), `--skill` pins the selection, `--copy` avoids symlinks (they need elevation on Windows,

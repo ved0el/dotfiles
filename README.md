@@ -56,7 +56,7 @@ Answers are stored in `~/.config/chezmoi/chezmoi.toml`. To change them:
 ```sh
 chezmoi edit ~/.tmux.conf    # edit a managed file
 chezmoi apply                # apply; re-runs a bootstrap script if it changed
-chezmoi update               # git pull + apply; the only command that updates Claude plugins
+chezmoi update               # git pull + apply (installs what's missing; doesn't update anything)
 chezmoi re-add ~/.tmux.conf  # capture a $HOME edit (not for .tmpl / modify_ targets)
 chezmoi cd                   # open the source repo to commit/push
 ```
@@ -103,7 +103,6 @@ dot_claude/, .chezmoitemplates/              # Claude Code settings, CLAUDE.md, 
 .chezmoi.toml.tmpl, .chezmoiignore           # profile prompts, what applies where
 run_onchange_after_10-install-packages.*     # bootstrap 1: OS packages, mise, wm
 run_onchange_after_20-install-claude.*       # bootstrap 2: Claude Code, plugins, skills
-run_after_update-claude-plugins.*            # plugin refresh (`chezmoi update` only)
 ```
 
 Agent/contributor rules: `AGENTS.md`.

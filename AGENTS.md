@@ -14,7 +14,7 @@ Tool-specific rules live in the nested `AGENTS.md` beside the files.
 | `cza` | `chezmoi apply` | source → `$HOME`; re-runs a bootstrap script whose rendered content changed (installs missing plugins, never updates) |
 | `czd` / `czs` | `diff` / `status` | preview; `R` in status = a script will run |
 | `czra` | `re-add` | capture a `$HOME` edit |
-| `czu` | `update` | git pull + apply; the ONLY command that updates Claude plugins/skills |
+| `czu` | `update` | git pull + apply (installs what's missing; never updates plugins/skills — that's the user's, in Claude) |
 | `cz`, `cze`, `czcd` | `chezmoi`, `edit`, `cd` | passthrough / `$EDITOR` / cd into repo |
 
 Aliases: `dot_config/zsh/conf.d/70-aliases.zsh`, `dot_config/powershell/profile.ps1`.
@@ -35,7 +35,6 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
     Windows) to its own env.
   - `.chezmoiignore` ships one set per OS (`*-install-*.ps1` ignored on Unix, `.sh` on Windows);
     a `.sh` can't run on Windows, so it MUST be ignored, not rendered empty.
-- `run_after_update-claude-plugins.*` — hidden from every command except `chezmoi update`.
 
 | path | holds |
 |---|---|
