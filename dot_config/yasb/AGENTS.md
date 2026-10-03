@@ -17,8 +17,10 @@ behind each rule is in its commit (`git log -S`); the current design starts at `
 
 ## Fonts
 - Text = **`Noto Sans JP`** (only installed family covering Latin + Vietnamese + Japanese, with
-  tabular digits so the clock doesn't jitter), then the Nerd Font. Not installed by the bootstrap.
-- Icons = **`JetBrainsMonoNL Nerd Font`**: its glyphs straddle the text's ink band; Segoe Fluent
+  tabular digits so the clock doesn't jitter), then the Nerd Font. Noto Sans JP is not installed by
+  the bootstrap.
+- Icons = **`JetBrainsMonoNL Nerd Font`** — scoop `JetBrainsMono-NF`, installed by the bootstrap
+  (NOT `-NF-Mono`: it only registers `… Nerd Font Mono`). Its glyphs straddle the text's ink band; Segoe Fluent
   towers 3-5px over the cap line and Qt has no vertical-align lever.
 - Family name per consumer: `styles.css` uses the typographic name `JetBrainsMonoNL Nerd Font`
   (Qt matches name ID 16; `NF`/`NFM`/`Nerd Font Mono` silently become Tahoma);

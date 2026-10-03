@@ -149,8 +149,11 @@ Add-UserPath (Join-Path $MiseDir 'shims')
 # Windows-only scoop extras, guarded on the command. gsudo (also ships a `sudo` shim; where
 # Windows' own sudo is enabled, System32\sudo.exe wins — `gsudo` always works). A font ships NO
 # command, so that one is guarded on `scoop list` (through Out-String: Select-String on its
-# objects never matches); JetBrainsMono-NF-Mono needs the nerd-fonts bucket, and the -Mono
-# variant is the single-width one terminals want. Fonts install per-user (HKCU) — no elevation.
+# objects never matches). The font is JetBrainsMono-NF (nerd-fonts bucket), NOT -NF-Mono: every
+# consumer names the family `JetBrainsMonoNL Nerd Font` (Windows Terminal, yasb's Qt CSS, the
+# komorebi bar as `JetBrainsMonoNL NF`), and -NF-Mono only registers `… Nerd Font Mono` — WT
+# then reports "Unable to find the following fonts" and Qt falls back to Tahoma.
+# Fonts install per-user (HKCU) — no elevation.
 if (-not (Get-Command openssl -ErrorAction SilentlyContinue)) { Invoke-Step 'openssl' { scoop install openssl } }
 # starship: the pwsh prompt — only Windows uses it (Unix: powerlevel10k), so scoop, not mise.
 # Guarded on `scoop list`: a leftover mise copy on PATH must not count.
@@ -161,10 +164,11 @@ if (-not (Get-Command gsudo   -ErrorAction SilentlyContinue)) { Invoke-Step 'gsu
 if (-not (Test-Path "$env:SystemRoot\System32\OpenSSH\ssh.exe")) {
   Write-Host "[ssh] Windows OpenSSH client missing - as admin: Add-WindowsCapability -Online -Name OpenSSH.Client~~~~0.0.1.0"
 }
-if ((scoop list 2>$null | Out-String) -notmatch '(?im)^\s*JetBrainsMono-NF-Mono\b') {
+# `\s`, not `\b`: "JetBrainsMono-NF\b" also matches the JetBrainsMono-NF-Mono row.
+if ((scoop list 2>$null | Out-String) -notmatch '(?im)^\s*JetBrainsMono-NF\s') {
   Invoke-Step 'font' {
     if ((scoop bucket list 2>$null | Out-String) -notmatch 'nerd-fonts') { scoop bucket add nerd-fonts }
-    scoop install JetBrainsMono-NF-Mono
+    scoop install JetBrainsMono-NF
   }
 }
 

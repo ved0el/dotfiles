@@ -70,7 +70,7 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   mise itself). Never move a cross-platform tool off mise on one OS — not even gh: the lists drift.
 - OS package managers only for what mise can't do, installed only if missing: brew/apt `git curl
   tmux` (+`zsh` on Linux, `mole`/`yabai`/`skhd` on macOS); scoop `git mise openssl starship gsudo
-  JetBrainsMono-NF-Mono psfzf` (+`psmux` for `tmux`); winget `Microsoft.PowerShell`. Guard on the
+  JetBrainsMono-NF psfzf` (+`psmux` for `tmux`); winget `Microsoft.PowerShell`. Guard on the
   COMMAND (a font/module: on `scoop list | Out-String` — `Select-String` on its objects never matches).
 - **ssh on Windows = the built-in OpenSSH** (System32, pairs with the `ssh-agent` service), never
   scoop `openssh`; git uses it via `core.sshCommand` (set only if unset).
@@ -114,7 +114,11 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   separate process: it reloads both from User env. `MISE_DATA_DIR` is NOT a NEVER var.
 - **Windows Terminal is merged, never replaced** (`modify_` + `fromJsonc` — a WT-written file has
   `//` comments): curated keys win, lists are replaced, `profiles.list` is the curated profiles
-  merged per `guid` over the live ones (icons survive). Its font must be one the bootstrap installs.
+  merged per `guid` over the live ones (icons survive). Its font must be one the bootstrap installs
+  — check the FAMILY NAME the package registers (its manifest's `-Filter`, then the .ttf's name
+  table), not just the files it ships: `JetBrainsMono-NF` → `JetBrainsMonoNL Nerd Font`,
+  `-NF-Mono` → only `… Nerd Font Mono`. A WT open during the first apply warns once (the file
+  lands before part 1 installs the font); reopening WT clears it.
 - **psmux** reads `~/.tmux.conf`; Windows-only lines are `{{ if eq .chezmoi.os "windows" }}` blocks
   in `dot_tmux.conf.tmpl`. Plugins are copied from the `psmux/psmux-plugins` monorepo into
   `~/.psmux/plugins/` (their `plugin.conf` hardcodes that path) — keep the bootstrap list and the
