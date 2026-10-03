@@ -126,9 +126,12 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   `~/.psmux/plugins/` (their `plugin.conf` hardcodes that path) — keep the bootstrap list and the
   `@plugin` lines in sync. Not ported: the sessionizer (`C-a f`), `tmux-user`.
 - WinPS 5.1 is an OS component — never "remove" it; pwsh's profile only aliases `powershell` → `pwsh`.
-- scoop is per-user and never elevated. **pwsh 7 comes from winget** (MSIX, per-user, no admin);
-  flags `--silent --accept-package-agreements --accept-source-agreements --disable-interactivity`.
-  An existing pwsh is never replaced.
+- scoop is per-user and never elevated. **pwsh 7 comes from winget's MSI** (`--installer-type wix
+  --scope machine`, one UAC prompt) at the FIXED `$env:ProgramFiles\PowerShell\7` — NOT winget's
+  default MSIX, whose `WindowsApps\Microsoft.PowerShell_<version>_…` dir moves on every update.
+  Guarded on that path (an MSIX pwsh doesn't count); success = the file exists. A leftover MSIX is
+  only reported, never removed by the bootstrap (it usually runs from that pwsh). Flags also
+  `--silent --accept-package-agreements --accept-source-agreements --disable-interactivity`.
 - Every `.ps1` bootstrap **resets `PSModulePath` to 5.1's own list first** — inherited from pwsh
   7, 5.1 autoloads pwsh's modules and dies (only when pwsh's `$PSHOME` is readable, e.g. CI).
 - A module the pwsh profile needs comes **from scoop** (PSFzf = extras `psfzf`): scoop's

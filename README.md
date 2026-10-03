@@ -33,7 +33,8 @@ GitHub rate limit? `gh auth login` (gh is a mise tool) or set `GITHUB_TOKEN`, th
 When it's done, open a new terminal (restart Windows Terminal) to load PATH, fonts and profile.
 
 It asks which profiles to enable, applies the dotfiles, then installs packages and plugins. The
-OS is auto-detected: brew/apt on macOS/Linux, scoop (+ winget for PowerShell 7) on Windows.
+OS is auto-detected: brew/apt on macOS/Linux, scoop (+ winget for PowerShell 7, as the MSI at the
+fixed `C:\Program Files\PowerShell\7`) on Windows.
 On Windows it also asks for the scoop and mise install dirs (default `~/.local/share/scoop`,
 `~/.local/share/mise`; persisted as User `SCOOP` / `MISE_DATA_DIR`, shims put on PATH). An
 existing scoop/mise elsewhere is kept, not moved.

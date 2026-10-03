@@ -28,10 +28,11 @@ if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator) 
   Write-Host "[bootstrap] Running as administrator - scoop refuses that. Open a NORMAL terminal and run: chezmoi apply" -ForegroundColor Red
   exit 1
 }
-# pwsh 7 comes from winget (see below). On a new Windows account winget only works once the
-# Store has updated "App Installer" (minutes to hours after first logon) - no fallback to a
-# scoop pwsh: stop, let the user update it, re-run.
-if (-not (Get-Command pwsh -ErrorAction SilentlyContinue)) {
+# pwsh 7 comes from winget's MSI (see below) at this FIXED path. On a new Windows account winget
+# only works once the Store has updated "App Installer" (minutes to hours after first logon) - no
+# fallback to a scoop pwsh: stop, let the user update it, re-run.
+$PwshExe = Join-Path $env:ProgramFiles 'PowerShell\7\pwsh.exe'
+if (-not (Test-Path $PwshExe)) {
   $wingetOk = (Get-Command winget -ErrorAction SilentlyContinue) -and
               (& { $ErrorActionPreference = 'Continue'; winget --version 2>&1 | Out-Null; $LASTEXITCODE -eq 0 })
   if (-not $wingetOk) {
@@ -128,17 +129,27 @@ if ((Test-Path $gitBash) -and -not [Environment]::GetEnvironmentVariable('CLAUDE
 }
 
 # pwsh 7 — the shell the managed profile targets (this bootstrap itself runs under WinPS 5.1).
-# From WINGET, not scoop: the `winget` source ships Microsoft.PowerShell as an MSIX bundle, so it
-# installs per-user with NO elevation and drops a `pwsh.exe` app alias into
-# %LOCALAPPDATA%\Microsoft\WindowsApps, which is on the user PATH by default. PATH resolution is
-# what matters: [cd] (`chezmoi cd`/`czcd`) and Claude Code's statusLine both invoke bare `pwsh`.
-# Nothing bakes an absolute path — see AGENTS.md "never bake pwsh's path".
-# winget readiness was checked in the preflight.
-if (-not (Get-Command pwsh -ErrorAction SilentlyContinue)) {
+# winget's MSI (`--installer-type wix`), NOT its default MSIX: the MSIX lives in a versioned
+# WindowsApps\Microsoft.PowerShell_7.x.y.z_... dir that moves on every update, while the MSI
+# installs to the FIXED $env:ProgramFiles\PowerShell\7 and puts it on the Machine PATH (ahead of
+# any MSIX alias on the user PATH). Machine scope = one UAC prompt, like the VC++ runtimes.
+# Guarded on that path, not `Get-Command pwsh`, so an MSIX/Store pwsh doesn't count. [cd] and
+# Claude's statusLine still call bare `pwsh` (AGENTS.md "never bake pwsh's path"); it now
+# resolves here. winget readiness was checked in the preflight.
+if (-not (Test-Path $PwshExe)) {
   Invoke-Step 'pwsh' {
-    winget install --id Microsoft.PowerShell --exact --source winget --silent `
-      --accept-package-agreements --accept-source-agreements --disable-interactivity
-  } 'update App Installer in Microsoft Store'
+    winget install --id Microsoft.PowerShell --exact --source winget --installer-type wix --scope machine `
+      --silent --accept-package-agreements --accept-source-agreements --disable-interactivity
+    # Success = the file exists (winget's exit code alone doesn't prove which installer ran).
+    if (-not (Test-Path $PwshExe)) { throw "pwsh MSI not at $PwshExe" }
+    $global:LASTEXITCODE = 0
+  } 'accept the UAC prompt, then chezmoi apply'
+}
+# A Store/MSIX pwsh left beside the MSI keeps a `pwsh` alias in ...\WindowsApps that can come first
+# on PATH and shadow the fixed one. NOT removed here: this script usually runs FROM that pwsh, and
+# removing a running package can kill the terminal mid-install - so only say how.
+if ((Test-Path $PwshExe) -and (Get-AppxPackage Microsoft.PowerShell -ErrorAction SilentlyContinue)) {
+  Write-Host "[pwsh] a Store/MSIX PowerShell is also installed and may shadow $PwshExe. Close every pwsh window, then from Windows PowerShell run: Get-AppxPackage Microsoft.PowerShell | Remove-AppxPackage"
 }
 
 # Visual C++ 2015-2022 runtimes (x64 + x86 for 32-bit apps; + arm64 on ARM) — most native Windows
