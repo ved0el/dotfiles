@@ -10,7 +10,9 @@
 {{- range $k, $v := $want -}}
 {{-   $old := get $live $k -}}
 {{-   if and (kindIs "map" $v) (kindIs "map" $old) (ne $k "hooks") -}}
-{{-     $m := merge (deepCopy $v) $old -}}
+{{- /* not sprig merge: mergo treats false/""/0 as empty and lets the live value win */ -}}
+{{-     $m := deepCopy $old -}}
+{{-     range $kk, $vv := $v -}}{{- $_ := set $m $kk $vv -}}{{- end -}}
 {{-     if eq $k "permissions" -}}
 {{-       $_ := set $m "allow" (concat (default list (get $v "allow")) (default list (get $old "allow")) | uniq) -}}
 {{-     end -}}

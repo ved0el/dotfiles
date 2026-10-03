@@ -50,8 +50,8 @@
     "security-guidance@claude-plugins-official": true,
     "last30days@last30days-skill": true,
     "playwright@claude-plugins-official": true,
-    "cloudflare@cloudflare": false,
-    "ecc@ecc": false
+    "cloudflare@cloudflare": true,
+    "ecc@ecc": true
   },
   "extraKnownMarketplaces": {
     "claude-plugins-official": {
