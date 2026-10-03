@@ -83,6 +83,8 @@ Shell aliases: `cz`, `cza`, `czd`, `czs`, `cze`, `czra`, `czu`, `czcd`.
 - Windows Terminal: 2 profiles (pwsh, cmd), Catppuccin schemes (Mocha default), JetBrainsMonoNL
   Nerd Font 14 — merged into the live `settings.json`, so changes made in WT's UI survive `apply`.
 - Typing `powershell` in pwsh opens pwsh; WinPS 5.1 stays (an OS component chezmoi's bootstrap runs on).
+- Visual C++ 2015-2022 runtimes (x64 + x86) from winget, upgraded to the newest on every
+  bootstrap run — the one step that shows a UAC prompt (a system-wide runtime).
 - `gsudo` (scoop) for elevation; ssh = Windows' built-in OpenSSH (git uses it via `core.sshCommand`).
 - Claude Code finds scoop's Git Bash through
   `CLAUDE_CODE_GIT_BASH_PATH`; WinPS 5.1 gets `RemoteSigned` for CurrentUser (its default blocks scripts).

@@ -141,6 +141,29 @@ if (-not (Get-Command pwsh -ErrorAction SilentlyContinue)) {
   } 'update App Installer in Microsoft Store'
 }
 
+# Visual C++ 2015-2022 runtimes (x64 + x86 for 32-bit apps; + arm64 on ARM) — most native Windows
+# binaries (mise's tools, runtimes) need vcruntime140.dll, and mise recommends it. From winget, not
+# scoop: it's a system component either way (UAC prompt; scoop's vcredist2022 only runs this same
+# installer and says to uninstall the wrapper after), and winget keeps it upgradable. `winget
+# install` on an installed package UPGRADES it, so every run leaves the newest one; "already
+# current" exits 0x8A15002B (no applicable upgrade) and 0x8A150061 (already installed, older
+# winget) — both success. Without winget, a box that already has the runtime is fine as is.
+$vcArch = @('x64', 'x86') + $(if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') { @('arm64') } else { @() })
+foreach ($a in $vcArch) {
+  $vcKey = "HKLM:\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\$a"
+  $vcHave = (Get-ItemProperty $vcKey -ErrorAction SilentlyContinue).Installed -or
+            (Get-ItemProperty ($vcKey -replace 'SOFTWARE\\', 'SOFTWARE\WOW6432Node\') -ErrorAction SilentlyContinue).Installed
+  if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+    if (-not $vcHave) { $script:Failed.Add("vcredist $a"); Write-Host "[vcredist $a] FAILED - winget missing" -ForegroundColor Red }
+    continue
+  }
+  Invoke-Step "vcredist $a" {
+    winget install --id "Microsoft.VCRedist.2015+.$a" --exact --source winget --silent `
+      --accept-package-agreements --accept-source-agreements --disable-interactivity
+    if ($LASTEXITCODE -in -1978335189, -1978335135) { $global:LASTEXITCODE = 0 }
+  } 'accept the UAC prompt (system-wide runtime)'
+}
+
 # --- mise (runtimes + CLI tools, cross-platform — drives the tools/develop profiles) ---
 if (-not (Get-Command mise -ErrorAction SilentlyContinue)) { Invoke-Step 'mise' { scoop install mise } }
 # mise's shims, for what runs outside the profile's `mise env` injection (GUI apps, tasks).
