@@ -71,7 +71,9 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
 - OS package managers only for what mise can't do, installed only if missing: brew/apt `git curl
   tmux` (+`zsh` on Linux, `mole`/`yabai`/`skhd` on macOS); scoop `git mise openssl starship gsudo
   JetBrainsMono-NF psfzf` (+`psmux` for `tmux`); winget `Microsoft.PowerShell`. Guard on the
-  COMMAND (a font/module: on `scoop list | Out-String` — `Select-String` on its objects never matches).
+  COMMAND (a module: on `scoop list | Out-String` — `Select-String` on its objects never matches; a
+  FONT: on its `.ttf` in the user/system Fonts dir — a registered font file is held open, so
+  re-running scoop's font install over it fails "being used by another process").
 - **ssh on Windows = the built-in OpenSSH** (System32, pairs with the `ssh-agent` service), never
   scoop `openssh`; git uses it via `core.sshCommand` (set only if unset).
 - `chsh` is never run (password prompt hangs the bootstrap); the script prints the command.

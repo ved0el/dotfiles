@@ -164,8 +164,14 @@ if (-not (Get-Command gsudo   -ErrorAction SilentlyContinue)) { Invoke-Step 'gsu
 if (-not (Test-Path "$env:SystemRoot\System32\OpenSSH\ssh.exe")) {
   Write-Host "[ssh] Windows OpenSSH client missing - as admin: Add-WindowsCapability -Online -Name OpenSSH.Client~~~~0.0.1.0"
 }
-# `\s`, not `\b`: "JetBrainsMono-NF\b" also matches the JetBrainsMono-NF-Mono row.
-if ((scoop list 2>$null | Out-String) -notmatch '(?im)^\s*JetBrainsMono-NF\s') {
+# Guard on the FONT being installed (its .ttf in the per-user or system Fonts dir), not on scoop's
+# record: once a font file there is registered, Windows' font service holds it open, so a retry
+# after a partial install (or over a hand-installed copy) dies with "The process cannot access
+# the file ... because it is being used by another process" — every time.
+$fontFile = 'JetBrainsMonoNLNerdFont-Regular.ttf'
+$fontHave = (Test-Path (Join-Path $env:LOCALAPPDATA "Microsoft\Windows\Fonts\$fontFile")) -or
+            (Test-Path (Join-Path $env:SystemRoot "Fonts\$fontFile"))
+if (-not $fontHave) {
   Invoke-Step 'font' {
     if ((scoop bucket list 2>$null | Out-String) -notmatch 'nerd-fonts') { scoop bucket add nerd-fonts }
     scoop install JetBrainsMono-NF
