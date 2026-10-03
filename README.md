@@ -87,6 +87,8 @@ Shell aliases: `cz`, `cza`, `czd`, `czs`, `cze`, `czra`, `czu`, `czcd`.
 - Visual C++ 2015-2022 runtimes (x64 + x86) from winget, upgraded to the newest on every
   bootstrap run — the one step that shows a UAC prompt (a system-wide runtime).
 - `gsudo` (scoop) for elevation; ssh = Windows' built-in OpenSSH (git uses it via `core.sshCommand`).
+- SSH into the machine: scoop runs with `no_junction`, so its shims (tmux, git, starship…) work in
+  an sshd session too (sshd won't follow scoop's `current` junctions).
 - Claude Code finds scoop's Git Bash through
   `CLAUDE_CODE_GIT_BASH_PATH`; WinPS 5.1 gets `RemoteSigned` for CurrentUser (its default blocks scripts).
 - psmux: same keys as tmux. Not ported: `C-a f` (sessionizer), `C-a .` (pane-name reset); status shows the login user.

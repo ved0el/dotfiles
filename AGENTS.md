@@ -114,6 +114,10 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   default `~/.local/share/{scoop,mise}`); their shims go on User PATH. An existing root elsewhere
   is kept with a warning — never moved (scoop's shims/junctions hold absolute paths). Part 2 is a
   separate process: it reloads both from User env. `MISE_DATA_DIR` is NOT a NEVER var.
+- **scoop `no_junction`** (set before any install; a junction-era install is `scoop reset *` once):
+  sshd runs with RedirectionGuard, which won't follow a non-admin junction, so a shim through
+  `apps\<app>\current` fails over SSH (Scoop#6594). So paths are versioned: never hardcode
+  `apps\<app>\current` (use `scoop prefix <app>`). An app's `persist` junctions aren't covered.
 - **Windows Terminal is merged, never replaced** (`modify_` + `fromJsonc` — a WT-written file has
   `//` comments): curated keys win, lists are replaced, `profiles.list` is the curated profiles
   merged per `guid` over the live ones (icons survive). Its font must be one the bootstrap installs

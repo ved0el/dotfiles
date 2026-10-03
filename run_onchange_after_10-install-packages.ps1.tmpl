@@ -118,12 +118,23 @@ if (-not $scoopCmd) {
   if (-not (Get-Command scoop -ErrorAction SilentlyContinue)) { Complete-Bootstrap 'part 1'; exit 1 }
 }
 Add-UserPath (Join-Path $ScoopDir 'shims')
+# no_junction, BEFORE any install: shims and PATH point at apps\<app>\<version>, not the
+# apps\<app>\current junction. sshd runs with RedirectionGuard (since KB5074105), which won't
+# follow a junction a non-admin created, so every shim through `current` fails over SSH
+# ("Could not create process", ScoopInstaller/Scoop#6594). Apps installed with junctions are
+# reset once to rewrite their shims/PATH; the old `current` junctions stay, unused.
+if ((scoop config no_junction) -ne $true) { Invoke-Step 'scoop no_junction' { scoop config no_junction true } }
+if (Get-ChildItem (Join-Path $ScoopDir 'shims\*.shim') -ErrorAction SilentlyContinue |
+    Where-Object { (Get-Content $_.FullName -Raw) -match '\\current\\' }) {
+  Invoke-Step 'scoop reset (no_junction)' { scoop reset * }
+}
 
 # git via scoop (per-user, no elevation); curl ships with Windows 10+.
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) { Invoke-Step 'git' { scoop install git } }
 # Claude Code runs its shell tool in Git Bash, found from git.exe's location - scoop's git.exe is
 # a shim in <scoop>\shims, so that lookup misses bash. Point it there (only if unset).
-$gitBash = Join-Path $ScoopDir 'apps\git\current\bin\bash.exe'
+# (`scoop prefix`: no `current` junction under no_junction.)
+$gitBash = Join-Path "$(scoop prefix git)" 'bin\bash.exe'
 if ((Test-Path $gitBash) -and -not [Environment]::GetEnvironmentVariable('CLAUDE_CODE_GIT_BASH_PATH', 'User')) {
   [Environment]::SetEnvironmentVariable('CLAUDE_CODE_GIT_BASH_PATH', $gitBash, 'User')
 }
