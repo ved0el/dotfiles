@@ -148,7 +148,23 @@ bind-key q kill-pane
 # Border
 set -g pane-active-border-style fg=colour67,bg=default
 set -g pane-border-style fg=colour67,bg=default
+# Focused pane = the terminal background (catppuccin base), the others darker (crust).
+# Both explicit: an active bg=default falls back to window-style's bg (tmux tty_default_colours).
+# psmux's attached client renders these only after v3.3.8 (not in that tag's client.rs).
+set -g window-style 'bg=#11111b'
+set -g window-active-style 'bg=#1e1e2e'
 set -g pane-border-status bottom
+{{ if eq .chezmoi.os "windows" -}}
+# psmux: no pane-scoped user options (`set -p @x` errors), and the border label is a
+# plain string replace of #{pane_title} / #{pane_index} / #P (src/client.rs) — anything
+# else (#T, #{?…}, #{b:…}) prints literally, and #P is the pane id (%13 → 13). So the
+# name is the pane title: allow-set-title lets programs set it (pwsh → pane<id> via the
+# profile, claude → its own), `select-pane -T` locks a custom one.
+#   C-a ,    - Set (lock) pane name. No reset key: `select-pane -T ''` loses the '' in a bind.
+set -g allow-set-title on
+set -g pane-border-format " #{pane_title} "
+bind-key , command-prompt -p "Rename pane:" "select-pane -T '%%'"
+{{- else -}}
 # Show custom name if set, otherwise fall back to current command
 set -g pane-border-format " #P: #{?#{@pane_name},#[bold]#{@pane_name}#[nobold],#{pane_current_command}} PID:#{pane_pid} "
 
@@ -157,6 +173,7 @@ set -g pane-border-format " #P: #{?#{@pane_name},#[bold]#{@pane_name}#[nobold],#
 #   C-a .    - Clear custom name (reverts to current command)
 bind-key , command-prompt -p "Rename pane:" "set-option -p @pane_name '%%'"
 bind-key . set-option -p -u @pane_name
+{{- end }}
 
 
 # =============================================================================
@@ -231,7 +248,7 @@ set -g status-style bg=default,fg=colour240
 # tmux server's login — see ~/.local/bin/tmux-user. status-interval (1s) refreshes it.
 {{ if eq .chezmoi.os "windows" -}}
 # Windows: no tty to inspect — the login user, baked in at apply time.
-set -g status-left ' #[fg=grey]User: {{ .chezmoi.username | splitList "\\" | last }}@#h#[fg=default] | Window: #W #{prefix_highlight}#[fg=default] '
+set -g status-left ' #[fg=grey]User: {{ .chezmoi.username | splitList "\\" | last }}@#h#[fg=default] | Window: #W #{?client_prefix,#[fg=white]#[bg=blue] Wait #[bg=default],}#[fg=default] '
 {{- else -}}
 set -g status-left ' #[fg=grey]User: #(~/.local/bin/tmux-user "#{pane_tty}")@#h#[fg=default] | Window: #W #{prefix_highlight}#[fg=default] '
 {{- end }}
@@ -261,7 +278,12 @@ set -g message-command-style bg=default,fg=grey
 # Usage:
 #   C-a r        - Reload tmux configuration (apply changes without restart)
 #
+{{ if eq .chezmoi.os "windows" -}}
+# psmux: an absolute path (`~/.tmux.conf\;` from a key binding reported the file missing).
+bind-key r source-file "{{ .chezmoi.homeDir }}/.tmux.conf" \; display-message "Config reloaded"
+{{- else -}}
 bind-key r source-file ~/.tmux.conf\; display-message "Config reloaded"
+{{- end }}
 
 # =============================================================================
 # Plugins
@@ -277,11 +299,12 @@ set -g @continuum-boot 'off'
 # psmux-plugins, copied into ~/.psmux/plugins by the bootstrap (keep its list in sync).
 # No yank plugin: psmux writes the Windows clipboard natively. No psmux-sensible: it uses
 # plain `set -g` + binds (escape-time 50, `R` → ~/.psmux.conf, `|`/`-` without the cwd),
-# overriding this file — everything else it sets is already set above.
+# overriding this file — everything else it sets is already set above. No psmux-cpu: its
+# status-interval hook spawns pwsh every tick (an error flashes each time) for stats the
+# status bar doesn't show.
 set -g @plugin 'psmux-plugins/ppm'
 set -g @plugin 'psmux-plugins/psmux-resurrect'
 set -g @plugin 'psmux-plugins/psmux-continuum'
-set -g @plugin 'psmux-plugins/psmux-cpu'
 set -g @plugin 'psmux-plugins/psmux-prefix-highlight'
 
 # =============================================================================

@@ -233,7 +233,7 @@ if ((scoop list 2>$null | Out-String) -notmatch '(?im)^\s*psfzf\b') {
 # with the Windows @plugin lines in dot_tmux.conf.tmpl.
 if (-not (Get-Command psmux -ErrorAction SilentlyContinue)) { Invoke-Step 'psmux' { scoop install psmux } }
 $psmuxPlugins = Join-Path $HOME '.psmux\plugins'
-$wanted = 'ppm','psmux-resurrect','psmux-continuum','psmux-cpu','psmux-prefix-highlight'
+$wanted = 'ppm','psmux-resurrect','psmux-continuum','psmux-prefix-highlight'
 $missing = $wanted | Where-Object { -not (Test-Path (Join-Path $psmuxPlugins $_)) }
 if ($missing) {
   $tmp = Join-Path $env:TEMP "psmux-plugins-$PID"

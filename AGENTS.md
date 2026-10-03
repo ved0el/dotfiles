@@ -125,6 +125,9 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   in `dot_tmux.conf.tmpl`. Plugins are copied from the `psmux/psmux-plugins` monorepo into
   `~/.psmux/plugins/` (their `plugin.conf` hardcodes that path) — keep the bootstrap list and the
   `@plugin` lines in sync. Not ported: the sessionizer (`C-a f`), `tmux-user`.
+  Its border label is a literal replace of `#{pane_title}`/`#{pane_index}`/`#P` only (`#P` = pane
+  id), so the pane name is the pane title (`allow-set-title`; the pwsh profile sets `pane<id>`).
+  `window-(active-)style` is ignored by the 3.3.8 client. No `psmux-cpu` (pwsh every status tick).
 - WinPS 5.1 is an OS component — never "remove" it; pwsh's profile only aliases `powershell` → `pwsh`.
 - scoop is per-user and never elevated. **pwsh 7 comes from winget's MSI** (`--installer-type wix
   --scope machine`, one UAC prompt) at the FIXED `$env:ProgramFiles\PowerShell\7` — NOT winget's
