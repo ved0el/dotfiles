@@ -1,6 +1,8 @@
 {
   "env": {
-    "PONYTAIL_DEFAULT_MODE": "ultra"
+    "PONYTAIL_DEFAULT_MODE": "ultra",
+    "CLAUDE_MEM_CONTEXT_SHOW_TERMINAL_OUTPUT": "false",
+    "CLAUDE_MEM_WELCOME_HINT_ENABLED": "false"
   },
   "permissions": {
     "allow": [
