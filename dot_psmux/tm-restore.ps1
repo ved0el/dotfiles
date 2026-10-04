@@ -20,10 +20,10 @@ if (-not ($saved | Where-Object { $_ -notin $running })) { return }
 # Only right after boot (the logon task), so an interactive `tm` never hangs on a closed Beeper.
 $justBooted = [Environment]::TickCount64 -lt 300000
 if ($justBooted -and (Get-ItemProperty HKCU:\Software\Microsoft\Windows\CurrentVersion\Run -Name com.automattic.beeper.desktop -EA SilentlyContinue)) {
-  $deadline = (Get-Date).AddSeconds(120)
+  $deadline = (Get-Date).AddSeconds(60)
   while ((Get-Date) -lt $deadline) {
     $c = [Net.Sockets.TcpClient]::new()
-    try { $c.Connect('127.0.0.1', 23373); break } catch { Start-Sleep 2 } finally { $c.Dispose() }
+    try { $c.Connect('127.0.0.1', 23373); break } catch { Start-Sleep -Milliseconds 500 } finally { $c.Dispose() }
   }
 }
 
