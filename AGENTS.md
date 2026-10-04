@@ -49,7 +49,7 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
 
 ## Profiles & OS
 - Profile keys `tools`, `develop`, `tmux` (Windows = psmux), `wm` (macOS + Windows) — plus the
-  Windows-only strings `scoopDir`/`miseDataDir` — are prompted by
+  Windows-only `sshd` (bool) and strings `scoopDir`/`miseDataDir` — are prompted by
   `chezmoi init` (`.chezmoi.toml.tmpl` → `~/.config/chezmoi/chezmoi.toml`, which overrides
   `.chezmoidata.yaml`). `apply` never re-prompts: re-run `init` or edit that file.
 - `.chezmoidata.yaml` must define every key — templates error on a missing one.
@@ -115,7 +115,7 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   default `~/.local/share/{scoop,mise}`); their shims go on User PATH. An existing root elsewhere
   is kept with a warning — never moved (scoop's shims/junctions hold absolute paths). Part 2 is a
   separate process: it reloads both from User env. `MISE_DATA_DIR` is NOT a NEVER var.
-- **scoop `no_junction`** (set before any install; a junction-era install is `scoop reset *` once):
+- **scoop `no_junction`** — `sshd` profile only (its one-time `scoop reset *` fails while an app runs, so clients skip it); set before any install; a junction-era install is `scoop reset *` once:
   sshd runs with RedirectionGuard, which won't follow a non-admin junction, so a shim through
   `apps\<app>\current` fails over SSH (Scoop#6594). So paths are versioned: never hardcode
   `apps\<app>\current` (use `scoop prefix <app>`). An app's `persist` junctions aren't covered.
@@ -132,7 +132,7 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   `@plugin` lines in sync. Not ported: the sessionizer (`C-b f`), `tmux-user`.
   Its border label is a literal replace of `#{pane_title}`/`#{pane_index}`/`#P` only (`#P` = pane
   id), so the pane name is the pane title (`allow-set-title`; the pwsh profile sets `pane<id>`).
-  `window-(active-)style` is ignored by the 3.3.8 client. No `psmux-cpu` (pwsh every status tick).
+  `window-(active-)style` is ignored by the 3.3.8 client; no extended-keys, so `C-Enter` is bound to `send-keys C-j`. No `psmux-cpu` (pwsh every status tick).
 - WinPS 5.1 is an OS component — never "remove" it; pwsh's profile only aliases `powershell` → `pwsh`.
 - scoop is per-user and never elevated. **pwsh 7 comes from winget's MSI** (`--installer-type wix
   --scope machine`, one UAC prompt) at the FIXED `$env:ProgramFiles\PowerShell\7` — NOT winget's

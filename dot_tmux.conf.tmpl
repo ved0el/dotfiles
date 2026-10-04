@@ -343,3 +343,9 @@ run '~/.tmux/plugins/tpm/tpm'
 # By default, tmux-yank binds prefix+y to copy command line
 # We override it to enter copy mode instead for text selection
 bind-key y copy-mode
+{{- if eq .chezmoi.os "windows" }}
+
+# psmux has no extended-keys, so C-Enter reaches the pane as a bare Enter (Claude Code then
+# submits instead of adding a line). Send C-j, a newline in Claude Code's input.
+bind-key -n C-Enter send-keys C-j
+{{- end }}

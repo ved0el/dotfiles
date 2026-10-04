@@ -6,4 +6,5 @@ develop: false  # language runtimes via mise
 tmux: true      # tmux + TPM plugins (Windows: psmux + ppm plugins), and ~/.tmux.conf
 scoopDir: ""    # Windows: SCOOP root (prompted; "" = bootstrap default ~/.local/share/scoop)
 miseDataDir: "" # Windows: MISE_DATA_DIR (prompted; "" = bootstrap default ~/.local/share/mise)
+sshd: false     # Windows: this box is an SSH server (scoop no_junction + one-time reset)
 wm: false       # tiling WM: macOS yabai+skhd / Windows komorebi+whkd+yasb (off on Linux)

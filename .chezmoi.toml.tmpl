@@ -4,6 +4,7 @@
 {{- $scoopDir    := "" -}}
 {{- $miseDataDir := "" -}}
 {{- $tmux := false -}}
+{{- $sshd := false -}}
 {{- if ne .chezmoi.os "windows" -}}
 {{-   $tmux = promptBoolOnce . "tmux" "Install tmux + plugins (and manage ~/.tmux.conf)" true -}}
 {{- else -}}
@@ -12,6 +13,7 @@
        scoop/mise root elsewhere is kept by the bootstrap regardless (they can't be moved). */ -}}
 {{-   $scoopDir    = promptStringOnce . "scoopDir"    "Scoop install dir"    (printf "%s/.local/share/scoop" .chezmoi.homeDir) -}}
 {{-   $miseDataDir = promptStringOnce . "miseDataDir" "mise data dir (tools)" (printf "%s/.local/share/mise" .chezmoi.homeDir) -}}
+{{-   $sshd = promptBoolOnce . "sshd" "This machine is an SSH server (scoop apps over SSH: no_junction + one-time scoop reset)" false -}}
 {{- end -}}
 {{- if eq .chezmoi.os "darwin" -}}
 {{-   $wm = promptBoolOnce . "wm" "Install the macOS window manager (yabai + skhd) and its config" false -}}
@@ -25,6 +27,7 @@
     wm      = {{ $wm }}
     scoopDir    = {{ $scoopDir | toToml }}
     miseDataDir = {{ $miseDataDir | toToml }}
+    sshd    = {{ $sshd }}
 {{ if eq .chezmoi.os "windows" }}
 # Windows: run the .ps1 bootstrap via Windows PowerShell 5.1 — ALWAYS. 5.1 lives at a fixed
 # %SystemRoot%\System32\... path that never moves, so it works on a fresh box (no pwsh yet) and

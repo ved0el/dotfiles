@@ -48,6 +48,7 @@ existing scoop/mise elsewhere is kept, not moved.
 | **develop** | off | language runtimes via mise (`conf.d/develop.toml`: node, python, go, bun, pnpm, uv, `npm:cf`) + Claude agent skills (need node) |
 | **tmux** | on | tmux + TPM plugins · Windows: psmux (same `~/.tmux.conf`, `tmux` works) + psmux-plugins |
 | **wm** | off (not Linux) | macOS: yabai + skhd · Windows: komorebi + whkd + yasb |
+| **sshd** | off (Windows only) | this box is an SSH server: scoop `no_junction` (+ a one-time `scoop reset *`) so scoop apps work over SSH |
 
 Answers are stored in `~/.config/chezmoi/chezmoi.toml`. To change them:
 `chezmoi init --prompt`, then `chezmoi apply`.
@@ -87,12 +88,12 @@ Shell aliases: `cz`, `cza`, `czd`, `czs`, `cze`, `czra`, `czu`, `czcd`.
 - Visual C++ 2015-2022 runtimes (x64 + x86) from winget, upgraded to the newest on every
   bootstrap run — the one step that shows a UAC prompt (a system-wide runtime).
 - `gsudo` (scoop) for elevation; ssh = Windows' built-in OpenSSH (git uses it via `core.sshCommand`).
-- SSH into the machine: scoop runs with `no_junction`, so its shims (tmux, git, starship…) work in
-  an sshd session too (sshd won't follow scoop's `current` junctions).
+- SSH into the machine (`sshd` profile): scoop runs with `no_junction`, so its shims (tmux, git,
+  starship…) work in an sshd session too (sshd won't follow scoop's `current` junctions).
 - Claude Code finds scoop's Git Bash through
   `CLAUDE_CODE_GIT_BASH_PATH`; WinPS 5.1 gets `RemoteSigned` for CurrentUser (its default blocks scripts).
 - psmux: same keys as tmux. Not ported: `C-b f` (sessionizer), `C-b .` (pane-name reset); status shows the login user.
-  Pane names: `paneN` by default (N = psmux pane id), `C-b ,` to rename. No psmux-cpu (it flashed a pwsh error every tick).
+  `Ctrl+Enter` sends `Ctrl+J` (psmux has no extended-keys; a newline in Claude Code). Pane names: `paneN` by default (N = psmux pane id), `C-b ,` to rename. No psmux-cpu (it flashed a pwsh error every tick).
 
 ## Layout
 
