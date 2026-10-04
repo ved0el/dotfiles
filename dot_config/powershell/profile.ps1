@@ -93,7 +93,8 @@ if (Get-Command psmux -ErrorAction SilentlyContinue) {
     if (-not $running -and -not $saved) { psmux new-session; return }
     if ($saved | Where-Object { $_ -notin $running }) {
       if (-not $running) { psmux new-session -d -s tm-boot }
-      pwsh -NoProfile -File $restore
+      # The restore's report is kept for debugging (the strategy logs per pane beside it).
+      pwsh -NoProfile -File $restore 2>&1 | Tee-Object (Join-Path $HOME '.psmux\resurrect\tm-restore.log')
       if (-not $running) { psmux kill-session -t tm-boot }
     }
     if ($args) { psmux attach @args } elseif ($saved) { psmux attach -t $saved[0] } else { psmux attach }
