@@ -172,7 +172,9 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   instead. `#(…)` is async — test the script directly, not via `display-message`.
 - `skhdrc` (macOS) and `whkdrc` (Windows) share one keymap scheme — **edit them as a pair**.
   Deliberate divergences: monitor-move `⌃⌘←/→` vs `win+shift+←/→`; macOS-only recent-workspace,
-  balance, sticky/pip. yabai Space binds need SIP partly off + the scripting addition.
+  balance, sticky/pip; Windows has NO workspace binds — komorebi keeps ONE workspace per monitor,
+  and `focus/move-to-workspace N` would create workspace N on demand. yabai Space binds need SIP
+  partly off + the scripting addition.
 - CI (workflows, verify, GITHUB_TOKEN, Renovate): `.github/AGENTS.md`. A new file the bootstrap
   reads goes into e2e's `paths`.
 
