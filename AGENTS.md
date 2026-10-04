@@ -106,8 +106,9 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   missing, on a winget that isn't ready (new account) — NO scoop-pwsh fallback; the user updates
   App Installer and re-runs.
 - Part 1 also sets: CurrentUser `RemoteSigned` for WinPS 5.1 (default Restricted blocks its
-  profile + scoop shims), `CLAUDE_CODE_GIT_BASH_PATH` → scoop's `bash.exe` (Claude can't derive it
-  from the `git.exe` shim) — both only if unset. `bootstrap-steps.ps1`'s `Set-GitHubToken`
+  profile + scoop shims) only if unset; `CLAUDE_CODE_GIT_BASH_PATH` → scoop's versioned `bash.exe`
+  (Claude can't derive it from the `git.exe` shim) if unset or still pointing into scoop's git
+  elsewhere (the old `current` junction fails over SSH). `bootstrap-steps.ps1`'s `Set-GitHubToken`
   exports a logged-in gh's token (gh = a mise tool) as `GITHUB_TOKEN` for mise's API calls;
   part 1 calls it again right before `mise install`, once mise's shims are on PATH.
 - **`SCOOP` / `MISE_DATA_DIR` are User scope, set BEFORE installing** (the installers read them;
@@ -128,7 +129,7 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
 - **psmux** reads `~/.tmux.conf`; Windows-only lines are `{{ if eq .chezmoi.os "windows" }}` blocks
   in `dot_tmux.conf.tmpl`. Plugins are copied from the `psmux/psmux-plugins` monorepo into
   `~/.psmux/plugins/` (their `plugin.conf` hardcodes that path) — keep the bootstrap list and the
-  `@plugin` lines in sync. Not ported: the sessionizer (`C-a f`), `tmux-user`.
+  `@plugin` lines in sync. Not ported: the sessionizer (`C-b f`), `tmux-user`.
   Its border label is a literal replace of `#{pane_title}`/`#{pane_index}`/`#P` only (`#P` = pane
   id), so the pane name is the pane title (`allow-set-title`; the pwsh profile sets `pane<id>`).
   `window-(active-)style` is ignored by the 3.3.8 client. No `psmux-cpu` (pwsh every status tick).

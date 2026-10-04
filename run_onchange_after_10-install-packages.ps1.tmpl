@@ -132,10 +132,12 @@ if (Get-ChildItem (Join-Path $ScoopDir 'shims\*.shim') -ErrorAction SilentlyCont
 # git via scoop (per-user, no elevation); curl ships with Windows 10+.
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) { Invoke-Step 'git' { scoop install git } }
 # Claude Code runs its shell tool in Git Bash, found from git.exe's location - scoop's git.exe is
-# a shim in <scoop>\shims, so that lookup misses bash. Point it there (only if unset).
-# (`scoop prefix`: no `current` junction under no_junction.)
+# a shim in <scoop>\shims, so that lookup misses bash. Point it there when unset, or when it
+# still points into scoop's git at another path (the old `current` junction — unreachable over
+# SSH — or a previous version); a path outside scoop is the user's and stays.
 $gitBash = Join-Path "$(scoop prefix git)" 'bin\bash.exe'
-if ((Test-Path $gitBash) -and -not [Environment]::GetEnvironmentVariable('CLAUDE_CODE_GIT_BASH_PATH', 'User')) {
+$curBash = [Environment]::GetEnvironmentVariable('CLAUDE_CODE_GIT_BASH_PATH', 'User')
+if ((Test-Path $gitBash) -and (-not $curBash -or ($curBash -like "$ScoopDir\apps\git\*" -and $curBash -ne $gitBash))) {
   [Environment]::SetEnvironmentVariable('CLAUDE_CODE_GIT_BASH_PATH', $gitBash, 'User')
 }
 

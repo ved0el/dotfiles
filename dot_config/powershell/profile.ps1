@@ -33,7 +33,7 @@ if (-not $env:EDITOR) { $env:EDITOR = 'micro' }
 # its true palette instead of the 256-color approximation.
 if (-not $env:MICRO_TRUECOLOR) { $env:MICRO_TRUECOLOR = '1' }
 # psmux pane name (allow-set-title in ~/.tmux.conf): pane<id> from TMUX_PANE (%13 → pane13);
-# pwsh's own title would be its full exe path. C-a , renames.
+# pwsh's own title would be its full exe path. C-b , renames.
 if ($env:PSMUX_SESSION) { $Host.UI.RawUI.WindowTitle = 'pane' + $env:TMUX_PANE.TrimStart('%') }
 
 # ── mise — static env injection, NOT `mise activate` (runs before tool blocks) ──────

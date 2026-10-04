@@ -8,12 +8,12 @@
 #   1. Install TPM (Tmux Plugin Manager):
 #      git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
 #   2. Start tmux:        tmux
-#   3. Install plugins:   C-a I (capital I)
-#   4. Reload config:     C-a r
+#   3. Install plugins:   C-b I (capital I)
+#   4. Reload config:     C-b r
 #
 # Quick Start:
 #   1. Start tmux:        tmux
-#   2. Detach:            C-a d (or C-a C-d)
+#   2. Detach:            C-b d (or C-b C-d)
 #   3. Attach:            tmux attach
 #   4. List sessions:     tmux ls
 #   5. Kill session:      tmux kill-session -t name
@@ -22,7 +22,7 @@
 #   - SSH to server:      ssh user@server
 #   - Start tmux:         tmux
 #   - Work in tmux:       (your commands)
-#   - Detach:             C-a d (session continues running)
+#   - Detach:             C-b d (session continues running)
 #   - Reconnect later:    ssh user@server && tmux attach
 #   - Session auto-restores on reattach
 #
@@ -33,7 +33,7 @@
 #
 # Windows: the same file drives psmux (scoop; `tmux` is its shim). The bootstrap
 # copies the psmux-plugins (ppm instead of TPM); Windows-only differences are the
-# chezmoi os-gated template blocks below. Not ported: C-a f (sessionizer).
+# chezmoi os-gated template blocks below. Not ported: C-b f (sessionizer).
 # =============================================================================
 
 # =============================================================================
@@ -68,23 +68,23 @@ set -g renumber-windows on
 # Prefix & Mouse
 # =============================================================================
 # Usage:
-#   Prefix key: C-a (Ctrl+a)
-#   All commands start with: C-a, then the key
-#   Example: C-a c = create new window
+#   Prefix key: C-b (Ctrl+b)
+#   All commands start with: C-b, then the key
+#   Example: C-b c = create new window
 #
-unbind-key C-b
-set -g prefix C-a
-bind-key C-a send-prefix
+# The default (tmux and psmux alike), set explicitly so a reload over a server that had
+# another prefix switches back.
+set -g prefix C-b
 set -g mouse on
 
 # =============================================================================
 # Windows
 # =============================================================================
 # Usage:
-#   C-a c        - Create new window
-#   C-a p      - Previous window
-#   C-a n      - Next window
-#   C-a 0-9      - Switch to window number
+#   C-b c        - Create new window
+#   C-b p      - Previous window
+#   C-b n      - Next window
+#   C-b 0-9      - Switch to window number
 #
 set -g base-index 1
 # Window status format defined in Status Bar section below
@@ -98,28 +98,28 @@ bind-key n next-window
 # =============================================================================
 # Usage:
 #   Split:
-#     C-a |      - Split horizontally (left/right)
-#     C-a -      - Split vertically (top/bottom)
+#     C-b |      - Split horizontally (left/right)
+#     C-b -      - Split vertically (top/bottom)
 #
 #   Navigate:
-#     C-a h      - Move to left pane
-#     C-a j      - Move to bottom pane
-#     C-a k      - Move to top pane
-#     C-a l      - Move to right pane
-#     C-a Tab    - Cycle to next pane
+#     C-b h      - Move to left pane
+#     C-b j      - Move to bottom pane
+#     C-b k      - Move to top pane
+#     C-b l      - Move to right pane
+#     C-b Tab    - Cycle to next pane
 #
 #   Resize (hold key to repeat):
-#     C-a H      - Resize left
-#     C-a J      - Resize down
-#     C-a K      - Resize up
-#     C-a L      - Resize right
+#     C-b H      - Resize left
+#     C-b J      - Resize down
+#     C-b K      - Resize up
+#     C-b L      - Resize right
 #
 #   Manage:
-#     C-a q      - Kill current pane
+#     C-b q      - Kill current pane
 #
 #   Rename:
-#     C-a ,      - Set custom pane name (persists, not overridden by shell)
-#     C-a .      - Clear custom name (reverts to current command)
+#     C-b ,      - Set custom pane name (persists, not overridden by shell)
+#     C-b .      - Clear custom name (reverts to current command)
 #
 set-window-option -g pane-base-index 1
 
@@ -160,7 +160,7 @@ set -g pane-border-status bottom
 # else (#T, #{?…}, #{b:…}) prints literally, and #P is the pane id (%13 → 13). So the
 # name is the pane title: allow-set-title lets programs set it (pwsh → pane<id> via the
 # profile, claude → its own), `select-pane -T` locks a custom one.
-#   C-a ,    - Set (lock) pane name. No reset key: `select-pane -T ''` loses the '' in a bind.
+#   C-b ,    - Set (lock) pane name. No reset key: `select-pane -T ''` loses the '' in a bind.
 set -g allow-set-title on
 set -g pane-border-format " #{pane_title} "
 bind-key , command-prompt -p "Rename pane:" "select-pane -T '%%'"
@@ -169,8 +169,8 @@ bind-key , command-prompt -p "Rename pane:" "select-pane -T '%%'"
 set -g pane-border-format " #P: #{?#{@pane_name},#[bold]#{@pane_name}#[nobold],#{pane_current_command}} PID:#{pane_pid} "
 
 # Rename pane (name persists, immune to terminal escape sequences)
-#   C-a ,    - Set custom pane name
-#   C-a .    - Clear custom name (reverts to current command)
+#   C-b ,    - Set custom pane name
+#   C-b .    - Clear custom name (reverts to current command)
 bind-key , command-prompt -p "Rename pane:" "set-option -p @pane_name '%%'"
 bind-key . set-option -p -u @pane_name
 {{- end }}
@@ -180,9 +180,9 @@ bind-key . set-option -p -u @pane_name
 # Sessions
 # =============================================================================
 # Usage:
-#   C-a s        - Choose/switch session (interactive)
-#   C-a S        - Manually save session state
-#   C-a R        - Manually restore session state
+#   C-b s        - Choose/switch session (interactive)
+#   C-b S        - Manually save session state
+#   C-b R        - Manually restore session state
 #   tmux new -s name    - Create new session from command line
 #   tmux attach -t name - Attach to existing session
 #   tmux ls             - List all sessions
@@ -199,9 +199,9 @@ bind-key S run-shell '~/.tmux/plugins/tmux-resurrect/scripts/save.sh'
 bind-key R run-shell '~/.tmux/plugins/tmux-resurrect/scripts/restore.sh'
 
 # Fuzzy project/session jumper (fzf + zoxide) — the "tmux-sessionizer".
-#   C-a f  - floating picker over your zoxide frecent dirs + open sessions; jumps
+#   C-b f  - floating picker over your zoxide frecent dirs + open sessions; jumps
 #            to the pick, creating the session on the fly. (Replaces find-window;
-#            use C-a s for the classic session list.) Falls back to a message if
+#            use C-b s for the classic session list.) Falls back to a message if
 #            fzf is absent. Script: ~/.local/bin/tmux-sessionizer.
 bind-key f display-popup -E -w 75% -h 70% "tmux-sessionizer"
 {{- end }}
@@ -210,8 +210,8 @@ bind-key f display-popup -E -w 75% -h 70% "tmux-sessionizer"
 # Copy Mode
 # =============================================================================
 # Usage:
-#   C-a [        - Enter copy mode (default)
-#   C-a y        - Enter copy mode (custom)
+#   C-b [        - Enter copy mode (default)
+#   C-b y        - Enter copy mode (custom)
 #   In copy mode:
 #     v          - Start selection (vi-style)
 #     y          - Copy selection to clipboard (tmux-yank handles this)
@@ -276,7 +276,7 @@ set -g message-command-style bg=default,fg=grey
 # Configuration
 # =============================================================================
 # Usage:
-#   C-a r        - Reload tmux configuration (apply changes without restart)
+#   C-b r        - Reload tmux configuration (apply changes without restart)
 #
 {{ if eq .chezmoi.os "windows" -}}
 # psmux: an absolute path (`~/.tmux.conf\;` from a key binding reported the file missing).
