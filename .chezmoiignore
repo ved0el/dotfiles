@@ -2,6 +2,7 @@
 README.md
 AGENTS.md
 **/AGENTS.md
+!.ssh/AGENTS.md
 renovate.json
 
 # Machine-local mise config — `mise use -g` writes here by default (no env var; never
