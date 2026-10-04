@@ -120,7 +120,7 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   `apps\<app>\current` fails over SSH (Scoop#6594). So paths are versioned: never hardcode
   `apps\<app>\current` (use `scoop prefix <app>`). An app's `persist` junctions aren't covered.
 - **Windows Terminal is merged, never replaced** (`modify_` + `fromJsonc` — a WT-written file has
-  `//` comments): curated keys win, lists are replaced, `profiles.list` is the curated profiles
+  `//` comments): curated keys win, lists are replaced (`actions`/`keybindings`: live minus entries a curated id/keys/command claims, plus the curated ones, pre-split `{command,id}` + `{id,keys}` — WT's own rewrite of an inline `keys` lost it), `profiles.list` is the curated profiles
   merged per `guid` over the live ones (icons survive). Its font must be one the bootstrap installs
   — check the FAMILY NAME the package registers (its manifest's `-Filter`, then the .ttf's name
   table), not just the files it ships: `JetBrainsMono-NF` → `JetBrainsMonoNL Nerd Font`,
