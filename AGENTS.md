@@ -132,7 +132,7 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   `@plugin` lines in sync. Not ported: the sessionizer (`C-b f`), `tmux-user`.
   Its border label is a literal replace of `#{pane_title}`/`#{pane_index}`/`#P` only (`#P` = pane
   id), so the pane name is the pane title (`allow-set-title`; the pwsh profile sets `pane<id>`).
-  `window-(active-)style` is ignored by the 3.3.8 client; no extended-keys, so `C-Enter` is bound to `send-keys C-j`; over SSH the client can't send C-Enter at all, so WT's `actions` map `ctrl+enter` to `sendInput "\n"` (C-j) on every Windows box. No `psmux-cpu` (pwsh every status tick).
+  `window-(active-)style` is ignored by the 3.3.8 client; no extended-keys, so `C-Enter` is bound to `send-keys C-j`; over SSH the client can't send C-Enter at all, so WT's `actions` map `ctrl+enter` to `sendInput "\u001b\r"` (ESC CR = Alt+Enter, which psmux's SSH and console input forwards as `\x1b\r` — Claude's newline; a bare `\n` is parsed as Enter). No `psmux-cpu` (pwsh every status tick).
   Restore = profile `tm` (auto-run at the end of the profile on an interactive SSH login — not `pwsh -c`,
   psmux, `CLAUDECODE`), run whenever a saved session isn't running (`psmux ls` exits 0 with no server —
   test its output) (`@continuum-restore` off: one server per session re-fires its once-per-server
