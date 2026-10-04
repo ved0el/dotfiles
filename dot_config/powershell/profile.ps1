@@ -76,28 +76,16 @@ if (Get-Command yasbc -ErrorAction SilentlyContinue) {
 
 # ── psmux: `tm` = restore whatever the last save has that isn't running, then attach ──────
 # The one restore path (continuum's auto-restore is off on Windows, see ~/.tmux.conf), for a
-# local terminal and an SSH login alike — the server outlives an SSH disconnect. Restore is
-# idempotent (a running session is left alone), so it runs whenever a saved session is
-# missing: after a reboot / kill-server, or when only some came back. `psmux ls` exits 0 with
-# no server, so "running" = its output. Restore reads the strategy/process options from a
-# live server, hence the throwaway `tm-boot` when there is none.
+# local terminal and an SSH login alike — the server outlives an SSH disconnect. The restore
+# itself is ~/.psmux/tm-restore.ps1 (shared with the sshd profile's logon task).
 if (Get-Command psmux -ErrorAction SilentlyContinue) {
   function tm {
-    $last = Join-Path $HOME '.psmux\resurrect\last'
-    $restore = Join-Path $HOME '.psmux\plugins\psmux-resurrect\scripts\restore.ps1'
+    & (Join-Path $HOME '.psmux\tm-restore.ps1')
     $running = @(psmux ls 2>$null | ForEach-Object { ($_ -split ':')[0] } | Where-Object { $_ })
-    $saved = @()
-    if ((Test-Path $last) -and (Test-Path $restore)) {
-      $saved = @((Get-Content (Get-Content $last -Raw).Trim() -Raw | ConvertFrom-Json).sessions.name)
-    }
-    if (-not $running -and -not $saved) { psmux new-session; return }
-    if ($saved | Where-Object { $_ -notin $running }) {
-      if (-not $running) { psmux new-session -d -s tm-boot }
-      # The restore's report is kept for debugging (the strategy logs per pane beside it).
-      pwsh -NoProfile -File $restore 2>&1 | Tee-Object (Join-Path $HOME '.psmux\resurrect\tm-restore.log')
-      if (-not $running) { psmux kill-session -t tm-boot }
-    }
-    if ($args) { psmux attach @args } elseif ($saved) { psmux attach -t $saved[0] } else { psmux attach }
+    if (-not $running) { psmux new-session; return }
+    $last = Join-Path $HOME '.psmux\resurrect\last'
+    $first = if (Test-Path $last) { @((Get-Content (Get-Content $last -Raw).Trim() -Raw | ConvertFrom-Json).sessions)[0].name }
+    if ($args) { psmux attach @args } elseif ($first -in $running) { psmux attach -t $first } else { psmux attach }
   }
 }
 

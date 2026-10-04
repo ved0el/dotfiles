@@ -133,8 +133,11 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   Its border label is a literal replace of `#{pane_title}`/`#{pane_index}`/`#P` only (`#P` = pane
   id), so the pane name is the pane title (`allow-set-title`; the pwsh profile sets `pane<id>`).
   `window-(active-)style` is ignored by the 3.3.8 client; no extended-keys, so `C-Enter` is bound to `send-keys C-j`; over SSH the client can't send C-Enter at all, so WT's `actions` map `ctrl+enter` to `sendInput "\u001b\r"` (ESC CR = Alt+Enter, which psmux's SSH and console input forwards as `\x1b\r` — Claude's newline; a bare `\n` is parsed as Enter). No `psmux-cpu` (pwsh every status tick).
-  Restore = profile `tm` (auto-run at the end of the profile on an interactive SSH login — not `pwsh -c`,
-  psmux, `CLAUDECODE`), run whenever a saved session isn't running (`psmux ls` exits 0 with no server —
+  Restore = `~/.psmux/tm-restore.ps1` (never attaches), run by profile `tm` (+ attach) and, `sshd` only, the
+  `psmux-restore` AtLogOn task (autologon = at boot; a logon task needs no elevation, a boot/S4U one does
+  and lacks the user's creds — a hand-made boot task running bare `claude` once clobbered the save). `tm` is
+  auto-run at the end of the profile on an interactive SSH login — not `pwsh -c`,
+  psmux, `CLAUDECODE`; restore runs whenever a saved session isn't running (`psmux ls` exits 0 with no server —
   test its output) (`@continuum-restore` off: one server per session re-fires its once-per-server
   guard); `node` panes go through `~/.psmux/strategies/node_claude.ps1` (title → `custom-title` →
   `Set-Location <dir>; claude --resume` — cd first, a warm pane's own `cd` can lose the race, else a comment line — never empty, resurrect falls back to `node`).

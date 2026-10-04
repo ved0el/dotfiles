@@ -48,7 +48,7 @@ existing scoop/mise elsewhere is kept, not moved.
 | **develop** | off | language runtimes via mise (`conf.d/develop.toml`: node, python, go, bun, pnpm, uv, `npm:cf`) + Claude agent skills (need node) |
 | **tmux** | on | tmux + TPM plugins · Windows: psmux (same `~/.tmux.conf`, `tmux` works) + psmux-plugins |
 | **wm** | off (not Linux) | macOS: yabai + skhd · Windows: komorebi + whkd + yasb |
-| **sshd** | off (Windows only) | this box is an SSH server: scoop `no_junction` (+ a one-time `scoop reset *`) so scoop apps work over SSH |
+| **sshd** | off (Windows only) | this box is an SSH server: scoop `no_junction` (+ a one-time `scoop reset *`) so scoop apps work over SSH; a logon task restores the psmux sessions (with autologon: at boot) |
 
 Answers are stored in `~/.config/chezmoi/chezmoi.toml`. To change them:
 `chezmoi init --prompt`, then `chezmoi apply`.

@@ -261,6 +261,22 @@ if ($missing) {
   }
   Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue
 }
+{{   if .sshd -}}
+# sshd profile: restore the saved psmux sessions at logon (with autologon that is right after
+# boot), so an SSH login finds them, Claude conversations resumed, already running. A logon
+# task for this user needs no elevation; a boot/S4U one would, and runs without the user's
+# credentials. Re-registered only when missing or its action differs.
+$restoreArgs = "-NoLogo -NoProfile -WindowStyle Hidden -File `"$HOME\.psmux\tm-restore.ps1`""
+$restoreTask = Get-ScheduledTask -TaskName 'psmux-restore' -ErrorAction SilentlyContinue
+if (-not $restoreTask -or $restoreTask.Actions[0].Arguments -ne $restoreArgs) {
+  Invoke-Step 'psmux-restore task' {
+    Register-ScheduledTask -TaskName 'psmux-restore' -Force -ErrorAction Stop `
+      -Action (New-ScheduledTaskAction -Execute 'pwsh.exe' -Argument $restoreArgs) `
+      -Trigger (New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME) `
+      -Settings (New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Minutes 10)) | Out-Null
+  }
+}
+{{   end -}}
 {{ end -}}
 
 # --- install tools/runtimes declared in ~/.config/mise/conf.d/*.toml ---
