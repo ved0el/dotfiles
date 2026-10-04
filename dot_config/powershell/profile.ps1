@@ -74,25 +74,29 @@ if (Get-Command yasbc -ErrorAction SilentlyContinue) {
   function yasbr { yasbc stop; Start-Sleep -Seconds 2; yasbc start }
 }
 
-# ── psmux: `tm` = attach; with no server (reboot, kill-server) restore the last save first ──
+# ── psmux: `tm` = restore whatever the last save has that isn't running, then attach ──────
 # The one restore path (continuum's auto-restore is off on Windows, see ~/.tmux.conf), for a
-# local terminal and an SSH login alike — the server outlives an SSH disconnect. Restore needs
-# a running server (it reads the strategy/process options), hence the throwaway `tm-boot`.
+# local terminal and an SSH login alike — the server outlives an SSH disconnect. Restore is
+# idempotent (a running session is left alone), so it runs whenever a saved session is
+# missing: after a reboot / kill-server, or when only some came back. `psmux ls` exits 0 with
+# no server, so "running" = its output. Restore reads the strategy/process options from a
+# live server, hence the throwaway `tm-boot` when there is none.
 if (Get-Command psmux -ErrorAction SilentlyContinue) {
   function tm {
-    psmux ls *> $null
-    if ($LASTEXITCODE -eq 0) { psmux attach @args; return }
     $last = Join-Path $HOME '.psmux\resurrect\last'
     $restore = Join-Path $HOME '.psmux\plugins\psmux-resurrect\scripts\restore.ps1'
-    psmux new-session -d -s tm-boot
-    $target = 'tm-boot'
+    $running = @(psmux ls 2>$null | ForEach-Object { ($_ -split ':')[0] } | Where-Object { $_ })
+    $saved = @()
     if ((Test-Path $last) -and (Test-Path $restore)) {
-      pwsh -NoProfile -File $restore
-      $first = @((Get-Content (Get-Content $last -Raw).Trim() -Raw | ConvertFrom-Json).sessions)[0].name
-      psmux has-session -t $first *> $null
-      if ($first -and $LASTEXITCODE -eq 0) { psmux kill-session -t tm-boot; $target = $first }
+      $saved = @((Get-Content (Get-Content $last -Raw).Trim() -Raw | ConvertFrom-Json).sessions.name)
     }
-    psmux attach -t $target
+    if (-not $running -and -not $saved) { psmux new-session; return }
+    if ($saved | Where-Object { $_ -notin $running }) {
+      if (-not $running) { psmux new-session -d -s tm-boot }
+      pwsh -NoProfile -File $restore
+      if (-not $running) { psmux kill-session -t tm-boot }
+    }
+    if ($args) { psmux attach @args } elseif ($saved) { psmux attach -t $saved[0] } else { psmux attach }
   }
 }
 
@@ -298,3 +302,13 @@ if ($f = Get-InitScript zoxide 'init', 'powershell') {
 # ── machine-local overrides — sourced last, never synced ────────────────────────────
 $LocalProfile = Join-Path $env:XDG_CONFIG_HOME 'powershell\profile.local.ps1'
 if (Test-Path $LocalProfile) { . $LocalProfile }
+
+# ── SSH login → `tm` (last, after every init) ───────────────────────────────────────────
+# An interactive SSH login lands in the psmux sessions, restored first after a shutdown.
+# Not for `ssh host <cmd>` (sshd runs `pwsh -c`), inside psmux, or in Claude's tool shell.
+# `C-b d` detaches back to this plain shell.
+if ($env:SSH_CONNECTION -and -not $env:TMUX -and -not $env:CLAUDECODE -and
+    (Get-Command tm -ErrorAction SilentlyContinue) -and
+    -not ([Environment]::GetCommandLineArgs() -match '^-(c|command|f|file|encodedcommand)$')) {
+  tm
+}
