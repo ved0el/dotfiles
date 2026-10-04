@@ -30,6 +30,7 @@ renovate.json
 .claude/statusline.sh
 {{ else }}
 .config/powershell
+.psmux
 AppData
 .config/mise/conf.d/windows.toml
 .config/starship.toml
@@ -47,6 +48,7 @@ AppData
 {{ end }}
 {{ if not .tmux }}
 .tmux.conf
+.psmux
 {{ end }}
 {{ if not .tools }}
 .config/bat

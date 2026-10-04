@@ -290,10 +290,21 @@ bind-key r source-file ~/.tmux.conf\; display-message "Config reloaded"
 # =============================================================================
 # Options first: psmux sources each plugin's plugin.conf at its @plugin line.
 # tmux-resurrect & continuum
-set -g @resurrect-capture-pane-contents 'on'
 set -g @continuum-save-interval '5'
-set -g @continuum-restore 'on'
 set -g @continuum-boot 'off'
+{{ if eq .chezmoi.os "windows" -}}
+# psmux: restore is `tm` (pwsh profile), not continuum's session-created hook: psmux runs one
+# server per session, so the hook's once-per-server guard re-fires in each session restore
+# creates (racing restores). Pane contents off: 3.3.8's capture saves "can't find pane", and
+# restore never reads them. Claude panes are saved as `node` — the node_claude strategy
+# (~/.psmux/strategies) resumes the conversation, or runs nothing instead of a node REPL.
+set -g @continuum-restore 'off'
+set -g @resurrect-capture-pane-contents 'off'
+set -g @resurrect-strategy-node 'claude'
+{{- else -}}
+set -g @continuum-restore 'on'
+set -g @resurrect-capture-pane-contents 'on'
+{{- end }}
 
 {{ if eq .chezmoi.os "windows" -}}
 # psmux-plugins, copied into ~/.psmux/plugins by the bootstrap (keep its list in sync).

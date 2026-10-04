@@ -74,6 +74,28 @@ if (Get-Command yasbc -ErrorAction SilentlyContinue) {
   function yasbr { yasbc stop; Start-Sleep -Seconds 2; yasbc start }
 }
 
+# ── psmux: `tm` = attach; with no server (reboot, kill-server) restore the last save first ──
+# The one restore path (continuum's auto-restore is off on Windows, see ~/.tmux.conf), for a
+# local terminal and an SSH login alike — the server outlives an SSH disconnect. Restore needs
+# a running server (it reads the strategy/process options), hence the throwaway `tm-boot`.
+if (Get-Command psmux -ErrorAction SilentlyContinue) {
+  function tm {
+    psmux ls *> $null
+    if ($LASTEXITCODE -eq 0) { psmux attach @args; return }
+    $last = Join-Path $HOME '.psmux\resurrect\last'
+    $restore = Join-Path $HOME '.psmux\plugins\psmux-resurrect\scripts\restore.ps1'
+    psmux new-session -d -s tm-boot
+    $target = 'tm-boot'
+    if ((Test-Path $last) -and (Test-Path $restore)) {
+      pwsh -NoProfile -File $restore
+      $first = @((Get-Content (Get-Content $last -Raw).Trim() -Raw | ConvertFrom-Json).sessions)[0].name
+      psmux has-session -t $first *> $null
+      if ($first -and $LASTEXITCODE -eq 0) { psmux kill-session -t tm-boot; $target = $first }
+    }
+    psmux attach -t $target
+  }
+}
+
 # ── eza (ls replacement) ──────────────────────────────────────────────────────────
 if (Get-Command eza -ErrorAction SilentlyContinue) {
   # PowerShell resolves ALIASES before FUNCTIONS, so the shipped `ls`→Get-ChildItem

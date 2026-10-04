@@ -133,6 +133,9 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   Its border label is a literal replace of `#{pane_title}`/`#{pane_index}`/`#P` only (`#P` = pane
   id), so the pane name is the pane title (`allow-set-title`; the pwsh profile sets `pane<id>`).
   `window-(active-)style` is ignored by the 3.3.8 client; no extended-keys, so `C-Enter` is bound to `send-keys C-j`. No `psmux-cpu` (pwsh every status tick).
+  Restore = profile `tm` (`@continuum-restore` off: one server per session re-fires its once-per-server
+  guard); `node` panes go through `~/.psmux/strategies/node_claude.ps1` (title → `custom-title` →
+  `claude --resume`, else a comment line — never empty, resurrect falls back to `node`).
 - WinPS 5.1 is an OS component — never "remove" it; pwsh's profile only aliases `powershell` → `pwsh`.
 - scoop is per-user and never elevated. **pwsh 7 comes from winget's MSI** (`--installer-type wix
   --scope machine`, one UAC prompt) at the FIXED `$env:ProgramFiles\PowerShell\7` — NOT winget's
