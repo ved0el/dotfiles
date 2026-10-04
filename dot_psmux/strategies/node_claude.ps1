@@ -24,5 +24,7 @@ try {
     $hits = @(Get-ChildItem $projDir -Filter *.jsonl -ErrorAction Stop |
         Where-Object { Select-String -Path $_.FullName -SimpleMatch "`"customTitle`":`"$title`"" -Quiet })
     if ($hits.Count -ne 1) { return $noop }
-    "claude --resume $($hits[0].BaseName)"
+    # cd first: a restored pane is a pre-booted (warm) shell that psmux moves into the pane's
+    # dir by typing a `cd`, which these keys can beat — claude then starts in ~ (trust prompt).
+    "Set-Location -LiteralPath '$($Directory -replace "'", "''")'; claude --resume $($hits[0].BaseName)"
 } catch { $noop }
