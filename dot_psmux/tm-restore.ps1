@@ -13,6 +13,20 @@ $running = @(psmux ls 2>$null | ForEach-Object { ($_ -split ':')[0] } | Where-Ob
 $saved = @((Get-Content (Get-Content $last -Raw).Trim() -Raw | ConvertFrom-Json).sessions.name)
 if (-not ($saved | Where-Object { $_ -notin $running })) { return }
 
+# Resumed Claude panes connect their MCP servers once, at start. Right after logon Beeper
+# Desktop (whose MCP is http://127.0.0.1:23373) comes up ~20s after this task fires, so wait
+# for its port, or Claude starts with beeper failed until a manual /mcp reconnect.
+# ponytail: Beeper only; add other local MCP ports here if one shows the same race.
+# Only right after boot (the logon task), so an interactive `tm` never hangs on a closed Beeper.
+$justBooted = [Environment]::TickCount64 -lt 300000
+if ($justBooted -and (Get-ItemProperty HKCU:\Software\Microsoft\Windows\CurrentVersion\Run -Name com.automattic.beeper.desktop -EA SilentlyContinue)) {
+  $deadline = (Get-Date).AddSeconds(120)
+  while ((Get-Date) -lt $deadline) {
+    $c = [Net.Sockets.TcpClient]::new()
+    try { $c.Connect('127.0.0.1', 23373); break } catch { Start-Sleep 2 } finally { $c.Dispose() }
+  }
+}
+
 if (-not $running) { psmux new-session -d -s tm-boot }
 # The restore's report is kept for debugging (the node strategy logs per pane beside it).
 pwsh -NoProfile -File $restore 2>&1 | Tee-Object (Join-Path $dir 'tm-restore.log')
