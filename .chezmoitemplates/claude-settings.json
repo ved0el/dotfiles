@@ -37,6 +37,7 @@
       }
     ]
   },
+  "teammateMode": "in-process",
   "statusLine": {
     "type": "command",
     "command": "{{ if eq .chezmoi.os "windows" }}pwsh -NoLogo -NoProfile -File {{ .chezmoi.homeDir }}/.claude/statusline.ps1{{ else }}bash $HOME/.claude/statusline.sh{{ end }}"

@@ -7,6 +7,9 @@
 # Line 3  STATUS:   💵 cost  ⏱️ duration  🚦 5h X% (14:50)  🚦 7d Y% (Mon 09:05)  👤 agent
 # =============================================================================
 
+# No statusline in an agent-team teammate (one pane per teammate would repeat the lead's
+# lines): Claude starts teammates with CLAUDE_CODE_SESSION_ATTENDED=0, the lead with 1.
+[ "${CLAUDE_CODE_SESSION_ATTENDED:-}" = 0 ] && exit 0
 input=$(cat)
 J() { jq -r "$1 // empty" 2>/dev/null <<<"$input"; }
 SETTINGS="$HOME/.claude/settings.json"

@@ -14,6 +14,11 @@
 
 [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 
+# No statusline in an agent-team teammate (one pane per teammate would repeat the lead's
+# lines): Claude starts teammates with CLAUDE_CODE_SESSION_ATTENDED=0, the lead with 1.
+# (CLAUDE_CODE_CHILD_SESSION doesn't tell them apart: a resumed lead has it too.)
+if ($env:CLAUDE_CODE_SESSION_ATTENDED -eq '0') { exit 0 }
+
 # --- Read + parse the statusline JSON payload from stdin ----------------------
 $raw = [Console]::In.ReadToEnd()
 try { $J = $raw | ConvertFrom-Json } catch { exit 0 }

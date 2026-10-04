@@ -16,6 +16,9 @@ behind each rule is in its commit (`git log -S`). Repo-wide rules: root `AGENTS.
   - Never symlink it: Claude saves by rename, replacing the link.
 - The template is a template only so `statusLine.command` can branch per OS.
 - **No `model` key**: picking "Default" in `/model` deletes the key, so a tracked value drifts.
+- **`teammateMode: "in-process"`**: inside psmux/tmux, agent-team teammates otherwise open a pane
+  each (psmux's `claude` wrapper injects `--teammate-mode tmux` only while the key is unset).
+  One run in panes: `claude --teammate-mode tmux`.
 - **`~/.claude/CLAUDE.md` is managed** (`dot_claude/CLAUDE.md`): the `@RTK.md` import (so rtk
   finds it present) + the codegraph rule. `RTK.md` stays rtk-written and machine-local.
 
@@ -73,3 +76,5 @@ behind each rule is in its commit (`git log -S`). Repo-wide rules: root `AGENTS.
   `executable_statusline.sh`. Git Bash on Windows flashes a console on every render (MSYS
   `AllocConsole` bypasses `windowsHide`). **Keep the two in sync**; each is OS-gated in
   `.chezmoiignore`.
+- Both print nothing in an agent-team teammate (`CLAUDE_CODE_SESSION_ATTENDED=0`; the lead has
+  `1`). Not `CLAUDE_CODE_CHILD_SESSION` — a resumed lead has it too. The payload has no marker.
