@@ -226,6 +226,14 @@ if (-not $fontHave) {
     scoop install JetBrainsMono-NF
   }
 }
+# WezTerm nightly (the cross-OS terminal, ~/.wezterm.lua). Its manifest's version is the literal
+# `nightly`, so `scoop update` never sees a new build — `scoop update wezterm-nightly -f` does.
+if (-not (Get-Command wezterm -ErrorAction SilentlyContinue)) {
+  Invoke-Step 'wezterm' {
+    if ((scoop bucket list 2>$null | Out-String) -notmatch 'versions') { scoop bucket add versions }
+    scoop install versions/wezterm-nightly
+  }
+}
 
 # --- PSFzf (fzf <-> PSReadLine chords: Ctrl+t / Ctrl+r / Alt+c) ---
 # PSReadLine itself needs nothing - it ships with pwsh 7 (2.4.x; WinPS 5.1's 2.0.0 is why

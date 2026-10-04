@@ -17,6 +17,10 @@ command -v curl >/dev/null 2>&1 || brew install curl
 {{ if .tmux }}command -v tmux >/dev/null 2>&1 || brew install tmux{{ end }}
 # mole — macOS cleanup/optimization CLI (macOS only).
 command -v mole >/dev/null 2>&1 || brew install mole
+# WezTerm nightly (the cross-OS terminal, ~/.wezterm.lua) + the font family it names.
+# `brew upgrade --cask wezterm@nightly --greedy` pulls a newer build.
+[ -d /Applications/WezTerm.app ] || brew install --cask wezterm@nightly
+[ -f "$HOME/Library/Fonts/JetBrainsMonoNLNerdFont-Regular.ttf" ] || brew install --cask font-jetbrains-mono-nerd-font
 {{ if .wm }}
 # macOS window manager (yabai + skhd) from the upstream tap — install only what's missing
 # so a re-run (cza after any fingerprint change) doesn't reinstall/upgrade them each time.

@@ -46,6 +46,7 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
 | `dot_claude/`, `.chezmoitemplates/claude-settings.json` | Claude settings (merged), CLAUDE.md, statuslines |
 | `dot_tmux.conf.tmpl`, `dot_local/bin/` | tmux + its helper scripts (Unix); psmux reads the same file (Windows blocks) |
 | `AppData/…/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/modify_settings.json`, `.chezmoitemplates/windows-terminal.json` | Windows Terminal (merged into the live file) |
+| `dot_wezterm.lua` | WezTerm, the main terminal on every OS (plain Lua, OS branches via `wezterm.target_triple`) |
 
 ## Profiles & OS
 - Profile keys `tools`, `develop`, `tmux` (Windows = psmux), `wm` (macOS + Windows) — plus the
@@ -91,6 +92,12 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
 - **vivid** — needs a COMPLETE theme (`dot_config/vivid/themes/catppuccin-mocha-red.yml`);
   zsh caches its output and feeds completion `list-colors`.
 - fzf-tab REQUIRES `zstyle ':completion:*' menu no` — never `menu select`.
+- **WezTerm = nightly** (scoop `versions/wezterm-nightly`, brew cask `wezterm@nightly`; not on
+  Linux), guarded on the command / `/Applications/WezTerm.app`. It only draws — sessions,
+  splits and restore stay in tmux/psmux, so don't add WezTerm tabs/panes/mux keys (and never
+  bind `C-b`). Theme = a built-in Gogh scheme (`"<name> (Gogh)"`); tmux's `window-(active-)style`
+  bgs are hardcoded Catppuccin Mocha, so a theme change edits both. Its font family must be
+  one the bootstrap installs (macOS: cask `font-jetbrains-mono-nerd-font`, guarded on the .ttf).
 - Claude install / plugins / skills: read `dot_claude/AGENTS.md` before editing them.
 
 ## Windows

@@ -72,6 +72,12 @@ Shell aliases: `cz`, `cza`, `czd`, `czs`, `cze`, `czra`, `czu`, `czcd`.
 - **Claude settings:** `~/.claude/settings.json` is merged with the tracked keys, so changes
   made in Claude Code survive `apply`. Copy a change into
   `.chezmoitemplates/claude-settings.json` to share it.
+- **Terminal:** WezTerm nightly on macOS and Windows, one `~/.wezterm.lua` (Linux: config
+  only, install it yourself). Theme = any [Gogh](https://gogh-co.github.io/Gogh/) name +
+  ` (Gogh)` in `color_scheme` (default `Catppuccin Mocha (Gogh)`, matching tmux's pane
+  backgrounds); JetBrainsMonoNL Nerd Font 14, copy-on-select, right-click pastes, `Ctrl+Enter` =
+  Claude newline. Tabs/panes stay in tmux/psmux. New build: `scoop update wezterm-nightly -f` /
+  `brew upgrade --cask wezterm@nightly --greedy`.
 - **Secrets:** never commit them — use chezmoi `encrypted_` files or password-manager template
   functions.
 
