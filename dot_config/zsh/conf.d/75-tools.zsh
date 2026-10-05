@@ -32,25 +32,19 @@ if command -v eza &>/dev/null; then
 fi
 
 # ── vivid (LS_COLORS) ─────────────────────────────────────────────────────────
-# Generate LS_COLORS from the custom catppuccin-mocha theme (red → repo accent
-# #ff5189). Cached + regenerated only when the theme file changes (vivid is ~10ms),
+# Generate LS_COLORS from vivid's built-in `ansi` theme (follows the terminal theme).
+# Cached + regenerated only when the vivid binary changes (vivid is ~10ms),
 # mirroring the sheldon/compinit caching idiom. zsh completion lists reuse it via
 # list-colors, read at completion time so module order vs compinit is irrelevant.
 if command -v vivid &>/dev/null; then
-  _vivid_theme="${XDG_CONFIG_HOME:-$HOME/.config}/vivid/themes/catppuccin-mocha-red.yml"
   _vivid_cache="$ZSH_CACHE_DIR/ls_colors"
-  if [[ ! -r "$_vivid_cache" || "$_vivid_theme" -nt "$_vivid_cache" ]]; then
-    vivid generate "$_vivid_theme" >| "$_vivid_cache" 2>/dev/null
+  if [[ ! -r "$_vivid_cache" || "${commands[vivid]:A}" -nt "$_vivid_cache" ]]; then
+    vivid generate ansi >| "$_vivid_cache" 2>/dev/null
   fi
   export LS_COLORS="$(<"$_vivid_cache")"
   zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
-  unset _vivid_theme _vivid_cache
+  unset _vivid_cache
 fi
-
-# ── fd ───────────────────────────────────────────────────────────────────────
-# --follow: cross symlinks. --hidden: include dotfiles (exclusions live in
-# config/fd/ignore so they stay version-controlled out of this env var).
-command -v fd &>/dev/null && export FD_OPTIONS="--follow --hidden"
 
 # ── ripgrep ──────────────────────────────────────────────────────────────────
 command -v rg &>/dev/null &&
@@ -58,7 +52,8 @@ command -v rg &>/dev/null &&
 
 # ── fzf (before zoxide so _ZO_FZF_OPTS can inherit FZF defaults) ──────────────
 if command -v fzf &>/dev/null; then
-  export FZF_DEFAULT_COMMAND="fd --type f"
+  # fd reads no options env var: --hidden/--follow go on each command (exclusions: ~/.config/fd/ignore).
+  export FZF_DEFAULT_COMMAND="fd --type f --hidden --follow"
   # Layout + preview UX. Preview sits right at 75% with a wrapped, scrollable pane,
   # and only flips below the list on very narrow terminals (<60 cols) where a side
   # pane would crush the list.
@@ -76,17 +71,16 @@ if command -v fzf &>/dev/null; then
     --bind='ctrl-f:preview-page-down,ctrl-b:preview-page-up' \
     --bind='shift-down:preview-down,shift-up:preview-up' \
     --bind='alt-down:preview-bottom,alt-up:preview-top' \
-    --color bg+:-1,spinner:#f5e0dc,hl:#ff5189 \
-    --color fg:#cdd6f4,header:#f38ba8,info:#cba6f7,pointer:#ff5189 \
-    --color marker:#ff5189,fg+:#f9e2af:bold,prompt:#cba6f7,hl+:#ff5189:bold:underline \
-    --color border:#313244,label:#cdd6f4"
+    --color fg:-1,bg+:-1,fg+:yellow:bold,hl:red,hl+:red:bold:underline \
+    --color info:magenta,prompt:magenta,pointer:red,marker:red,spinner:cyan \
+    --color header:red,border:bright-black,label:-1"
   # History search: no preview (the command line is the whole content).
   export FZF_CTRL_R_OPTS="--no-preview"
   # File widget (ctrl-t): syntax-highlighted preview, line numbers, first 500 lines.
   export FZF_CTRL_T_COMMAND="rg --files --hidden --follow --glob '!.git/*'"
   export FZF_CTRL_T_OPTS="--preview 'bat --style=numbers --color=always --line-range=:500 {}'"
   # Dir widget (alt-c): a colored, icon'd tree two levels deep.
-  export FZF_ALT_C_COMMAND="fd --type d"
+  export FZF_ALT_C_COMMAND="fd --type d --hidden --follow"
   if command -v eza &>/dev/null; then
     export FZF_ALT_C_OPTS="--preview 'eza --tree --level=2 --color=always --icons=always --group-directories-first {}'"
   fi

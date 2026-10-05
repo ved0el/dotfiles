@@ -2,7 +2,9 @@
   "env": {
     "PONYTAIL_DEFAULT_MODE": "ultra",
     "CLAUDE_MEM_CONTEXT_SHOW_TERMINAL_OUTPUT": "false",
-    "CLAUDE_MEM_WELCOME_HINT_ENABLED": "false"
+    "CLAUDE_MEM_WELCOME_HINT_ENABLED": "false",
+    "ECC_HOOK_PROFILE": "minimal",
+    "ECC_GATEGUARD": "off"
   },
   "permissions": {
     "allow": [

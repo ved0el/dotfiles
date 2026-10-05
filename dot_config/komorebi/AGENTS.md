@@ -47,7 +47,7 @@ commit (`git log -S`).
   silence.
 - **No "skip fullscreen" switch exists** — games go in `ignore_rules` by `Exe`. UE games: add both
   `<Name>-Win64-Shipping.exe` and the launcher exe (separate windows).
-- `alt + ctrl + p` (`komorebic toggle-pause`) covers any game with no config edit.
+- `alt + ctrl + g` (`komorebic toggle-pause`) covers any game with no config edit.
 - **`applications.json` is NOT tracked**: bootstrap part 1 runs `komorebic
   fetch-app-specific-configuration` (`fetch-asc` by hand to refresh). Own rules go in
   `komorebi.json` — the next fetch overwrites `applications.json`. Grep it before adding a rule.

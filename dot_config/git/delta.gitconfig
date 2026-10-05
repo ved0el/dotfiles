@@ -8,6 +8,6 @@
 [delta]
 	navigate = true                     # n / N to jump between diff sections
 	line-numbers = true
-	syntax-theme = "Catppuccin Mocha"   # matches bat's theme (dot_config/bat/config)
+	syntax-theme = ansi                 # terminal-theme colours, matches bat (dot_config/bat/config)
 [merge]
 	conflictStyle = zdiff3

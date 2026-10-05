@@ -31,15 +31,13 @@
 # Display & Output
 # ------------------------------------------------------------------------------
 
-# Colors — catppuccin-mocha (24-bit RGB triples; ripgrep rejects the #rrggbb string
-# form). match = shared accent red #ff5189, path = blue #89b4fa, line = yellow #f9e2af,
-# column = peach #fab387.
---colors=match:fg:0xff,0x51,0x89
+# Colors — ANSI names only, so they follow the terminal theme.
+--colors=match:fg:red
 --colors=match:style:bold
---colors=path:fg:0x89,0xb4,0xfa
+--colors=path:fg:blue
 --colors=path:style:bold
---colors=line:fg:0xf9,0xe2,0xaf
---colors=column:fg:0xfa,0xb3,0x87
+--colors=line:fg:yellow
+--colors=column:fg:cyan
 
 # Show heading with filename
 --heading

@@ -1,69 +1,46 @@
 # starship — prompt config (Windows only; Unix uses powerlevel10k).
-# Base: `starship preset pure-preset`, recolored with catppuccin mocha (text colors only).
+# Minimal: directory + branch + duration, colours from the ANSI palette below so it follows the
+# terminal theme. No git_status: it runs `git status` every prompt (~55ms of a ~170ms prompt on
+# Windows, measured); the branch name is free (read from .git/HEAD).
 #
 # scan_timeout: the default 30ms is marginal on Windows. starship globs the CWD once per prompt;
 # a cold FS cache (+ Defender) after boot blows 30ms and prints
 #   [WARN] - (starship::context): Scanning current directory timed out.
 # It is a CEILING, not a cost (warm scan ~1ms).
 scan_timeout = 500
-palette = 'catppuccin_mocha'
+# No blank line before the prompt (default true) — it also left an empty first row in a new pane.
+add_newline = false
+palette = 'ansi'
 "$schema" = 'https://starship.rs/config-schema.json'
 
+# username/hostname only render over SSH.
 format = """
 $username\
 $hostname\
 $directory\
 $git_branch\
-$git_state\
-$git_status\
 $cmd_duration\
 $line_break\
-$python\
 $character"""
 
 [directory]
 style = "blue"
 
-[character]
-success_symbol = "[❯](mauve)"
-error_symbol = "[❯](red)"
-vimcmd_symbol = "[❮](green)"
-
 [git_branch]
-format = "[$branch]($style)"
-style = "overlay0"
-
-[git_status]
-format = "[[(*$conflicted$untracked$modified$staged$renamed$deleted)](pink) ($ahead_behind$stashed)]($style)"
-style = "sky"
-conflicted = "​"
-untracked = "​"
-modified = "​"
-staged = "​"
-renamed = "​"
-deleted = "​"
-stashed = "≡"
-
-[git_state]
-format = '\([$state( $progress_current/$progress_total)]($style)\) '
-style = "overlay0"
+format = "[$branch]($style) "
+style = "muted"
 
 [cmd_duration]
 format = "[$duration]($style) "
 style = "yellow"
 
-[python]
-format = "[$virtualenv]($style) "
-style = "overlay0"
-detect_extensions = []
-detect_files = []
+[character]
+success_symbol = "[❯](accent)"
+error_symbol = "[❯](red)"
 
-[palettes.catppuccin_mocha]
-red = "#f38ba8"
-pink = "#f5c2e7"
-mauve = "#cba6f7"
-yellow = "#f9e2af"
-green = "#a6e3a1"
-sky = "#89dceb"
-blue = "#89b4fa"
-overlay0 = "#6c7086"
+[palettes.ansi]
+accent = "purple"
+red = "red"
+yellow = "yellow"
+blue = "blue"
+muted = "bright-black"

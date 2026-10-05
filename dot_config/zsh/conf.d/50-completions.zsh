@@ -13,7 +13,7 @@ unset _zcompdump
 # fzf-tab replaces the Tab menu with an fzf picker (plugin in sheldon, deferred).
 # It REQUIRES `menu no` — never `menu select`. Entry coloring comes from list-colors
 # (vivid LS_COLORS, set in 75-tools.zsh); use-fzf-default-opts makes the picker inherit
-# the catppuccin FZF_DEFAULT_OPTS. All zstyles are read at completion time, so order
+# the FZF_DEFAULT_OPTS colours. All zstyles are read at completion time, so order
 # vs the deferred plugin load and the 75-tools LS_COLORS export doesn't matter.
 zstyle ':completion:*' menu no
 zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'   # case-insensitive

@@ -81,10 +81,11 @@ mkdir -p "$tpm_dir"
 [ -d "$tpm_dir/tpm" ] || \
   git clone --depth 1 https://github.com/tmux-plugins/tpm "$tpm_dir/tpm"
 # Clone every `set -g @plugin 'owner/repo'` (or full git URL) declared in the config
-# that isn't present yet. A failed clone warns but never aborts the bootstrap.
+# that isn't present yet. A failed clone doesn't stop the other plugins or the rest of the
+# bootstrap, but fails the script at the end (so chezmoi re-runs it on the next apply).
 sed -n "s/^[[:space:]]*set[^@]*@plugin[[:space:]]*['\"]\([^'\"]*\)['\"].*/\1/p" \
       "$HOME/.tmux.conf" 2>/dev/null \
-  | while IFS= read -r plugin; do
+  | { rc=0; while IFS= read -r plugin; do
       [ -n "$plugin" ] || continue
       name=${plugin##*/}; name=${name%.git}
       if [ -d "$tpm_dir/$name" ]; then continue; fi
@@ -94,13 +95,16 @@ sed -n "s/^[[:space:]]*set[^@]*@plugin[[:space:]]*['\"]\([^'\"]*\)['\"].*/\1/p" 
       esac
       echo "[tmux] installing plugin: $name"
       git clone --depth 1 "$url" "$tpm_dir/$name" \
-        || echo "[tmux] WARN: clone failed for $plugin — run 'prefix + I' in tmux to retry"
-    done
+        || { echo "[tmux] clone failed for $plugin" >&2; rc=1; }
+    done; exit $rc; } || tmux_failed=1
 {{ end -}}
 
 # --- install tools/runtimes declared in ~/.config/mise/conf.d/*.toml, lock sheldon ---
 # --cd "$HOME": mise only auto-discovers the global conf.d/*.toml when CWD is inside the home
 # tree; chezmoi may run this script from elsewhere, so anchor it at $HOME or nothing installs.
+# A logged-in gh's token lifts mise's GitHub API limit (60/h unauthenticated) — same as the
+# .ps1's Set-GitHubToken. gh is itself a mise tool, so this only helps on a re-run.
+[ -n "${GITHUB_TOKEN:-}" ] || { GITHUB_TOKEN=$(mise --cd "$HOME" exec -- gh auth token 2>/dev/null) && export GITHUB_TOKEN; } || unset GITHUB_TOKEN
 mise --cd "$HOME" install --yes
 
 {{ if .tools -}}
@@ -119,4 +123,7 @@ if command -v git >/dev/null 2>&1; then
 fi
 {{ end -}}
 
-sheldon lock --update
+# `lock` (not `--update`): fetch missing plugins only; updating them is the user's.
+sheldon lock
+
+[ -z "${tmux_failed:-}" ] || { echo "[bootstrap] part 1 had failures; fix them, then re-run chezmoi apply" >&2; exit 1; }

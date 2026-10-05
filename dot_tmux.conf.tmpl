@@ -4,12 +4,7 @@
 # Optimized for remote SSH s
 # - Minimal, performance-focused
 #
-# First Time Setup:
-#   1. Install TPM (Tmux Plugin Manager):
-#      git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
-#   2. Start tmux:        tmux
-#   3. Install plugins:   C-b I (capital I)
-#   4. Reload config:     C-b r
+# Plugins are cloned by the chezmoi bootstrap (no `C-b I` needed). Reload: C-b r
 #
 # Quick Start:
 #   1. Start tmux:        tmux
@@ -40,7 +35,7 @@
 # Core Settings
 # =============================================================================
 {{ if eq .chezmoi.os "windows" -}}
-# No terminfo on Windows (Windows Terminal is truecolor already); SHELL is unset.
+# No terminfo on Windows (WezTerm is truecolor already); SHELL is unset.
 set -g default-shell pwsh
 {{- else -}}
 set -g default-terminal "tmux-256color"
@@ -53,7 +48,6 @@ set -ga terminal-overrides ",*256col*:Tc"
 # Performance
 set -s escape-time 0
 set -g history-limit 50000
-set -g status-interval 5
 set -g focus-events on
 set -g aggressive-resize on
 {{- if ne .chezmoi.os "windows" }}
@@ -146,9 +140,10 @@ bind-key -r L resize-pane -R 10
 bind-key q kill-pane
 
 # Border
-set -g pane-active-border-style fg=colour67,bg=default
-set -g pane-border-style fg=colour67,bg=default
-# Pane bg left unset = the terminal theme's own bg, so WezTerm's opacity shows through.
+# Colours are ANSI names only (no colourNNN / hex / X11 names like grey), so they follow the theme.
+set -g pane-active-border-style fg=blue,bg=default
+set -g pane-border-style fg=blue,bg=default
+# Pane bg left unset = the terminal theme's own bg.
 {{ if eq .chezmoi.os "windows" -}}
 # psmux: no pane-scoped user options (`set -p @x` errors), so the pane name is the pane
 # title: allow-set-title lets programs set it (pwsh → pane<id> via the profile, claude →
@@ -182,7 +177,7 @@ bind-key . set-option -p -u @pane_name
 #   tmux attach -t name - Attach to existing session
 #   tmux ls             - List all sessions
 #
-# Note: Sessions auto-save every 5 minutes and auto-restore on tmux start
+# Note: Sessions auto-save every 5 minutes; Unix auto-restores on tmux start, Windows via tm-restore.ps1
 #
 bind-key s choose-session
 {{ if eq .chezmoi.os "windows" -}}
@@ -228,44 +223,40 @@ bind-key -T copy-mode-vi v send-keys -X begin-selection
 # =============================================================================
 # Format:
 #   Left:  User@Host | Window
-#   Right: Window list (1 2 3 4, current highlighted, right-aligned)
+#   Right: window list (1 2 3 4, current highlighted, right-aligned; status-right is empty)
 #
 set -g status-position bottom
 set -g status-justify right
 set -g status-interval 1
 set -g status-left-length 150
 set -g status-right-length 0
-set -g status-style bg=default,fg=colour240
+set -g status-style bg=default,fg=brightblack
 
 # Left side: User@Host | Window
-# Using tmux-cpu plugin for CPU and RAM display
 # User: live foreground user of the active pane (tracks sudo -i / su -), not the
 # tmux server's login — see ~/.local/bin/tmux-user. status-interval (1s) refreshes it.
 {{ if eq .chezmoi.os "windows" -}}
 # Windows: no tty to inspect — the login user, baked in at apply time.
-set -g status-left ' #[fg=grey]User: {{ .chezmoi.username | splitList "\\" | last }}@#h#[fg=default] | Window: #W | Pane: #{pane_title} #{?client_prefix,#[fg=white]#[bg=blue] Wait #[bg=default],}#[fg=default] '
+set -g status-left ' #[fg=brightblack]User: {{ .chezmoi.username | splitList "\\" | last }}@#h#[fg=default] | Window: #W | Pane: #{pane_title} #{?client_prefix,#[fg=white]#[bg=blue] Wait #[bg=default],}#[fg=default] '
 {{- else -}}
-set -g status-left ' #[fg=grey]User: #(~/.local/bin/tmux-user "#{pane_tty}")@#h#[fg=default] | Window: #W #{prefix_highlight}#[fg=default] '
+set -g status-left ' #[fg=brightblack]User: #(~/.local/bin/tmux-user "#{pane_tty}")@#h#[fg=default] | Window: #W #{prefix_highlight}#[fg=default] '
 {{- end }}
 
-# Right side: Window list | CPU | RAM | Time (right-aligned)
-set -g status-right '#{cpu_fg_color} CPU: #{cpu_percentage}#[fg=default] | #{ram_fg_color}RAM: #{ram_percentage}#[fg=default] | #[fg=grey] %H:%M #[fg=yellow] '
-
 # Window status format (simple numbers: 1 2 3 4)
-set -g window-status-format ' #[fg=grey]#I '
+set -g window-status-format ' #[fg=brightblack]#I '
 set -g window-status-current-format ' #[fg=yellow,bold]#I '
 
 # Window status separator
 set -g window-status-separator '#[fg=default]|'
 
 # Window status styles (original highlight: yellow)
-set-window-option -g window-status-style fg=grey,bg=default,dim
+set-window-option -g window-status-style fg=brightblack,bg=default,dim
 set-window-option -g window-status-current-style fg=yellow,bg=default,bright
-set-window-option -g window-status-activity-style fg=colour223,bg=default
+set-window-option -g window-status-activity-style fg=yellow,bg=default
 
 # Messages
-set -g message-style bg=default,fg=grey
-set -g message-command-style bg=default,fg=grey
+set -g message-style bg=default,fg=brightblack
+set -g message-command-style bg=default,fg=brightblack
 
 # =============================================================================
 # Configuration
@@ -307,11 +298,11 @@ set -g @resurrect-capture-pane-contents 'on'
 # plain `set -g` + binds (escape-time 50, `R` → ~/.psmux.conf, `|`/`-` without the cwd),
 # overriding this file — everything else it sets is already set above. No psmux-cpu: its
 # status-interval hook spawns pwsh every tick (an error flashes each time) for stats the
-# status bar doesn't show.
+# status bar doesn't show. No psmux-prefix-highlight: it only sets status-right, which is
+# hidden — status-left shows its own `Wait` badge.
 set -g @plugin 'psmux-plugins/ppm'
 set -g @plugin 'psmux-plugins/psmux-resurrect'
 set -g @plugin 'psmux-plugins/psmux-continuum'
-set -g @plugin 'psmux-plugins/psmux-prefix-highlight'
 
 # =============================================================================
 # Initialize
@@ -323,7 +314,6 @@ set -g @plugin 'tmux-plugins/tmux-sensible'
 set -g @plugin 'tmux-plugins/tmux-yank'
 set -g @plugin 'tmux-plugins/tmux-resurrect'
 set -g @plugin 'tmux-plugins/tmux-continuum'
-set -g @plugin 'tmux-plugins/tmux-cpu'
 set -g @plugin 'tmux-plugins/tmux-prefix-highlight'
 
 # Plugin Config

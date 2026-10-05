@@ -33,7 +33,7 @@ behind each rule is in its commit (`git log -S`). Repo-wide rules: root `AGENTS.
 - **Install (part 2):** `marketplace add` for each `extraKnownMarketplaces` entry missing from
   `claude plugin marketplace list --json`, then `claude plugin install -y` for each missing
   `enabledPlugins` id. Both lists are local reads (zero network when complete). `-y` is required
-  (no TTY). Every call is `|| echo` / `try/catch`.
+  (no TTY). A failed call fails the script (Windows: `Invoke-Step`; Unix: `fail` + exit 1 at the end), so chezmoi retries it.
 - **Updating is the user's, inside Claude — NOT `czu`** (`czu` = git pull + apply, i.e. install
   what's missing). Marketplaces auto-update (below); by hand: `claude plugin marketplace update`
   then `claude plugin update <id>` (`marketplace update` alone doesn't move installed plugin code),
@@ -44,8 +44,9 @@ behind each rule is in its commit (`git log -S`). Repo-wide rules: root `AGENTS.
 - Id lists render from the template via `includeTemplate … | fromJson` (single source); the
   rendered ids are part 2's run_onchange fingerprint.
 - **`false` in `enabledPlugins` = installed but OFF** (both loops ignore the value). To remove a
-  plugin, delete its line AND `claude plugin uninstall` it. Opt-in plugins `ecc@ecc`,
-  `cloudflare@cloudflare`: enable per project with `claude plugin enable <id> --scope local`.
+  plugin, delete its line AND `claude plugin uninstall` it. `ecc@ecc` and
+  `cloudflare@cloudflare` are installed AND enabled everywhere like the rest; ECC's hooks run at
+  `ECC_HOOK_PROFILE=minimal` with GateGuard off (`ECC_GATEGUARD=off`), both in the managed `env`.
   ECC's rules aren't in the plugin — copy only what a project needs:
   `cp -r ~/.claude/plugins/cache/ecc/ecc/*/rules/{common,<lang>} .claude/rules/ecc/`
   (never globally: ~4.4k tokens per session).

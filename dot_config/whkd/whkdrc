@@ -58,7 +58,8 @@ alt + y                 : komorebic flip-layout vertical
 
 # --- Window manager options -------------------------------------------------
 alt + ctrl + r          : komorebic retile
-alt + ctrl + p          : komorebic toggle-pause
+# g = game (alt + ctrl + p is monitor-prev below).
+alt + ctrl + g          : komorebic toggle-pause
 
 # --- No workspace binds: ONE workspace per monitor (komorebi.json) -----------
 # Deliberate divergence from skhdrc (macOS keeps its Space jumps): focus/move-to-workspace N

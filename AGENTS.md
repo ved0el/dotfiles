@@ -38,7 +38,7 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
 
 | path | holds |
 |---|---|
-| `dot_config/{bat,fd,ripgrep,micro,git,vivid}` | CLI tool configs (`tools`) |
+| `dot_config/{bat,fd,ripgrep,micro,git}` | CLI tool configs (`tools`) |
 | `dot_zshrc`, `dot_p10k.zsh`, `dot_config/{zsh/conf.d,sheldon}` | Unix shell (numbered load order) |
 | `dot_config/powershell/profile.ps1`, `dot_config/starship.toml` | Windows shell |
 | `dot_config/mise/conf.d/*.toml` | tools/runtimes, all OSes |
@@ -89,8 +89,9 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   rule in `dot_claude/CLAUDE.md`.
 - **delta** — wired by an idempotent `include.path` in the UNMANAGED `~/.gitconfig`; never
   manage `~/.gitconfig` (identity/signing stay machine-local).
-- **vivid** — needs a COMPLETE theme (`dot_config/vivid/themes/catppuccin-mocha-red.yml`);
-  zsh caches its output and feeds completion `list-colors`.
+- **Colours follow the terminal theme** — CLI configs use ANSI names only (fzf, tmux, bat/delta
+  `ansi`, ripgrep, starship palette, micro `simple`, vivid `ansi`); never a hex/`colourNNN`, or a
+  WezTerm theme change breaks them. zsh caches vivid's output and feeds completion `list-colors`.
 - fzf-tab REQUIRES `zstyle ':completion:*' menu no` — never `menu select`.
 - **WezTerm = nightly** (scoop `versions/wezterm-nightly`, brew cask `wezterm@nightly`; not on
   Linux), guarded on the command / `/Applications/WezTerm.app`. It only draws — sessions,
@@ -106,7 +107,8 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   and never re-runs it, so a swallowed failure (try/catch + Write-Host, an unchecked
   `$LASTEXITCODE`) leaves that tool missing for good. Every install/network step goes through
   `Invoke-Step` (`.chezmoitemplates/bootstrap-steps.ps1`: runs under `Continue`, counts a throw
-  or non-zero exit) and each part ends with `Complete-Bootstrap` (`exit 1` if any failed). Steps
+  or non-zero exit) and each part ends with `Complete-Bootstrap` (`exit 1` if any failed). (Unix:
+  same rule — part 1 `set -e` + a tracked tmux-clone loop, part 2 `fail()` + `exit 1` at the end.) Steps
   stay idempotent so the retry only redoes what's missing. README's one-liner uses `--keep-going`
   so a failed part 1 doesn't skip part 2; part 2 itself stops when part 1 left no mise.
 - **Preflight, before changing anything** (part 1): exit on an elevated terminal (scoop's

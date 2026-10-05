@@ -5,19 +5,26 @@
 set -eu
 # Separate process from part 1: ~/.local/bin (mise, claude) has to go on PATH again.
 export PATH="$HOME/.local/bin:$PATH"
+# A failed step must fail the script: chezmoi never re-runs a run_onchange script that exited 0,
+# so a swallowed failure would leave that piece missing for good. Steps stay idempotent, so the
+# retry (next `apply`) only redoes what's missing — same contract as the .ps1's Invoke-Step.
+failed=0
+fail() { echo "$1" >&2; failed=1; }
 
 # rtk (rtk-ai/rtk) — install its Claude Code command-rewrite hook globally. --auto-patch
 # edits ~/.claude/settings.json without prompting, keeping this bootstrap non-interactive;
-# it's idempotent so re-runs are safe, and `|| true` keeps a hiccup from aborting setup.
-command -v rtk >/dev/null 2>&1 && rtk init -g --auto-patch || \
-  mise --cd "$HOME" exec -- rtk init -g --auto-patch || true
+# it's idempotent so re-runs are safe. rtk is a `tools` mise tool.
+{{ if .tools -}}
+{ command -v rtk >/dev/null 2>&1 && rtk init -g --auto-patch; } || \
+  mise --cd "$HOME" exec -- rtk init -g --auto-patch || fail "[rtk] hook install failed"
+{{ end -}}
 
 # Claude Code itself — the marketplace step below is a no-op without it, and since the
 # run_onchange fingerprint wouldn't change afterwards it would never retry on a fresh box.
 # Official installer; lands in ~/.local/bin (already on PATH above) and self-updates after that.
 command -v claude >/dev/null 2>&1 || \
   curl -fsSL https://claude.ai/install.sh | bash || \
-  echo "[claude] install failed — install Claude Code by hand"
+  fail "[claude] install failed"
 
 # Claude Code marketplaces + plugins — INSTALL ONLY WHAT'S MISSING. The ids below are
 # rendered straight out of .chezmoitemplates/claude-settings.json, so that file stays the single
@@ -32,13 +39,13 @@ if command -v claude >/dev/null 2>&1; then
 {{- range $name, $mk := $settings.extraKnownMarketplaces }}
   printf '%s' "$have_mk" | grep -qF '"name": "{{ $name }}"' || \
     claude plugin marketplace add '{{ index $mk.source "repo" | default (index $mk.source "url") }}' || \
-    echo "[claude] marketplace add {{ $name }} failed"
+    fail "[claude] marketplace add {{ $name }} failed"
 {{- end }}
   # -y is mandatory: the install prompt has no TTY here and would otherwise hang.
   have_plugin=$(claude plugin list --json 2>/dev/null || true)
 {{- range $id, $_ := $settings.enabledPlugins }}
   printf '%s' "$have_plugin" | grep -qF '"{{ $id }}"' || \
-    claude plugin install -y '{{ $id }}' || echo "[claude] install {{ $id }} failed"
+    claude plugin install -y '{{ $id }}' || fail "[claude] install {{ $id }} failed"
 {{- end }}
 fi
 
@@ -65,10 +72,10 @@ fi
 for _entry in tt-a1i/archify:archify:archify 'mattpocock/skills:*:ask-matt'; do
   _repo="${_entry%%:*}"; _rest="${_entry#*:}"; _spec="${_rest%:*}"; _anchor="${_rest##*:}"
   if [ -e "$HOME/.claude/skills/$_anchor" ]; then continue; fi
-  command -v npx >/dev/null 2>&1 && \
-    npx -y skills add "$_repo" --skill "$_spec" --agent claude-code -g -y --copy || \
+  { command -v npx >/dev/null 2>&1 && \
+    npx -y skills add "$_repo" --skill "$_spec" --agent claude-code -g -y --copy; } || \
     mise --cd "$HOME" exec -- npx -y skills add "$_repo" --skill "$_spec" --agent claude-code -g -y --copy || \
-    echo "[skills] $_repo skipped — needs node/npx (the develop profile)"
+    fail "[skills] $_repo failed (needs node/npx from the develop profile)"
 done
 unset _entry _repo _rest _spec _anchor
 
@@ -81,7 +88,7 @@ if [ -e "$HOME/.claude/skills/brandkit" ] || [ -e "$HOME/.claude/skills/humanize
     design-taste-frontend design-taste-frontend-v1 full-output-enforcement gpt-taste \
     high-end-visual-design image-to-code imagegen-frontend-mobile imagegen-frontend-web \
     industrial-brutalist-ui minimalist-ui redesign-existing-projects stitch-design-taste \
-    || echo "[skills] retired-skill cleanup failed"
+    || fail "[skills] retired-skill cleanup failed"
 fi
 {{ end -}}
 
@@ -91,6 +98,8 @@ if command -v claude >/dev/null 2>&1; then
   claude mcp get codegraph >/dev/null 2>&1 || \
     claude mcp add-json --scope user codegraph \
       '{"type":"stdio","command":"codegraph","args":["serve","--mcp"],"alwaysLoad":true}' || \
-    echo "[codegraph] mcp add failed"
+    fail "[codegraph] mcp add failed"
 fi
 {{ end -}}
+
+[ "$failed" = 0 ] || { echo "[bootstrap] part 2 had failures; fix them, then re-run chezmoi apply" >&2; exit 1; }

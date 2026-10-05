@@ -1,8 +1,8 @@
 # bat configuration — https://github.com/sharkdp/bat
 # ── Theme ─────────────────────────────────────────────────────────────────────
-# Built-in dark theme that pairs well with most terminal colour schemes.
+# `ansi`: highlights with the terminal's 16 ANSI colours, so it follows the terminal theme.
 # Run `bat --list-themes` to see all options; `bat --theme=<name> <file>` to preview.
---theme="Catppuccin Mocha"
+--theme="ansi"
 
 # ── Display style ─────────────────────────────────────────────────────────────
 # numbers       — line numbers in the gutter

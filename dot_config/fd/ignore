@@ -1,6 +1,6 @@
 # fd global ignore — ~/.config/fd/ignore
 # Patterns here are excluded from every fd search (gitignore syntax).
-# Keeps ad-hoc searches fast without cluttering FD_OPTIONS.
+# Keeps searches with --hidden (the fzf commands) fast.
 
 # ── Version control ───────────────────────────────────────────────────────────
 .git

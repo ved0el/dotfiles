@@ -29,9 +29,6 @@ foreach ($wm in 'komorebi','whkd','yasb') {
   }
 }
 if (-not $env:EDITOR) { $env:EDITOR = 'micro' }
-# micro: force 24-bit truecolor so the catppuccin-mocha colorscheme renders with
-# its true palette instead of the 256-color approximation.
-if (-not $env:MICRO_TRUECOLOR) { $env:MICRO_TRUECOLOR = '1' }
 # psmux pane name (allow-set-title in ~/.tmux.conf): pane<id> from TMUX_PANE (%13 → pane13);
 # pwsh's own title would be its full exe path. C-b , renames.
 if ($env:PSMUX_SESSION) { $Host.UI.RawUI.WindowTitle = 'pane' + $env:TMUX_PANE.TrimStart('%') }
@@ -118,7 +115,6 @@ if ($PSVersionTable.PSVersion.Major -ge 7) { Set-Alias powershell pwsh }
 if (Get-Command bat -ErrorAction SilentlyContinue) {
   $env:BAT_CONFIG_PATH = Join-Path $env:XDG_CONFIG_HOME 'bat\config'
 }
-if (Get-Command fd -ErrorAction SilentlyContinue) { $env:FD_OPTIONS = '--follow --hidden' }
 if (Get-Command rg -ErrorAction SilentlyContinue) {
   $env:RIPGREP_CONFIG_PATH = Join-Path $env:XDG_CONFIG_HOME 'ripgrep\ripgreprc'
 }
@@ -135,7 +131,9 @@ if ($psrl = Get-Module PSReadLine) {
   # redirected or lacks VT processing, so -EA SilentlyContinue does not suppress it. A
   # cosmetic suggestion feature failing to turn on must not paint the profile red.
   if ($psrl.Version -ge [version]'2.1') {
-    try { Set-PSReadLineOption -PredictionSource History } catch { }
+    # Suggestion text = the theme's bright black, upright and full-strength (the default
+    # 97;2;3 is dim + italic, which renders faint and slanted); matches zsh-autosuggestions' fg=8.
+    try { Set-PSReadLineOption -PredictionSource History -Colors @{ InlinePrediction = "$([char]27)[90m" } } catch { }
   }
   # Complete = bash-style (common prefix, then list); the PSFzf block below swaps in fzf.
   Set-PSReadLineKeyHandler -Key Tab -Function Complete
@@ -143,9 +141,11 @@ if ($psrl = Get-Module PSReadLine) {
 
 # ── fzf — env defaults; key-bindings need the PSFzf module (loaded if present) ──────
 if (Get-Command fzf -ErrorAction SilentlyContinue) {
-  $env:FZF_DEFAULT_COMMAND = 'fd --type f'
+  # fd reads no options env var: --hidden/--follow go on each command (exclusions: ~/.config/fd/ignore).
+  $env:FZF_DEFAULT_COMMAND = 'fd --type f --hidden --follow'
+  $env:FZF_ALT_C_COMMAND   = 'fd --type d --hidden --follow'
   # Layout + preview UX mirrored from the zsh config (these opts are fzf-level, not
-  # shell-specific) + catppuccin-mocha palette synced with the micro editor theme.
+  # shell-specific); colours are ANSI names only, so they follow the terminal theme.
   #   ctrl-/  cycle preview (large → hidden → default) · ctrl-f/-b page preview
   #   shift-down/-up scroll preview a line · alt-down/-up jump to bottom/top
   $env:FZF_DEFAULT_OPTS    = @(
@@ -155,10 +155,9 @@ if (Get-Command fzf -ErrorAction SilentlyContinue) {
     '--bind="ctrl-f:preview-page-down,ctrl-b:preview-page-up"'
     '--bind="shift-down:preview-down,shift-up:preview-up"'
     '--bind="alt-down:preview-bottom,alt-up:preview-top"'
-    '--color bg+:-1,spinner:#f5e0dc,hl:#ff5189'
-    '--color fg:#cdd6f4,header:#f38ba8,info:#cba6f7,pointer:#ff5189'
-    '--color marker:#ff5189,fg+:#f9e2af:bold,prompt:#cba6f7,hl+:#ff5189:bold:underline'
-    '--color border:#313244,label:#cdd6f4'
+    '--color fg:-1,bg+:-1,fg+:yellow:bold,hl:red,hl+:red:bold:underline'
+    '--color info:magenta,prompt:magenta,pointer:red,marker:red,spinner:cyan'
+    '--color header:red,border:bright-black,label:-1'
   ) -join ' '
   $env:FZF_CTRL_R_OPTS     = '--no-preview'
   $env:FZF_CTRL_T_COMMAND  = "rg --files --hidden --follow --glob '!.git/*'"

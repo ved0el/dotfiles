@@ -13,6 +13,7 @@ on:
     paths: &install-paths
       - 'run_*'
       - '.chezmoi*'
+      - '.chezmoitemplates/**'   # `*` stops at `/`, so '.chezmoi*' alone misses this dir
       - 'dot_config/mise/**'
       - 'dot_config/sheldon/**'
       - 'dot_tmux.conf.tmpl'
