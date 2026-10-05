@@ -29,9 +29,6 @@ foreach ($wm in 'komorebi','whkd','yasb') {
   }
 }
 if (-not $env:EDITOR) { $env:EDITOR = 'micro' }
-# psmux pane name (allow-set-title in ~/.tmux.conf): pane<id> from TMUX_PANE (%13 → pane13);
-# pwsh's own title would be its full exe path. C-b , renames.
-if ($env:PSMUX_SESSION) { $Host.UI.RawUI.WindowTitle = 'pane' + $env:TMUX_PANE.TrimStart('%') }
 
 # ── mise — static env injection, NOT `mise activate` (runs before tool blocks) ──────
 # `mise activate`'s chpwd hook corrupts the env on every cd on Windows (zoxide `z` then

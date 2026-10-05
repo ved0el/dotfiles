@@ -23,6 +23,19 @@ if ($env:CLAUDE_CODE_SESSION_ATTENDED -eq '0') { exit 0 }
 $raw = [Console]::In.ReadToEnd()
 try { $J = $raw | ConvertFrom-Json } catch { exit 0 }
 
+# Inside psmux: record which conversation runs in this directory, for psmux-resurrect's node
+# strategy (~/.psmux/strategies/node_claude.ps1) — psmux saves a Claude pane as just `node` +
+# its dir, and pane titles are human-only (allow-set-title off). Written only on change.
+if ($env:TMUX_PANE -and $J.session_id) {
+    $proj = if ($J.workspace.project_dir) { $J.workspace.project_dir } else { $J.cwd }
+    $mapDir = Join-Path $HOME '.psmux\claude-sessions'
+    $map = Join-Path $mapDir ($proj.ToLower() -replace '[^a-z0-9]', '-')
+    if (-not (Test-Path -LiteralPath $map) -or (Get-Content -LiteralPath $map -Raw) -ne $J.session_id) {
+        $null = New-Item -ItemType Directory -Force -Path $mapDir
+        Set-Content -LiteralPath $map -Value $J.session_id -NoNewline -ErrorAction Ignore
+    }
+}
+
 # --- Extract (official schema; missing props read back as $null) --------------
 $MODEL    = $J.model.display_name
 $DIR      = if ($J.workspace.current_dir) { $J.workspace.current_dir } else { $J.cwd }

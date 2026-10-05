@@ -79,3 +79,5 @@ behind each rule is in its commit (`git log -S`). Repo-wide rules: root `AGENTS.
   `.chezmoiignore`.
 - Both print nothing in an agent-team teammate (`CLAUDE_CODE_SESSION_ATTENDED=0`; the lead has
   `1`). Not `CLAUDE_CODE_CHILD_SESSION` — a resumed lead has it too. The payload has no marker.
+- Inside psmux (`TMUX_PANE`) `statusline.ps1` writes the session id to `~/.psmux/claude-sessions/<dir>` (on change) —
+  psmux-resurrect's node strategy resumes Claude panes from it. Windows only (psmux).

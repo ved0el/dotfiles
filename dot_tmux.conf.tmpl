@@ -155,12 +155,12 @@ set -g pane-border-style fg=blue,bg=default
 # Pane bg left unset = the terminal theme's own bg.
 {{ if eq .chezmoi.os "windows" -}}
 # psmux: no pane-scoped user options (`set -p @x` errors), so the pane name is the pane
-# title: allow-set-title lets programs set it (pwsh → pane<id> via the profile, claude →
-# its own), `select-pane -T` locks a custom one. Shown in status-left (Pane: …) for the
-# active pane, not on the borders.
-#   C-b ,    - Set (lock) pane name. No reset key: `select-pane -T ''` loses the '' in a bind.
+# title, and only C-b , sets it: allow-set-title off keeps programs' OSC titles (claude's,
+# pwsh's) out, so an unnamed pane's title stays the hostname and status-left (P: …) shows its
+# process instead. psmux exposes no "renamed" flag, hence names only a human sets.
+#   C-b ,    - Set pane name. No reset key: `select-pane -T ''` loses the '' in a bind.
 set -g pane-border-status off
-set -g allow-set-title on
+set -g allow-set-title off
 bind-key , command-prompt -p "Rename pane:" "select-pane -T '%%'"
 {{- else -}}
 set -g pane-border-status bottom
@@ -246,10 +246,13 @@ set -g status-style bg=default,fg=brightblack
 # tmux server's login — see ~/.local/bin/tmux-user. status-interval (1s) refreshes it.
 {{ if eq .chezmoi.os "windows" -}}
 # Windows: no tty to inspect — the login user, baked in at apply time.
-# psmux ignores automatic-rename-format, so the dir name is picked here: a window still named
-# after its process (or its index, as resurrect restores it) counts as unnamed. A pane title
-# still pwsh's default pane<id> (profile) shows the process; any other title (claude's, C-b ,) wins.
-set -g status-left ' #[fg=yellow,bold]W: #{=/10/...:#{?#{||:#{==:#{window_name},#{pane_current_command}},#{==:#{window_name},#{window_index}}},#{b:pane_current_path},#{window_name}}}#[fg=default,nobold] | #[fg=white]P: #{=/10/...:#{?#{m:pane*,#{pane_title}},#{pane_current_command},#{pane_title}}}#[fg=default] | #[fg=brightblack]U: {{ .chezmoi.username | splitList "\\" | last }}@#h#[fg=default] #{?client_prefix,#[fg=white]#[bg=blue] Wait #[bg=default],}#[fg=default] '
+# psmux ignores automatic-rename-format and exposes no per-window "renamed" flag, so nothing
+# renames a window but C-b W: with automatic-rename/allow-rename off a new window keeps the
+# name `pwsh`, shown as the current dir's name; any other name is yours and stays. A pane
+# title still the hostname (unset, see allow-set-title above) shows the process.
+set -g automatic-rename off
+set -g allow-rename off
+set -g status-left ' #[fg=yellow,bold]W: #{=/10/...:#{?#{==:#{window_name},pwsh},#{b:pane_current_path},#{window_name}}}#[fg=default,nobold] | #[fg=white]P: #{=/10/...:#{?#{==:#{pane_title},#{host}},#{pane_current_command},#{pane_title}}}#[fg=default] | #[fg=brightblack]U: {{ .chezmoi.username | splitList "\\" | last }}@#h#[fg=default] #{?client_prefix,#[fg=white]#[bg=blue] Wait #[bg=default],}#[fg=default] '
 {{- else -}}
 # rename-window turns automatic-rename off for that window, so a manual name sticks.
 set -g automatic-rename on
