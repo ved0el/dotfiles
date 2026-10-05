@@ -89,7 +89,7 @@ Shell aliases: `cz`, `cza`, `czd`, `czs`, `cze`, `czra`, `czu`, `czcd`.
   and WinPS 5.1 `$PROFILE`s and loads in ~210ms (cached inits in `~/.cache/pwsh`).
 - With fzf, PSFzf gives `Tab` completion, `Ctrl+t`, `Ctrl+r`, `Alt+c` (loaded on first use).
 - `XDG_CONFIG_HOME=~/.config`, so tools read the same config tree as on Unix.
-- `wm`: komorebi starts at logon via a scheduled task; yasb via its own installer.
+- `wm`: komorebi + whkd start at logon via komorebi's own autostart shortcut (no console flash); yasb via its own installer.
 - Typing `powershell` in pwsh opens pwsh; WinPS 5.1 stays (an OS component chezmoi's bootstrap runs on).
 - Visual C++ 2015-2022 runtimes (x64 + x86) from winget, upgraded to the newest on every
   bootstrap run — the one step that shows a UAC prompt (a system-wide runtime).

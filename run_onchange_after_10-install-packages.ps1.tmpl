@@ -351,40 +351,20 @@ foreach ($app in 'komorebi','whkd','yasb') {
     }
   }
 }
-# Autostart komorebi at login via a scheduled task that runs the managed launcher
-# (~/.config/komorebi/autostart.ps1). NOT `komorebic enable-autostart` / a shell:startup
-# shortcut: at login the environment lacks scoop's shims on PATH, so `komorebic start` (which
-# does `Start-Process komorebi.exe`) can't find komorebi.exe and komorebi never launches —
-# nothing tiles (proven: strip <scoop>\shims from PATH and it reproduces). The launcher puts the
-# shims dir — resolved HERE while PATH is intact and passed in — back on PATH, then starts
-# komorebi+whkd with retry. It's run by System32 powershell.exe (WinPS 5.1 — always present; the
-# winget/scoop pwsh isn't reliably on the task PATH) with -WindowStyle Hidden.
-# Do NOT wrap this in `conhost.exe --headless`: that flag can't allocate its pseudoconsole during
-# early session init, so the task dies at LOGON with 0x80070003 (ERROR_PATH_NOT_FOUND) and nothing
-# tiles — while still succeeding when run on demand, which makes it look fine. It was added to
-# suppress a console flash that actually came from `komorebic start` spawning pwsh; the launcher
-# now starts komorebi.exe/whkd.exe directly, so there is no flash left to suppress.
+# Autostart komorebi + whkd at login: komorebi's own `enable-autostart`, a shell:startup
+# komorebi.lnk running komorebic-no-console.exe (no console, so no flash at login). Verified
+# after a reboot: it tiles, whkd runs. The July 2026 logon task + autostart.ps1 launcher existed
+# because scoop's shims weren't on the login PATH then (`komorebic start` does `Start-Process
+# komorebi.exe`); they're on the User PATH now (Add-UserPath above). autostart.ps1 stays only for
+# `-Restart` (whkd alt+ctrl+o, yasb reload). Never `conhost.exe --headless` a logon launcher:
+# it dies at LOGON with 0x80070003 while working on demand.
 if (Get-Command komorebic -ErrorAction SilentlyContinue) {
   # Community app rules (komorebi.json's app_specific_configuration_path): downloaded, NOT
   # tracked — the tracked copy only ever went stale. Writes $KOMOREBI_CONFIG_HOME/applications.json.
   Invoke-Step 'komorebi app rules' { komorebic fetch-app-specific-configuration | Out-Null } 'run: komorebic fetch-asc'
-  # Drop any legacy shell:startup shortcut so it doesn't race the task.
-  Remove-Item (Join-Path ([Environment]::GetFolderPath('Startup')) 'komorebi.lnk') -Force -ErrorAction SilentlyContinue
-  try {
-    $launcher = Join-Path $XdgConfig 'komorebi\autostart.ps1'
-    $shims    = Split-Path (Get-Command komorebic).Source
-    $winps    = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
-    $uid      = "$env:USERDOMAIN\$env:USERNAME"
-    $act = New-ScheduledTaskAction -Execute $winps -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$launcher`" -ShimsDir `"$shims`""
-    $trg = New-ScheduledTaskTrigger -AtLogOn -User $uid
-    $set = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero)
-    $prn = New-ScheduledTaskPrincipal -UserId $uid -LogonType Interactive -RunLevel Limited
-    Register-ScheduledTask -TaskName 'komorebi' -Action $act -Trigger $trg -Settings $set -Principal $prn -Force | Out-Null
-    Write-Host "[wm] komorebi/whkd installed; autostart registered (scheduled task 'komorebi')."
-  } catch {
-    Write-Host "[wm] komorebi/whkd installed, but autostart task registration failed: $($_.Exception.Message)"
-    $script:Failed.Add('komorebi autostart')
-  }
+  Invoke-Step 'komorebi autostart' { komorebic enable-autostart --whkd -c (Join-Path $XdgConfig 'komorebi\komorebi.json') | Out-Null }
+  # Drop the legacy logon task so it can't race the shortcut.
+  Unregister-ScheduledTask -TaskName 'komorebi' -Confirm:$false -ErrorAction SilentlyContinue
 }
 Write-Host "[wm] Run yasb once (or add it to startup) to launch the status bar."
 {{ end -}}

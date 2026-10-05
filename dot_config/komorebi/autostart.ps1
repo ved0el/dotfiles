@@ -1,22 +1,11 @@
-# komorebi autostart launcher — run by the 'komorebi' logon scheduled task.
+# komorebi (re)start helper. Login autostart is komorebi's own `enable-autostart` shortcut
+# (komorebic-no-console.exe, set up by bootstrap part 1); this script is the `-Restart` path for
+# whkd's alt+ctrl+o and yasb's reload_command, run by System32 powershell.exe (5.1 — keep it
+# 5.1-compatible). It launches komorebi.exe + whkd.exe directly (hidden) with retry — NOT
+# `komorebic start`, which spawns a pwsh that flashes a console.
 #
-# Why this exists (not `komorebic enable-autostart` / a shell:startup shortcut):
-#   At login the environment (scheduled task, early explorer startup) has NO scoop shims on PATH,
-#   so komorebi.exe can't be found and komorebi never launches — nothing tiles (verified: strip
-#   <scoop>\shims from PATH → reproduces). And an early start can exit before the shell is ready.
-#   So: resolve the shims dir, launch komorebi.exe + whkd.exe directly (hidden), retrying until it
-#   sticks. Direct launch — NOT `komorebic start` — because komorebic start spawns a pwsh process
-#   for its launch sequence that flashes a visible console window at login. Idempotent.
-#
-# Runs under Windows PowerShell 5.1, launched by the 'komorebi' task as
-# `System32\...\powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File <this>
-# -ShimsDir <shims>` (registered by bootstrap part 1). -WindowStyle Hidden hides the console after
-# a brief flash; 5.1 (not the scoop-shimmed pwsh) because pwsh isn't reliably on the task PATH.
-# Keep it 5.1-compatible.
-#
-# -ShimsDir: scoop's shims directory (holds komorebi.exe), resolved at task-registration time
-# when PATH is intact and passed in here. A broken login/task environment can't discover scoop's
-# root on its own — scoop can live anywhere (this box uses D:\scoop and doesn't set $env:SCOOP).
+# -ShimsDir: scoop's shims directory (holds komorebi.exe); optional — falls back to $env:SCOOP,
+# then ~/scoop.
 #
 # -Restart: stop komorebi + whkd first, then run the normal start sequence (whkd's alt+ctrl+o and
 # yasb's reload_command). Must run as its OWN process: `komorebic stop --whkd` kills whkd, and a
