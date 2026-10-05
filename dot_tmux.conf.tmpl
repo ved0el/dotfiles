@@ -37,6 +37,10 @@
 {{ if eq .chezmoi.os "windows" -}}
 # No terminfo on Windows (WezTerm is truecolor already); SHELL is unset.
 set -g default-shell pwsh
+# psmux launches pwsh with `-PredictionSource None` after the profile unless allowed, so the
+# profile's history suggestions never showed; prediction-dimming would also dim them again.
+set -g allow-predictions on
+set -g prediction-dimming off
 {{- else -}}
 set -g default-terminal "tmux-256color"
 set -g default-shell "${SHELL}"

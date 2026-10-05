@@ -10,6 +10,14 @@ config.color_scheme = 'Catppuccin Mocha (Gogh)'
 
 -- The family the bootstrap installs (scoop JetBrainsMono-NF / brew font-jetbrains-mono-nerd-font).
 config.font = wezterm.font 'JetBrainsMonoNL Nerd Font'
+-- Dim (SGR 2) text: WezTerm's default rule draws it in ExtraLight, which reads hair-thin (mise's
+-- `mise` prefix, hints). Keep Regular weight; the colour is still dimmed.
+config.font_rules = {
+  { intensity = 'Half', italic = true,
+    font = wezterm.font('JetBrainsMonoNL Nerd Font', { weight = 'Regular', italic = true }) },
+  { intensity = 'Half', italic = false,
+    font = wezterm.font('JetBrainsMonoNL Nerd Font', { weight = 'Regular' }) },
+}
 config.font_size = 14
 
 if wezterm.target_triple:find 'windows' then
@@ -22,7 +30,7 @@ config.webgpu_power_preference = 'HighPerformance'
 config.hide_tab_bar_if_only_one_tab = true
 config.window_close_confirmation = 'NeverPrompt'
 
--- Selecting copies (WezTerm's default); right-click pastes, as in Windows Terminal.
+-- Selecting copies (WezTerm's default; hold Shift in an app that grabs the mouse); right-click pastes.
 config.mouse_bindings = {
   { event = { Down = { streak = 1, button = 'Right' } }, mods = 'NONE', action = act.PasteFrom 'Clipboard' },
 }

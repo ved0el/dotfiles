@@ -143,6 +143,8 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   Its border label is a literal replace of `#{pane_title}`/`#{pane_index}`/`#P` only (`#P` = pane
   id), so the pane name is the pane title (`allow-set-title`; the pwsh profile sets `pane<id>`).
   No extended-keys, so `C-Enter` is bound to `send-keys C-j`; over SSH the client can't send C-Enter at all, so WT's `actions` map `ctrl+enter` to `sendInput "\u001b\r"` (ESC CR = Alt+Enter, which psmux's SSH and console input forwards as `\x1b\r` — Claude's newline; a bare `\n` is parsed as Enter). No `psmux-cpu` (pwsh every status tick).
+  psmux re-runs `Set-PSReadLineOption -PredictionSource None` after the profile unless
+  `allow-predictions on` (+ `prediction-dimming off`) — both set in the Windows block.
   Restore = `~/.psmux/tm-restore.ps1` (never attaches), run by profile `tm` (+ attach) and, `sshd` only, the
   `psmux-restore` AtLogOn task (autologon = at boot; a logon task needs no elevation, a boot/S4U one does
   and lacks the user's creds — a hand-made boot task running bare `claude` once clobbered the save). `tm` is
