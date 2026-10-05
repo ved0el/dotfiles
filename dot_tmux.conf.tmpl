@@ -231,7 +231,7 @@ bind-key -T copy-mode-vi v send-keys -X begin-selection
 # Status Bar
 # =============================================================================
 # Format:
-#   Left:  Window | Pane | U: user@host (Window/Pane cut to 10 chars + ...)
+#   Left:  W: window (yellow) | P: pane (white) | U: user@host (W/P cut to 10 chars + ...)
 #   Right: window list (1 2 3 4, current highlighted, right-aligned; status-right is empty)
 #
 set -g status-position bottom
@@ -249,12 +249,12 @@ set -g status-style bg=default,fg=brightblack
 # psmux ignores automatic-rename-format, so the dir name is picked here: a window still named
 # after its process (or its index, as resurrect restores it) counts as unnamed. A pane title
 # still pwsh's default pane<id> (profile) shows the process; any other title (claude's, C-b ,) wins.
-set -g status-left ' Window: #{=/10/...:#{?#{||:#{==:#{window_name},#{pane_current_command}},#{==:#{window_name},#{window_index}}},#{b:pane_current_path},#{window_name}}} | Pane: #{=/10/...:#{?#{m:pane*,#{pane_title}},#{pane_current_command},#{pane_title}}} | #[fg=brightblack]U: {{ .chezmoi.username | splitList "\\" | last }}@#h#[fg=default] #{?client_prefix,#[fg=white]#[bg=blue] Wait #[bg=default],}#[fg=default] '
+set -g status-left ' #[fg=yellow,bold]W: #{=/10/...:#{?#{||:#{==:#{window_name},#{pane_current_command}},#{==:#{window_name},#{window_index}}},#{b:pane_current_path},#{window_name}}}#[fg=default,nobold] | #[fg=white]P: #{=/10/...:#{?#{m:pane*,#{pane_title}},#{pane_current_command},#{pane_title}}}#[fg=default] | #[fg=brightblack]U: {{ .chezmoi.username | splitList "\\" | last }}@#h#[fg=default] #{?client_prefix,#[fg=white]#[bg=blue] Wait #[bg=default],}#[fg=default] '
 {{- else -}}
 # rename-window turns automatic-rename off for that window, so a manual name sticks.
 set -g automatic-rename on
 set -g automatic-rename-format '#{b:pane_current_path}'
-set -g status-left ' Window: #{=/10/...:window_name} | Pane: #{=/10/...:#{?#{@pane_name},#{@pane_name},#{pane_current_command}}} | #[fg=brightblack]U: #(~/.local/bin/tmux-user "#{pane_tty}")@#h#[fg=default] #{prefix_highlight}#[fg=default] '
+set -g status-left ' #[fg=yellow,bold]W: #{=/10/...:window_name}#[fg=default,nobold] | #[fg=white]P: #{=/10/...:#{?#{@pane_name},#{@pane_name},#{pane_current_command}}}#[fg=default] | #[fg=brightblack]U: #(~/.local/bin/tmux-user "#{pane_tty}")@#h#[fg=default] #{prefix_highlight}#[fg=default] '
 {{- end }}
 
 # Window status format (simple numbers: 1 2 3 4)
