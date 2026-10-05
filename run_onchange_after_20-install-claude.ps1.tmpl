@@ -134,7 +134,7 @@ if (-not $cgHave) {
 {{ end -}}
 
 # What a fresh install can't do from inside its own process: the CURRENT terminal still has the
-# old PATH/env, and a Windows Terminal that was open during apply hasn't loaded the new font.
+# old PATH/env, and a terminal that was open during apply hasn't loaded the new font.
 # Nothing above depends on that - this is only for the user's next session.
-Write-Host "`n[bootstrap] Finished. Open a NEW terminal (close and reopen Windows Terminal) to load PATH, fonts and the PowerShell profile."
+Write-Host "`n[bootstrap] Finished. Open a NEW terminal (close and reopen WezTerm) to load PATH, fonts and the PowerShell profile."
 Complete-Bootstrap 'part 2'

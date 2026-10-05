@@ -202,9 +202,9 @@ Add-UserPath (Join-Path $MiseDir 'shims')
 # Windows' own sudo is enabled, System32\sudo.exe wins — `gsudo` always works). A font ships NO
 # command, so that one is guarded on `scoop list` (through Out-String: Select-String on its
 # objects never matches). The font is JetBrainsMono-NF (nerd-fonts bucket), NOT -NF-Mono: every
-# consumer names the family `JetBrainsMonoNL Nerd Font` (Windows Terminal, yasb's Qt CSS, the
-# komorebi bar as `JetBrainsMonoNL NF`), and -NF-Mono only registers `… Nerd Font Mono` — WT
-# then reports "Unable to find the following fonts" and Qt falls back to Tahoma.
+# consumer names the family `JetBrainsMonoNL Nerd Font` (WezTerm, yasb's Qt CSS, the
+# komorebi bar as `JetBrainsMonoNL NF`), and -NF-Mono only registers `… Nerd Font Mono` — Qt
+# then falls back to Tahoma.
 # Fonts install per-user (HKCU) — no elevation.
 if (-not (Get-Command openssl -ErrorAction SilentlyContinue)) { Invoke-Step 'openssl' { scoop install openssl } }
 # starship: the pwsh prompt — only Windows uses it (Unix: powerlevel10k), so scoop, not mise.

@@ -45,7 +45,6 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
 | `dot_config/{yabai,skhd}` / `{komorebi,whkd,yasb}` | tiling WM: macOS / Windows |
 | `dot_claude/`, `.chezmoitemplates/claude-settings.json` | Claude settings (merged), CLAUDE.md, statuslines |
 | `dot_tmux.conf.tmpl`, `dot_local/bin/` | tmux + its helper scripts (Unix); psmux reads the same file (Windows blocks) |
-| `AppData/…/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/modify_settings.json`, `.chezmoitemplates/windows-terminal.json` | Windows Terminal (merged into the live file) |
 | `dot_wezterm.lua` | WezTerm, the main terminal on every OS (plain Lua, OS branches via `wezterm.target_triple`) |
 
 ## Profiles & OS
@@ -137,20 +136,17 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   sshd runs with RedirectionGuard, which won't follow a non-admin junction, so a shim through
   `apps\<app>\current` fails over SSH (Scoop#6594). So paths are versioned: never hardcode
   `apps\<app>\current` (use `scoop prefix <app>`). An app's `persist` junctions aren't covered.
-- **Windows Terminal is merged, never replaced** (`modify_` + `fromJsonc` — a WT-written file has
-  `//` comments): curated keys win, lists are replaced (`actions`/`keybindings`: live minus entries a curated id/keys/command claims, plus the curated ones, pre-split `{command,id}` + `{id,keys}` — WT's own rewrite of an inline `keys` lost it), `profiles.list` is the curated profiles
-  merged per `guid` over the live ones (icons survive). Its font must be one the bootstrap installs
-  — check the FAMILY NAME the package registers (its manifest's `-Filter`, then the .ttf's name
-  table), not just the files it ships: `JetBrainsMono-NF` → `JetBrainsMonoNL Nerd Font`,
-  `-NF-Mono` → only `… Nerd Font Mono`. A WT open during the first apply warns once (the file
-  lands before part 1 installs the font); reopening WT clears it.
+- **Windows Terminal is not managed** (WezTerm is the terminal). A font a config names must be one
+  the bootstrap installs — check the FAMILY NAME the package registers (its manifest's `-Filter`,
+  then the .ttf's name table), not just the files it ships: `JetBrainsMono-NF` →
+  `JetBrainsMonoNL Nerd Font`, `-NF-Mono` → only `… Nerd Font Mono`.
 - **psmux** reads `~/.tmux.conf`; Windows-only lines are `{{ if eq .chezmoi.os "windows" }}` blocks
   in `dot_tmux.conf.tmpl`. Plugins are copied from the `psmux/psmux-plugins` monorepo into
   `~/.psmux/plugins/` (their `plugin.conf` hardcodes that path) — keep the bootstrap list and the
   `@plugin` lines in sync. Not ported: the sessionizer (`C-b f`), `tmux-user`.
   Its border label is a literal replace of `#{pane_title}`/`#{pane_index}`/`#P` only (`#P` = pane
   id), so the pane name is the pane title (`allow-set-title`; the pwsh profile sets `pane<id>`). status-left shows the process while the title is still `pane*`; psmux ignores `automatic-rename-format`, so a window named after its process/index displays `#{b:pane_current_path}` instead.
-  No extended-keys, so `C-Enter` is bound to `send-keys C-j`; over SSH the client can't send C-Enter at all, so WT's `actions` map `ctrl+enter` to `sendInput "\u001b\r"` (ESC CR = Alt+Enter, which psmux's SSH and console input forwards as `\x1b\r` — Claude's newline; a bare `\n` is parsed as Enter). No `psmux-cpu` (pwsh every status tick).
+  No extended-keys, so `C-Enter` is bound to `send-keys C-j`; over SSH the client can't send C-Enter at all, so WezTerm's `keys` map `CTRL+Enter` to `SendString '\x1b\r'` (ESC CR = Alt+Enter, which psmux's SSH and console input forwards as `\x1b\r` — Claude's newline; a bare `\n` is parsed as Enter). No `psmux-cpu` (pwsh every status tick).
   psmux re-runs `Set-PSReadLineOption -PredictionSource None` after the profile unless
   `allow-predictions on` (+ `prediction-dimming off`) — both set in the Windows block.
   Restore = `~/.psmux/tm-restore.ps1` (never attaches), run by profile `tm` (+ attach) and, `sshd` only, the
