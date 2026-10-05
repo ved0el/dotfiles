@@ -41,6 +41,9 @@ set -g default-shell pwsh
 # profile's history suggestions never showed; prediction-dimming would also dim them again.
 set -g allow-predictions on
 set -g prediction-dimming off
+# paste-detection (default on) swallows Ctrl+V to fake a console-host paste; WezTerm/WT paste
+# themselves (bracketed), so off lets Ctrl+V reach the pane (PSReadLine Paste, Claude).
+set -g paste-detection off
 {{- else -}}
 set -g default-terminal "tmux-256color"
 set -g default-shell "${SHELL}"
