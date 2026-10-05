@@ -9,11 +9,9 @@
   "permissions": {
     "allow": [
       "Bash(ls:*)",
-      "Bash(tree:*)",
       "Bash(npx:*)",
       "Bash(pnpx:*)",
       "Bash(pnpm:*)",
-      "Bash(nvm use:*)",
       "Bash(printf:*)",
       "Bash(head:*)",
       "Bash(git:*)",
@@ -52,7 +50,6 @@
     "claude-md-management@claude-plugins-official": true,
     "security-guidance@claude-plugins-official": true,
     "last30days@last30days-skill": true,
-    "playwright@claude-plugins-official": true,
     "cloudflare@cloudflare": true,
     "ecc@ecc": true
   },
@@ -130,6 +127,5 @@
   "terminalProgressBarEnabled": false,
   "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true,
-  "defaultMode": "auto",
   "hasCompletedOnboarding": true
 }
