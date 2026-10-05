@@ -8,6 +8,5 @@ go = "latest"
 bun = "latest"
 pnpm = "latest"
 uv = "latest"
-# npm backend: needs node (above). If a fresh box's first `mise install` races it, the bootstrap
-# reports the failure and the next `chezmoi apply` installs it.
-"npm:cf" = "latest"
+# Cloudflare's `cf` is NOT here: mise hides npm prereleases (it stays at 0.15.0) while cf ships as
+# 1.0.0-beta.x on npm's `latest` tag — install it the way its docs say: `pnpm add -g cf`.
