@@ -5,8 +5,7 @@ local act = wezterm.action
 local config = wezterm.config_builder()
 
 -- Any Gogh theme ships built in as "<name> (Gogh)" (https://gogh-co.github.io/Gogh/).
--- Catppuccin Mocha matches the tmux pane backgrounds (window-active-style #1e1e2e); another
--- theme also needs those two bg colours in dot_tmux.conf.tmpl changed to match.
+-- tmux sets no pane bg, so any theme works as-is.
 config.color_scheme = 'Catppuccin Mocha (Gogh)'
 
 -- The family the bootstrap installs (scoop JetBrainsMono-NF / brew font-jetbrains-mono-nerd-font).
@@ -16,6 +15,9 @@ config.font_size = 14
 if wezterm.target_triple:find 'windows' then
   config.default_prog = { 'pwsh', '-NoLogo' }
 end
+
+-- GPU renderer on the discrete card (WebGpu is the default front_end; OpenGL draws thinner glyphs).
+config.webgpu_power_preference = 'HighPerformance'
 
 config.hide_tab_bar_if_only_one_tab = true
 config.window_close_confirmation = 'NeverPrompt'
@@ -29,5 +31,14 @@ config.keys = {
   -- Claude's newline: Alt+Enter (ESC CR) is the one form psmux and SSH both pass through.
   { key = 'Enter', mods = 'CTRL', action = act.SendString '\x1b\r' },
 }
+
+-- Machine-local tweaks (unmanaged): ~/.wezterm.local.lua returns function(config).
+local local_file = wezterm.home_dir .. '/.wezterm.local.lua'
+local f = io.open(local_file, 'r')
+if f then
+  f:close()
+  wezterm.add_to_config_reload_watch_list(local_file)
+  dofile(local_file)(config)
+end
 
 return config

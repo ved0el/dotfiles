@@ -95,8 +95,9 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
 - **WezTerm = nightly** (scoop `versions/wezterm-nightly`, brew cask `wezterm@nightly`; not on
   Linux), guarded on the command / `/Applications/WezTerm.app`. It only draws — sessions,
   splits and restore stay in tmux/psmux, so don't add WezTerm tabs/panes/mux keys (and never
-  bind `C-b`). Theme = a built-in Gogh scheme (`"<name> (Gogh)"`); tmux's `window-(active-)style`
-  bgs are hardcoded Catppuccin Mocha, so a theme change edits both. Its font family must be
+  bind `C-b`). Theme = a built-in Gogh scheme (`"<name> (Gogh)"`); tmux sets NO pane bg
+  (`window-(active-)style`) so every pane uses the theme's bg (fzf too: `bg:` unset, `bg+:-1`). Opaque on purpose: WebGpu (the default renderer, sharpest text) can't draw a translucent window on Windows. Machine-local overrides =
+  unmanaged `~/.wezterm.local.lua` (`function(config)`), loaded last — never a template branch. Its font family must be
   one the bootstrap installs (macOS: cask `font-jetbrains-mono-nerd-font`, guarded on the .ttf).
 - Claude install / plugins / skills: read `dot_claude/AGENTS.md` before editing them.
 
@@ -139,7 +140,7 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   `@plugin` lines in sync. Not ported: the sessionizer (`C-b f`), `tmux-user`.
   Its border label is a literal replace of `#{pane_title}`/`#{pane_index}`/`#P` only (`#P` = pane
   id), so the pane name is the pane title (`allow-set-title`; the pwsh profile sets `pane<id>`).
-  `window-(active-)style` is ignored by the 3.3.8 client; no extended-keys, so `C-Enter` is bound to `send-keys C-j`; over SSH the client can't send C-Enter at all, so WT's `actions` map `ctrl+enter` to `sendInput "\u001b\r"` (ESC CR = Alt+Enter, which psmux's SSH and console input forwards as `\x1b\r` — Claude's newline; a bare `\n` is parsed as Enter). No `psmux-cpu` (pwsh every status tick).
+  No extended-keys, so `C-Enter` is bound to `send-keys C-j`; over SSH the client can't send C-Enter at all, so WT's `actions` map `ctrl+enter` to `sendInput "\u001b\r"` (ESC CR = Alt+Enter, which psmux's SSH and console input forwards as `\x1b\r` — Claude's newline; a bare `\n` is parsed as Enter). No `psmux-cpu` (pwsh every status tick).
   Restore = `~/.psmux/tm-restore.ps1` (never attaches), run by profile `tm` (+ attach) and, `sshd` only, the
   `psmux-restore` AtLogOn task (autologon = at boot; a logon task needs no elevation, a boot/S4U one does
   and lacks the user's creds — a hand-made boot task running bare `claude` once clobbered the save). `tm` is

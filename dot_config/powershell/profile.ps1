@@ -151,14 +151,14 @@ if (Get-Command fzf -ErrorAction SilentlyContinue) {
   $env:FZF_DEFAULT_OPTS    = @(
     '--height=80% --min-height=20 --multi --layout=reverse --cycle'
     '--border=rounded --margin=0,1 --info=inline-right --scrollbar="█│" --separator="─"'
-    '--prompt="❯ " --pointer="▶" --marker="✚"'
+    '--prompt="❯ " --pointer="▶" --marker="✚" --gutter=" "'
     '--bind="ctrl-f:preview-page-down,ctrl-b:preview-page-up"'
     '--bind="shift-down:preview-down,shift-up:preview-up"'
     '--bind="alt-down:preview-bottom,alt-up:preview-top"'
-    '--color bg+:#313244,bg:#1e1e2e,spinner:#f5e0dc,hl:#ff5189'
+    '--color bg+:-1,spinner:#f5e0dc,hl:#ff5189'
     '--color fg:#cdd6f4,header:#f38ba8,info:#cba6f7,pointer:#ff5189'
-    '--color marker:#ff5189,fg+:#cdd6f4,prompt:#cba6f7,hl+:#ff5189'
-    '--color selected-bg:#45475a,border:#313244,label:#cdd6f4'
+    '--color marker:#ff5189,fg+:#f9e2af:bold,prompt:#cba6f7,hl+:#ff5189:bold:underline'
+    '--color border:#313244,label:#cdd6f4'
   ) -join ' '
   $env:FZF_CTRL_R_OPTS     = '--no-preview'
   $env:FZF_CTRL_T_COMMAND  = "rg --files --hidden --follow --glob '!.git/*'"
@@ -171,6 +171,9 @@ if (Get-Command fzf -ErrorAction SilentlyContinue) {
     '--preview-window="right,60%,border-left,wrap,<90(down,60%,border-top)"'
     '--bind="ctrl-/:change-preview-window(down,75%,border-top|hidden|)"'
   ) -join ' '
+  # Alt+c: same layout, previewing the directory as a tree (mirrors zsh).
+  $env:FZF_ALT_C_OPTS      = $env:FZF_CTRL_T_OPTS -replace '--preview "[^"]*"',
+    '--preview "eza --tree --level=2 --color=always --icons=always --group-directories-first {}"'
   # PSFzf binds fzf to PSReadLine chords (scoop `psfzf`, installed by the bootstrap
   # — see AGENTS.md). Tab completion picker · Ctrl+t file picker · Ctrl+r history · Alt+c cd into a
   # subdirectory. Ctrl+t/Ctrl+r override PSReadLine's own SwapCharacters/ReverseSearchHistory.

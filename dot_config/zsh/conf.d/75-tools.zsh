@@ -70,16 +70,16 @@ if command -v fzf &>/dev/null; then
   # Query-editing keys (ctrl-u/-w/-a/-e) keep their fzf defaults — none are stolen.
   export FZF_DEFAULT_OPTS="--height=80% --min-height=20 --multi --layout=reverse --cycle \
     --border=rounded --margin=0,1 --info=inline-right --scrollbar='█│' --separator='─' \
-    --prompt='❯ ' --pointer='▶' --marker='✚' \
+    --prompt='❯ ' --pointer='▶' --marker='✚' --gutter=' ' \
     --preview-window='right,75%,border-left,wrap,<60(down,75%,border-top)' \
     --bind='ctrl-/:change-preview-window(down,75%,border-top|hidden|)' \
     --bind='ctrl-f:preview-page-down,ctrl-b:preview-page-up' \
     --bind='shift-down:preview-down,shift-up:preview-up' \
     --bind='alt-down:preview-bottom,alt-up:preview-top' \
-    --color bg+:#313244,bg:#1e1e2e,spinner:#f5e0dc,hl:#ff5189 \
+    --color bg+:-1,spinner:#f5e0dc,hl:#ff5189 \
     --color fg:#cdd6f4,header:#f38ba8,info:#cba6f7,pointer:#ff5189 \
-    --color marker:#ff5189,fg+:#cdd6f4,prompt:#cba6f7,hl+:#ff5189 \
-    --color selected-bg:#45475a,border:#313244,label:#cdd6f4"
+    --color marker:#ff5189,fg+:#f9e2af:bold,prompt:#cba6f7,hl+:#ff5189:bold:underline \
+    --color border:#313244,label:#cdd6f4"
   # History search: no preview (the command line is the whole content).
   export FZF_CTRL_R_OPTS="--no-preview"
   # File widget (ctrl-t): syntax-highlighted preview, line numbers, first 500 lines.
