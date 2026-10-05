@@ -45,8 +45,9 @@ existing scoop/mise elsewhere is kept, not moved.
 |---|---|---|
 | base | always | zsh + powerlevel10k + sheldon (Unix) or PowerShell + starship (Windows), mise, Claude Code + plugins |
 | **tools** | on | CLI tools via mise (bat, eza, fd, ripgrep, fzf, micro, rtk, codegraph, vivid, …), delta for git |
-| **develop** | off | language runtimes via mise (`conf.d/develop.toml`: node, python, go, bun, pnpm, uv, `npm:cf`) + Claude agent skills (need node) |
+| **develop** | off | language runtimes via mise (`conf.d/develop.toml`: node, python, go, bun, pnpm, uv, `npm:cf`) + Claude agent skills (need node) · Windows: scoop `make` (Linux: apt) |
 | **tmux** | on | tmux + TPM plugins · Windows: psmux (same `~/.tmux.conf`, `tmux` works) + psmux-plugins |
+| **apps** | off | essential GUI apps (`.chezmoidata.yaml` `appList`, essentials only — the rest by hand) · Windows: winget (OpenKey, Tailscale, Brave, Flow Launcher, ShareX) · macOS: brew casks (OpenKey, Tailscale, Brave, Raycast) · Linux: apt (empty by default) |
 | **wm** | off (not Linux) | macOS: yabai + skhd · Windows: komorebi + whkd + yasb |
 | **sshd** | off (Windows only) | this box is an SSH server: scoop `no_junction` (+ a one-time `scoop reset *`) so scoop apps work over SSH; a logon task restores the psmux sessions (with autologon: at boot) |
 

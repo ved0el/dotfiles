@@ -29,6 +29,12 @@ command -v skhd  >/dev/null 2>&1 || brew install koekeishiya/formulae/skhd
 skhd --start-service || true
 echo "[wm] yabai installed — run 'yabai --start-service' (needs SIP setup; see the yabai wiki)"
 {{ end }}
+{{ if .apps -}}
+# Essential GUI apps (the `apps` profile; list = .chezmoidata.yaml appList.darwin).
+for _c in {{ .appList.darwin | join " " }}; do
+  brew list --cask "$_c" >/dev/null 2>&1 || brew install --cask "$_c"
+done
+{{ end -}}
 {{ else if eq .chezmoi.os "linux" -}}
 # Batch a single apt-get for whatever is missing (skip the update entirely if nothing is).
 _pkgs=""
@@ -38,6 +44,9 @@ command -v curl >/dev/null 2>&1 || _pkgs="$_pkgs curl"
 # exist. macOS already ships zsh; Debian/Ubuntu do not.
 command -v zsh  >/dev/null 2>&1 || _pkgs="$_pkgs zsh"
 {{ if .tmux }}command -v tmux >/dev/null 2>&1 || _pkgs="$_pkgs tmux"{{ end }}
+{{ if .develop }}command -v make >/dev/null 2>&1 || _pkgs="$_pkgs make"{{ end }}
+{{ if .apps }}{{ range .appList.linux }}dpkg -s {{ . }} >/dev/null 2>&1 || _pkgs="$_pkgs {{ . }}"
+{{ end }}{{ end -}}
 if [ -n "$_pkgs" ]; then sudo apt-get update -y && sudo apt-get install -y $_pkgs; fi
 {{ end -}}
 

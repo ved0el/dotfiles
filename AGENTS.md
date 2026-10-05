@@ -49,7 +49,7 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
 | `dot_wezterm.lua` | WezTerm, the main terminal on every OS (plain Lua, OS branches via `wezterm.target_triple`) |
 
 ## Profiles & OS
-- Profile keys `tools`, `develop`, `tmux` (Windows = psmux), `wm` (macOS + Windows) — plus the
+- Profile keys `tools`, `develop`, `tmux` (Windows = psmux), `wm` (macOS + Windows), `apps` — plus the
   Windows-only `sshd` (bool) and strings `scoopDir`/`miseDataDir` — are prompted by
   `chezmoi init` (`.chezmoi.toml.tmpl` → `~/.config/chezmoi/chezmoi.toml`, which overrides
   `.chezmoidata.yaml`). `apply` never re-prompts: re-run `init` or edit that file.
@@ -65,6 +65,14 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   runtime goes there (`conf.d/tools.toml.tmpl`, `develop.toml`); a cross-platform tool that only
   needs a different BACKEND on Windows goes in `windows.toml` (`eza` is `aqua:` there; registry
   default is cargo). Prefer prebuilt backends (`aqua:`/`github:`); the prefix goes in the KEY.
+- **Which manager:** cross-platform CLI/runtime → mise; Windows-only CLI, font, WM, terminal →
+  scoop; GUI app / installer / service / system runtime → winget (macOS: brew cask, Linux: apt).
+  Never the same package in two managers. GUI apps install at the vendor's default path and
+  scope — no `--location`/`--scope` (self-updaters write back to the default); only pin an
+  installer (pwsh's MSI) when a config or task hardcodes the exe path.
+- **`apps` profile** = the essential GUI apps in `.chezmoidata.yaml` `appList.<os>` (winget ids /
+  brew casks / apt packages). Essentials only — anything else is installed by hand. winget runs
+  with `--no-upgrade` (installed = `0x8A150061`, success); casks are guarded on `brew list --cask`.
 - **scoop/brew/apt (+winget) only for tools ONE OS needs** (starship, psfzf, psmux, gsudo, fonts,
   WMs, mole, zsh, …) **and bootstrap prerequisites** that must exist before mise runs (git, curl,
   mise itself). Never move a cross-platform tool off mise on one OS — not even gh: the lists drift.

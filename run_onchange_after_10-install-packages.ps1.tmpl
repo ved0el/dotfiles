@@ -251,6 +251,24 @@ if ((scoop list 2>$null | Out-String) -notmatch '(?im)^\s*psfzf\b') {
   }
 }
 
+{{ if .develop -}}
+# make: Windows-only gap (Unix gets it from the OS), so scoop — the `develop` profile.
+if (-not (Get-Command make -ErrorAction SilentlyContinue)) { Invoke-Step 'make' { scoop install make } }
+{{ end -}}
+
+{{ if and .apps .appList.windows -}}
+# --- Essential GUI apps (the `apps` profile; list = .chezmoidata.yaml appList.windows) ---
+# winget, not scoop: installers/services that update themselves. --no-upgrade leaves an
+# installed app alone; "already installed" exits 0x8A150061 (or 0x8A15002B) — success.
+foreach ($id in @('{{ .appList.windows | join "','" }}')) {
+  Invoke-Step $id {
+    winget install --id $id --exact --source winget --no-upgrade --silent `
+      --accept-package-agreements --accept-source-agreements --disable-interactivity
+    if ($LASTEXITCODE -in -1978335189, -1978335135) { $global:LASTEXITCODE = 0 }
+  }
+}
+{{ end -}}
+
 {{ if .tmux -}}
 # --- psmux (tmux for Windows; reads the same ~/.tmux.conf) — the `tmux` profile ---
 # Ships psmux/pmux/tmux.exe shims. Plugins are copied like the Unix TPM clones (no live server,

@@ -1,5 +1,6 @@
 {{- $tools   := promptBoolOnce . "tools"   "Install productivity tools (ex: bat, fd, ripgrep, etc)" true -}}
 {{- $develop := promptBoolOnce . "develop" "Install development tools (ex: nodejs, golang, python, etc)" false -}}
+{{- $apps    := promptBoolOnce . "apps"    "Install essential GUI apps (ex: OpenKey, Tailscale, Brave)" false -}}
 {{- $wm   := false -}}
 {{- $scoopDir    := "" -}}
 {{- $miseDataDir := "" -}}
@@ -25,6 +26,7 @@
     develop = {{ $develop }}
     tmux    = {{ $tmux }}
     wm      = {{ $wm }}
+    apps    = {{ $apps }}
     scoopDir    = {{ $scoopDir | toToml }}
     miseDataDir = {{ $miseDataDir | toToml }}
     sshd    = {{ $sshd }}
