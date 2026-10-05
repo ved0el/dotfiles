@@ -86,6 +86,7 @@ set -g mouse on
 #   C-b p      - Previous window
 #   C-b n      - Next window
 #   C-b 0-9      - Switch to window number
+#   C-b W        - Rename window (sticks; unnamed = current dir's name)
 #
 set -g base-index 1
 # Window status format defined in Status Bar section below
@@ -93,6 +94,7 @@ set -g base-index 1
 bind-key c new-window -c "#{pane_current_path}"
 bind-key p previous-window
 bind-key n next-window
+bind-key W command-prompt -p "Rename window:" "rename-window '%%'"
 
 # =============================================================================
 # Panes
@@ -229,7 +231,7 @@ bind-key -T copy-mode-vi v send-keys -X begin-selection
 # Status Bar
 # =============================================================================
 # Format:
-#   Left:  User@Host | Window
+#   Left:  Window | Pane | U: user@host (Window/Pane cut to 10 chars + ...)
 #   Right: window list (1 2 3 4, current highlighted, right-aligned; status-right is empty)
 #
 set -g status-position bottom
@@ -239,14 +241,20 @@ set -g status-left-length 150
 set -g status-right-length 0
 set -g status-style bg=default,fg=brightblack
 
-# Left side: User@Host | Window
+# Window = current dir's name until renamed (C-b W); Pane = the process until renamed (C-b ,).
 # User: live foreground user of the active pane (tracks sudo -i / su -), not the
 # tmux server's login — see ~/.local/bin/tmux-user. status-interval (1s) refreshes it.
 {{ if eq .chezmoi.os "windows" -}}
 # Windows: no tty to inspect — the login user, baked in at apply time.
-set -g status-left ' #[fg=brightblack]User: {{ .chezmoi.username | splitList "\\" | last }}@#h#[fg=default] | Window: #W | Pane: #{pane_title} #{?client_prefix,#[fg=white]#[bg=blue] Wait #[bg=default],}#[fg=default] '
+# psmux ignores automatic-rename-format, so the dir name is picked here: a window still named
+# after its process (or its index, as resurrect restores it) counts as unnamed. A pane title
+# still pwsh's default pane<id> (profile) shows the process; any other title (claude's, C-b ,) wins.
+set -g status-left ' Window: #{=/10/...:#{?#{||:#{==:#{window_name},#{pane_current_command}},#{==:#{window_name},#{window_index}}},#{b:pane_current_path},#{window_name}}} | Pane: #{=/10/...:#{?#{m:pane*,#{pane_title}},#{pane_current_command},#{pane_title}}} | #[fg=brightblack]U: {{ .chezmoi.username | splitList "\\" | last }}@#h#[fg=default] #{?client_prefix,#[fg=white]#[bg=blue] Wait #[bg=default],}#[fg=default] '
 {{- else -}}
-set -g status-left ' #[fg=brightblack]User: #(~/.local/bin/tmux-user "#{pane_tty}")@#h#[fg=default] | Window: #W #{prefix_highlight}#[fg=default] '
+# rename-window turns automatic-rename off for that window, so a manual name sticks.
+set -g automatic-rename on
+set -g automatic-rename-format '#{b:pane_current_path}'
+set -g status-left ' Window: #{=/10/...:window_name} | Pane: #{=/10/...:#{?#{@pane_name},#{@pane_name},#{pane_current_command}}} | #[fg=brightblack]U: #(~/.local/bin/tmux-user "#{pane_tty}")@#h#[fg=default] #{prefix_highlight}#[fg=default] '
 {{- end }}
 
 # Window status format (simple numbers: 1 2 3 4)
