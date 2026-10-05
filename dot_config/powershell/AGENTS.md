@@ -27,7 +27,7 @@ pwsh/WinPS rules are in the root `AGENTS.md`. The "why" behind each rule is in i
   `zoxide query --list`, zoxide skipped for path-like words); without it `cd ch<Tab>` only sees CWD.
 - Removals use `-ErrorAction Ignore` (`SilentlyContinue` still fills `$Error`).
 - `powershell` → `pwsh` is a pwsh-7-only alias (version-gated: 5.1 loads this file too). Never
-  shim/redirect `powershell.exe` itself — the bootstrap and the komorebi task need real 5.1.
+  shim/redirect `powershell.exe` itself — the bootstrap and komorebi's whkd/yasb restart need real 5.1.
 
 ## Load budget: 500ms (currently ~210ms)
 - Above 500ms pwsh prints "Loading personal and system profiles took …" intermittently.

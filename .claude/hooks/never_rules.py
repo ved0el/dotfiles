@@ -28,7 +28,7 @@ RULES = [
      "[cd] uses bare `pwsh`, [interpreters.ps1] the fixed WinPS 5.1 path. See AGENTS.md -> OS gate."),
     ("conhost-headless", r"^(run_.*|dot_config/komorebi/.*)$",
      r"conhost(\.exe)?['\"]?\s+--headless",
-     "NEVER wrap the komorebi logon task in `conhost.exe --headless`: it dies with 0x80070003 at logon. "
+     "NEVER wrap a komorebi logon launcher in `conhost.exe --headless`: it dies with 0x80070003 at logon. "
      "See dot_config/komorebi/AGENTS.md."),
     ("claude-mem-install", r"^run_",
      r"claude-mem\s+install",
@@ -158,7 +158,7 @@ def selftest():
         ("run_x.ps1.tmpl", "# NOTE: deliberately DO NOT set MISE_GLOBAL_CONFIG_FILE=anything"),
         ("AGENTS.md", "export MISE_GLOBAL_CONFIG_FILE=x"),
         (".chezmoi.toml.tmpl", "command = \"pwsh\""),
-        ("dot_config/komorebi/autostart.ps1", "# `conhost.exe --headless System32\\powershell.exe` was removed"),
+        ("run_onchange_after_10-install-packages.ps1.tmpl", "# Never `conhost.exe --headless` a logon launcher"),
         ("dot_config/zsh/conf.d/50-completions.zsh", "zstyle ':completion:*' menu no"),
         ("dot_config/yasb/styles.css", "  color: #ff5189;  --crust-glass: rgba(17, 17, 27, 0.55);"),
         ("dot_config/yasb/styles.css", "/* never #11111b8c,\n   it is read alpha-first */"),

@@ -108,7 +108,7 @@ if (Get-Command eza -ErrorAction SilentlyContinue) {
 
 # ── powershell → pwsh (typing only) ───────────────────────────────────────────────
 # pwsh 7 only (5.1 dot-sources this same file). Scripts and full-path powershell.exe calls
-# (chezmoi's bootstrap, the komorebi logon task) still get 5.1 — it can't be uninstalled.
+# (chezmoi's bootstrap, komorebi's whkd/yasb restart) still get 5.1 — it can't be uninstalled.
 if ($PSVersionTable.PSVersion.Major -ge 7) { Set-Alias powershell pwsh }
 
 # ── bat / fd / ripgrep — point tools at the ~/.config tree ─────────────────────────
