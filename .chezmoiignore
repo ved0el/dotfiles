@@ -32,12 +32,15 @@ renovate.json
 {{ else }}
 .config/powershell
 .psmux
-AppData
 .config/mise/conf.d/windows.toml
 .config/starship.toml
 .claude/statusline.ps1
 {{ end }}
 
+# WezTerm isn't installed on Linux (no package); its dim-text fonts aren't needed there.
+{{ if eq .chezmoi.os "linux" }}
+.config/wezterm
+{{ end }}
 {{ if or (ne .chezmoi.os "darwin") (not .wm) }}
 .config/skhd
 .config/yabai

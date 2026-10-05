@@ -104,7 +104,9 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   Linux), guarded on the command / `/Applications/WezTerm.app`. It only draws — sessions,
   splits and restore stay in tmux/psmux, so don't add WezTerm tabs/panes/mux keys (and never
   bind `C-b`). Theme = a built-in Gogh scheme (`"<name> (Gogh)"`); tmux sets NO pane bg
-  (`window-(active-)style`) so every pane uses the theme's bg (fzf too: `bg:` unset, `bg+:-1`). Opaque on purpose: WebGpu (the default renderer, sharpest text) can't draw a translucent window on Windows. Machine-local overrides =
+  (`window-(active-)style`) so every pane uses the theme's bg (fzf too: `bg:` unset, `bg+:-1`). Opaque on purpose: WebGpu (the default renderer, sharpest text) can't draw a translucent window on Windows. Dim (SGR 2) text is grey only because Half maps to `JetBrainsMonoNL Nerd Font Mono` from
+  `~/.config/wezterm/fonts` (Regular + Italic only): WezTerm dims the COLOUR (fixed 50%) only when the matched font has
+  nothing lighter than Regular — the system family has every weight, so it never would. Machine-local overrides =
   unmanaged `~/.wezterm.local.lua` (`function(config)`), loaded last — never a template branch. Its font family must be
   one the bootstrap installs (macOS: cask `font-jetbrains-mono-nerd-font`, guarded on the .ttf).
 - Claude install / plugins / skills: read `dot_claude/AGENTS.md` before editing them.

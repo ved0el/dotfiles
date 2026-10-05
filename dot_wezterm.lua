@@ -10,13 +10,16 @@ config.color_scheme = 'Catppuccin Mocha (Gogh)'
 
 -- The family the bootstrap installs (scoop JetBrainsMono-NF / brew font-jetbrains-mono-nerd-font).
 config.font = wezterm.font 'JetBrainsMonoNL Nerd Font'
--- Dim (SGR 2) text: WezTerm's default rule draws it in ExtraLight, which reads hair-thin (mise's
--- `mise` prefix, hints). Keep Regular weight; the colour is still dimmed.
+-- Dim (SGR 2) text — Claude's suggestions, mise's prefix, hints. WezTerm never recolours it; it
+-- only picks a lighter weight (hair-thin Thin by default). It dims the COLOUR (fixed 50%
+-- brightness) only when the matched font has nothing lighter than Regular, so Half asks for Light
+-- from the NL Mono family, of which ~/.config/wezterm/fonts ships just Regular + Italic (OFL).
+config.font_dirs = { wezterm.home_dir .. '/.config/wezterm/fonts' }
 config.font_rules = {
   { intensity = 'Half', italic = true,
-    font = wezterm.font('JetBrainsMonoNL Nerd Font', { weight = 'Regular', italic = true }) },
+    font = wezterm.font('JetBrainsMonoNL Nerd Font Mono', { weight = 'Light', italic = true }) },
   { intensity = 'Half', italic = false,
-    font = wezterm.font('JetBrainsMonoNL Nerd Font', { weight = 'Regular' }) },
+    font = wezterm.font('JetBrainsMonoNL Nerd Font Mono', { weight = 'Light' }) },
 }
 config.font_size = 14
 
