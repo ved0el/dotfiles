@@ -15,7 +15,8 @@
 
 # Reload whkd configuration / restart komorebi
 alt + o                 : taskkill /f /im whkd.exe; Start-Process whkd -WindowStyle hidden
-alt + ctrl + o          : Start-Process powershell.exe -WindowStyle Hidden -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File',"$HOME\.config\komorebi\autostart.ps1",'-Restart'
+# Own process: `stop --whkd` kills whkd and this shell with it.
+alt + ctrl + o          : Start-Process powershell.exe -WindowStyle Hidden -ArgumentList '-NoProfile','-Command','komorebic stop --whkd; Wait-Process komorebi,whkd -Timeout 10 -ErrorAction SilentlyContinue; komorebic-no-console start --whkd'
 
 # --- Close / minimize -------------------------------------------------------
 alt + q                 : komorebic close

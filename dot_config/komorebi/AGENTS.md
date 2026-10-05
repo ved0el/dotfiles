@@ -11,12 +11,12 @@ commit (`git log -S`).
 - **komorebi autostart = `komorebic enable-autostart --whkd -c <komorebi.json>`** — a shell:startup
   `komorebi.lnk` running `komorebic-no-console.exe start` (no console → no flash at login; verified
   after a reboot, 2026-10-05). It works because scoop's shims are on the User PATH (`komorebic start`
-  does `Start-Process komorebi.exe`); the July 2026 logon task + `autostart.ps1` launcher predate
+  does `Start-Process komorebi.exe`); the July 2026 logon task + `autostart.ps1` launcher (both removed) predate
   that. The bootstrap unregisters the old `komorebi` task so the two can't race.
   - **NEVER wrap a logon launcher in `conhost.exe --headless`** — it fails at LOGON with
     `0x80070003` while working on demand. No VBScript/mshta launcher.
-- **Restart = `autostart.ps1 -Restart` in its OWN process** (direct komorebi.exe/whkd.exe launch with retry, then
-  `komorebic replace-configuration`) (whkd `alt+ctrl+o`, yasb
+- **Restart = `komorebic stop --whkd; Wait-Process …; komorebic-no-console start --whkd` in its OWN
+  `powershell.exe` process** (whkd `alt+ctrl+o`, yasb `reload_command`) (whkd `alt+ctrl+o`, yasb
   `reload_command`). Never chain `komorebic stop --whkd; komorebic start` inside whkd: `stop --whkd`
   kills whkd and its shell, so `start` never runs.
 - `display_index_preferences` keys monitors by **`serial_number_id`** (`komorebic

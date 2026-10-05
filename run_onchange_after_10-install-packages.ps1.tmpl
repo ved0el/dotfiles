@@ -355,8 +355,8 @@ foreach ($app in 'komorebi','whkd','yasb') {
 # komorebi.lnk running komorebic-no-console.exe (no console, so no flash at login). Verified
 # after a reboot: it tiles, whkd runs. The July 2026 logon task + autostart.ps1 launcher existed
 # because scoop's shims weren't on the login PATH then (`komorebic start` does `Start-Process
-# komorebi.exe`); they're on the User PATH now (Add-UserPath above). autostart.ps1 stays only for
-# `-Restart` (whkd alt+ctrl+o, yasb reload). Never `conhost.exe --headless` a logon launcher:
+# komorebi.exe`); they're on the User PATH now (Add-UserPath above). Restart (whkd alt+ctrl+o,
+# yasb reload) = `komorebic stop` + `komorebic-no-console start` in its own process. Never `conhost.exe --headless` a logon launcher:
 # it dies at LOGON with 0x80070003 while working on demand.
 if (Get-Command komorebic -ErrorAction SilentlyContinue) {
   # Community app rules (komorebi.json's app_specific_configuration_path): downloaded, NOT
