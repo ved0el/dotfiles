@@ -31,9 +31,12 @@ pwsh/WinPS rules are in the root `AGENTS.md`. The "why" behind each rule is in i
 
 ## Load budget: 500ms (currently ~210ms)
 - Above 500ms pwsh prints "Loading personal and system profiles took …" intermittently.
-- `Get-InitScript` caches generated inits (starship, gh, zoxide) in `~/.cache/pwsh`, keyed by the
+- `Get-InitScript` caches generated inits (starship, gh, zoxide) in `~/.cache/pwsh/v2`, keyed by the
   exe's full path (versioned mise dirs = automatic invalidation), written temp-then-rename,
   UTF-8 **with** BOM (5.1 loads it). `rm -r ~/.cache/pwsh` rebuilds. Old caches aren't pruned.
+- **`[Console]::OutputEncoding` = UTF-8 runs before any `Get-InitScript`**: the inits are captured
+  through a pipe, and a CP932 console (Japanese locale) bakes mojibake into the cache (the starship
+  continuation prompt `∙` became `竏・[0m`). A change to what a cached init holds bumps the dir (`v2`).
 - starship's cached init has its `--continuation` prompt baked in (`-Transform`) and depends on
   `starship.toml`'s mtime; if the pattern stops matching, the spawn just stays.
 - **Do NOT cache `mise env`** — a stale PATH silently drops tools, and validating it needs a spawn.

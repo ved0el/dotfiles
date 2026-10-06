@@ -29,6 +29,9 @@ foreach ($wm in 'komorebi','whkd','yasb') {
   }
 }
 if (-not $env:EDITOR) { $env:EDITOR = 'micro' }
+# Decode native output as UTF-8: on a Japanese-locale box the console is CP932, so anything pwsh
+# captures (pipes, `$x = cmd`, `cmd &&`) turns node/git UTF-8 into mojibake. try: no console = throws.
+try { [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false) } catch {}
 
 # ── mise — static env injection, NOT `mise activate` (runs before tool blocks) ──────
 # `mise activate`'s chpwd hook corrupts the env on every cd on Windows (zoxide `z` then
@@ -208,7 +211,8 @@ if (Get-Command fzf -ErrorAction SilentlyContinue) {
 # that bakes in something read from that config. -Transform post-processes the text once, at
 # generation. Delete ~/.cache/pwsh to force a rebuild. Returns the file to dot-source at THIS
 # scope (dot-sourcing inside the function would scope its definitions).
-$InitCacheDir = Join-Path $HOME '.cache\pwsh'
+# v2: caches made before the UTF-8 OutputEncoding line held CP932 mojibake (the continuation prompt).
+$InitCacheDir = Join-Path $HOME '.cache\pwsh\v2'
 function Get-InitScript([string]$Tool, [string[]]$InitArgs, [string]$DependsOn, [scriptblock]$Transform) {
   $exe = (Get-Command $Tool -CommandType Application -ErrorAction Ignore | Select-Object -First 1).Source
   if (-not $exe) { return }

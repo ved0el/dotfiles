@@ -86,7 +86,7 @@ Shell aliases: `cz`, `cza`, `czd`, `czs`, `cze`, `czra`, `czu`, `czcd`.
 ## Windows notes
 
 - The PowerShell profile (`~/.config/powershell/profile.ps1`) is dot-sourced from both pwsh 7
-  and WinPS 5.1 `$PROFILE`s and loads in ~210ms (cached inits in `~/.cache/pwsh`).
+  and WinPS 5.1 `$PROFILE`s and loads in ~210ms (cached inits in `~/.cache/pwsh/v2`). Native output is decoded as UTF-8 (a Japanese-locale console is CP932).
 - With fzf, PSFzf gives `Tab` completion, `Ctrl+t`, `Ctrl+r`, `Alt+c` (loaded on first use).
 - `XDG_CONFIG_HOME=~/.config`, so tools read the same config tree as on Unix.
 - `wm`: komorebi + whkd start at logon via komorebi's own autostart shortcut (no console flash); yasb via its own installer.
