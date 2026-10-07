@@ -86,10 +86,11 @@ if (-not $env:CLAUDECODE) {
   function clc { claude --continue @args }
   if (Get-Command bat -ErrorAction Ignore) {
     Remove-Item Alias:cat -Force -ErrorAction Ignore
-    # Piped on: plain text (bat's config forces --color=always and the grid).
+    # Piped on: plain text (bat's config forces --color=always and the grid). On screen: colour but
+    # --style=plain, so a terminal copy has no line numbers (`bat` keeps them).
     function cat {
       if ($MyInvocation.PipelinePosition -lt $MyInvocation.PipelineLength) { bat --paging=never --color=never --style=plain @args }
-      else { bat --paging=never @args }
+      else { bat --paging=never --style=plain @args }
     }
   }
 }

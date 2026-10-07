@@ -22,9 +22,10 @@ alias glg='git log --oneline --graph -20'
 
 # ── tool swaps, Claude, tmux ─────────────────────────────────────────────────
 # bat only on a terminal (its config forces --color=always: a pipe gets real cat), and not in
-# Claude's tool shell (it snapshots functions): its `cat` must take cat's flags.
+# Claude's tool shell (it snapshots functions): its `cat` must take cat's flags. `--style=plain`:
+# no line numbers/grid, so a terminal copy is the file as-is (`bat` keeps them).
 if [[ -z "$CLAUDECODE" ]] && command -v bat >/dev/null 2>&1; then
-  cat() { if [[ -t 1 ]]; then bat --paging=never "$@"; else command cat "$@"; fi; }
+  cat() { if [[ -t 1 ]]; then bat --paging=never --style=plain "$@"; else command cat "$@"; fi; }
 fi
 command -v btm >/dev/null 2>&1 && alias top='btm'
 alias clc='claude --continue'
