@@ -5,46 +5,46 @@ Synced by chezmoi; keys and `config` are NOT synced (they are per machine).
 Examples below are placeholders (`acme`, `alice`, `example.com`) — never write real org, user,
 host, IP or repo names into this file (it's committed).
 
-## Naming — git platform keys
+## Naming
 
-`<org>-<user>-<platform>`, used identically for the key file, its `Host` alias in `config`, and the git remote host.
+Parts, always broad → narrow:
 
 - org: short code of the org/client (`acme`, `me` for personal), ...
-- user: the account the key belongs to (`alice`, `bob`, ...)
-- platform: `gh` (GitHub), `gl` (GitLab), ...
+- project: the app/repo (`shop`, `api`, ...)
+- env: the server's role — `dev`, `stg`, `prd`, `vps`, `db`, ... (+ a number when there are several: `prd2`)
+- user: the account (`alice`, `deploy`, ...)
+- platform: `gh` (GitHub), `gl` (GitLab), `ssh` (server-to-server only), ...
 
-Examples: `acme-alice-gh`, `me-alice-gh`.
+Two cases, by WHERE the key lives:
 
-## Naming — servers
+| | key file = git `Host` alias | key comment | server `Host` alias |
+|---|---|---|---|
+| **local** (own machine): one key per account, used for its git platform AND every server it logs into | `<org>-<user>-<platform>` → `acme-alice-gh` | + machine: `<org>-<user>-<machine>-<platform>` → `acme-alice-desk1-gh` | `<org>[-<project>]-<env>-<user>` → `acme-shop-stg-alice`, `acme-stg-alice` |
+| **server**: one key per project (a GitHub deploy key fits one repo only) | `<org>-<project>-<platform>` → `acme-shop-gh` | + server: `<org>-<project>-<env>-<user>-<platform>` → `acme-shop-stg-deploy-gh` | — |
 
-`Host` alias = `<org>[-<project>]-<env>-<user>`, never the IP or the domain. Broad → narrow, so
-`<org>-<project>-<env>-<Tab>` lists every login on that box:
-
-- org: same codes as above (`acme`, `me`, ...)
-- project: the app/service it runs (`shop`, `api`, ...); left out when the server is shared by
-  several projects (`acme-stg-alice`)
-- env/role: `dev`, `stg`, `prd`, `vps`, `db`, ... — add a number only when there are several (`prd2`).
-- user: the login user (same as `User` in the block)
-- Own machines (desktop, laptop, Pi) use their hostname as the alias (`desk1`, `rasp-dev`).
-- `IdentityFile` = the key of the account that logs in (often its `<org>-<user>-gh` one); group
-  servers sharing a key on one line (`Host acme-shop-stg-alice acme-shop-prd-alice`).
-
-Examples: `acme-shop-stg-alice`, `acme-shop-stg-deploy`, `me-blog-vps-alice`.
+- The file name and `Host` alias never carry the machine/server: one machine never holds two of
+  them. The **comment** does — it tells the copies apart when the keys are added to GitHub.
+- Server alias: leave out `project` when the server is shared by several projects
+  (`acme-stg-alice`). The login user goes in the alias AND in `User`.
+- Server key: `project` = ONE repo (a deploy key can't be added to a second repo). A project
+  with two repos gets two keys: `acme-shop-gh`, `acme-shop-api-gh`.
+- A server that logs into another server (stg → db) follows the **local** row: one key per
+  account (`acme-deploy-ssh`, platform `ssh`), comment with the server (`acme-deploy-shop-stg-ssh`).
+- Own machines (desktop, laptop, Pi) use their hostname as the alias (`desk1`, `pi1`).
 
 ## Key comment
 
-- Comment = key name: `ssh-keygen -t ed25519 -C acme-alice-gh -f ~/.ssh/acme-alice-gh`.
-- A key that lives on several machines — or is made ON a server (e.g. to pull from GitHub) — adds
-  the machine name before the platform in its **comment**: `acme-alice-desk1-gh`,
-  `acme-alice-shop-stg-gh` (server = `<project>-<env>`). This tells the machines apart when the key
-  is added to GitHub. The file name and `Host` alias stay without the machine (`acme-alice-gh`):
-  one machine never holds two of them.
+- `ssh-keygen -t ed25519 -C <comment> -f ~/.ssh/<file>`:
+  `ssh-keygen -t ed25519 -C acme-alice-desk1-gh -f ~/.ssh/acme-alice-gh` (local),
+  `ssh-keygen -t ed25519 -C acme-shop-stg-deploy-gh -f ~/.ssh/acme-shop-gh` (server).
 - Renaming a key: rename both files, then update the comment with
   `ssh-keygen -c -C <new-comment> -f ~/.ssh/<key>`. The key itself doesn't change, so GitHub still accepts it.
 
 ## config
 
-One `Host` block per key, always `IdentitiesOnly yes`:
+One `Host` block per key, always `IdentitiesOnly yes`.
+
+Local — the account key serves git and every server it logs into (group servers on one line):
 
 ```
 # GitHub <account> (<user>): <what it's for>
@@ -54,23 +54,39 @@ Host acme-alice-gh
   IdentityFile ~/.ssh/acme-alice-gh
   IdentitiesOnly yes
 
-# acme shop staging server (alice)
-Host acme-shop-stg-alice
-  HostName stg.example.com
+# acme shop staging + production (alice)
+Host acme-shop-stg-alice acme-shop-prd-alice
   User alice
   IdentityFile ~/.ssh/acme-alice-gh
   IdentitiesOnly yes
+Host acme-shop-stg-alice
+  HostName stg.example.com
+Host acme-shop-prd-alice
+  HostName prd.example.com
 ```
 
-The main account's key also lists the plain `github.com` host (`Host acme-alice-gh github.com`),
-so `git@github.com:` URLs (for example dotfiles) keep working.
+Server — one block per project's deploy key:
+
+```
+# GitHub deploy key: acme/shop
+Host acme-shop-gh
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/acme-shop-gh
+  IdentitiesOnly yes
+```
+
+Local only: the main account's key also lists the plain `github.com` host
+(`Host acme-alice-gh github.com`), so `git@github.com:` URLs (for example dotfiles) keep working.
+Never on a server — with several deploy keys, plain `github.com` would pick the wrong repo's key.
 
 ## Git remotes
 
 Use the alias, not `git@github.com:`:
 
 ```
-git clone acme-alice-gh:acme/app.git
+git clone acme-alice-gh:acme/app.git          # local
+git clone acme-shop-gh:acme/shop.git          # server
 git remote set-url origin acme-alice-gh:acme/app.git
 ```
 
@@ -79,5 +95,5 @@ Verify with `ssh -T <alias>` and `git ls-remote --heads origin`.
 ## Never
 
 - Never commit or sync private keys or `config` through chezmoi or git.
-- Never copy private keys out of `~/.ssh`.
+- Never copy private keys out of `~/.ssh` (a server gets its own deploy key, not a copy).
 - Never put real org, user, host, IP or repo names in this file — placeholders only.
