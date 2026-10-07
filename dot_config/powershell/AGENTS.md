@@ -50,7 +50,10 @@ pwsh/WinPS rules are in the root `AGENTS.md`. The "why" behind each rule is in i
   zoxide must come last or no directory is ever recorded. Check:
   `$function:prompt -match '__zoxide_hook'`. Test in a single-load shell — `pwsh -Command` plus
   `. $PROFILE` double-loads and gives a false negative.
-- `cd` → `__zoxide_z` alias is skipped under `CLAUDECODE` (root `AGENTS.md`).
+- `cd` → `__zoxide_z` alias is skipped under `CLAUDECODE` (root `AGENTS.md`); so are the functions that
+  shadow a built-in alias (`gl`, `gp`, `clc`, `cat` → bat) — Claude's commands expect the built-ins.
+- Short aliases (`..`, `mkcd`, git `g*`, `clc`, …) mirror `dot_config/zsh/conf.d/70-aliases.zsh` — edit them as a pair.
+  `reload` starts a fresh shell + `exit` (a function can't dot-source the profile into global scope).
 
 ## starship
 - Minimal: directory, git branch, cmd_duration, character (+ user@host over SSH), coloured from a

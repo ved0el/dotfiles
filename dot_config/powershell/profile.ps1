@@ -60,6 +60,39 @@ if (Get-Command chezmoi -ErrorAction SilentlyContinue) {
 # ── navigation / listing (same names in 70-aliases.zsh) ───────────────────────────
 function ..   { Set-Location .. }
 function ...  { Set-Location ..\.. }
+function .... { Set-Location ..\..\.. }
+function mkcd([string]$Path) { $null = New-Item -ItemType Directory -Force $Path; Set-Location $Path }
+# A function can't dot-source the profile into the global scope, so start a fresh shell
+# (zsh's `exec zsh`): exit returns to nothing, the env carries over.
+function reload { & (Get-Process -Id $PID).Path -NoLogo; exit }
+function path { $env:Path -split ';' | Where-Object { $_ } }
+function which { Get-Command @args -All | ForEach-Object { if ($_.Path) { $_.Path } else { "$($_.CommandType) $($_.Name)" } } }
+function e { & $(if ($env:EDITOR) { $env:EDITOR } else { 'micro' }) @args }
+
+# ── git (zsh's forgit owns ga/gd/glo/gcb/…) ──────────────────────────────────────
+function g   { git @args }
+function gs  { git status -sb @args }
+function gsw { git switch @args }
+function glg { git log --oneline --graph -20 @args }
+function clr { claude --resume @args }
+if (Get-Command btm -ErrorAction Ignore) { function top { btm @args } }
+# These shadow built-in aliases (gl = Get-Location, gp = Get-ItemProperty, clc = Clear-Content,
+# cat = Get-Content), so not in Claude's tool shell, whose commands expect the built-ins (same
+# rule as cd → z).
+if (-not $env:CLAUDECODE) {
+  Remove-Item Alias:gl, Alias:gp, Alias:clc -Force -ErrorAction Ignore
+  function gl  { git pull @args }
+  function gp  { git push @args }
+  function clc { claude --continue @args }
+  if (Get-Command bat -ErrorAction Ignore) {
+    Remove-Item Alias:cat -Force -ErrorAction Ignore
+    # Piped on: plain text (bat's config forces --color=always and the grid).
+    function cat {
+      if ($MyInvocation.PipelinePosition -lt $MyInvocation.PipelineLength) { bat --paging=never --color=never --style=plain @args }
+      else { bat --paging=never @args }
+    }
+  }
+}
 # `ls -al` = eza's `ls` function (below) when installed; Get-ChildItem has no -al.
 function lsal { if (Test-Path Function:\ls) { ls -al @args } else { Get-ChildItem -Force @args } }
 
