@@ -17,11 +17,12 @@ Examples: `acme-alice-gh`, `me-alice-gh`.
 
 ## Naming — servers
 
-`Host` alias = `<org>-<project>-<env>-<user>`, never the IP or the domain. Broad → narrow, so
+`Host` alias = `<org>[-<project>]-<env>-<user>`, never the IP or the domain. Broad → narrow, so
 `<org>-<project>-<env>-<Tab>` lists every login on that box:
 
 - org: same codes as above (`acme`, `me`, ...)
-- project: the app/service it runs (`shop`, `api`, ...)
+- project: the app/service it runs (`shop`, `api`, ...); left out when the server is shared by
+  several projects (`acme-stg-alice`)
 - env/role: `dev`, `stg`, `prd`, `vps`, `db`, ... — add a number only when there are several (`prd2`).
 - user: the login user (same as `User` in the block)
 - Own machines (desktop, laptop, Pi) use their hostname as the alias (`desk1`, `rasp-dev`).
