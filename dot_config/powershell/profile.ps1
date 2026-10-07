@@ -57,6 +57,12 @@ if (Get-Command chezmoi -ErrorAction SilentlyContinue) {
   function czcd { chezmoi cd @args }      # cd into the source repo
 }
 
+# ── navigation / listing (same names in 70-aliases.zsh) ───────────────────────────
+function ..   { Set-Location .. }
+function ...  { Set-Location ..\.. }
+# `ls -al` = eza's `ls` function (below) when installed; Get-ChildItem has no -al.
+function lsal { if (Test-Path Function:\ls) { ls -al @args } else { Get-ChildItem -Force @args } }
+
 # ── Antigravity IDE (VS Code fork; its CLI ships as `antigravity-ide`, no short name) ──
 if (Get-Command antigravity-ide -ErrorAction SilentlyContinue) {
   Set-Alias agide antigravity-ide

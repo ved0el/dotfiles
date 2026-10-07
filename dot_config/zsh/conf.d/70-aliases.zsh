@@ -2,6 +2,11 @@
 # General aliases. Each block self-gates on `command -v <tool>`, so an alias is only
 # defined when its tool is actually installed (same rule as 75-tools.zsh).
 
+# ── navigation / listing (same names in the pwsh profile) ────────────────────
+alias ..='cd ..'
+alias ...='cd ../..'
+alias lsal='ls -al'   # eza when installed (75-tools.zsh aliases ls)
+
 # ── chezmoi (dotfiles manager) ───────────────────────────────────────────────
 if command -v chezmoi >/dev/null 2>&1; then
   alias cz='chezmoi'

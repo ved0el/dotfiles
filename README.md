@@ -64,7 +64,7 @@ chezmoi re-add ~/.tmux.conf  # capture a $HOME edit (not for .tmpl / modify_ tar
 chezmoi cd                   # open the source repo to commit/push
 ```
 
-Shell aliases: `cz`, `cza`, `czd`, `czs`, `cze`, `czra`, `czu`, `czcd`.
+Shell aliases: `cz`, `cza`, `czd`, `czs`, `cze`, `czra`, `czu`, `czcd`; `..` / `...` (up one / two dirs), `lsal` (`ls -al`) — same on zsh and pwsh.
 
 - **Add a package:** CLI tools go in `dot_config/mise/conf.d/tools.toml.tmpl` (all OSes).
   OS packages go in `run_onchange_after_10-install-packages.{sh,ps1}.tmpl`.
