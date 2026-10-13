@@ -44,6 +44,8 @@ command -v curl >/dev/null 2>&1 || _pkgs="$_pkgs curl"
 # exist. macOS already ships zsh; Debian/Ubuntu do not.
 command -v zsh  >/dev/null 2>&1 || _pkgs="$_pkgs zsh"
 {{ if .tmux }}command -v tmux >/dev/null 2>&1 || _pkgs="$_pkgs tmux"{{ end }}
+# Colour emoji: Linux ships no colour emoji font (macOS/Windows do); fontconfig picks it up.
+dpkg -s fonts-noto-color-emoji >/dev/null 2>&1 || _pkgs="$_pkgs fonts-noto-color-emoji"
 {{ if .develop }}command -v make >/dev/null 2>&1 || _pkgs="$_pkgs make"{{ end }}
 {{ if .apps }}{{ range .appList.linux }}dpkg -s {{ . }} >/dev/null 2>&1 || _pkgs="$_pkgs {{ . }}"
 {{ end }}{{ end -}}
