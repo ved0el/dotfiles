@@ -12,7 +12,22 @@
 # Line 3  STATUS:   💵 cost  ⏱️ duration  🚦 5h X% (14:50)  🚦 7d Y% (Mon 09:05)  👤 agent
 # =============================================================================
 
+param([switch]$SessionEnd)
+
 [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+
+# -SessionEnd (a SessionEnd hook): the conversation was exited on purpose, so drop its
+# ~/.psmux/claude-sessions record — tm-restore resumes every record left behind at a reboot.
+# Only explicit exits: a shutdown that kills Claude may still fire the hook (reason "other").
+if ($SessionEnd) {
+    try { $E = [Console]::In.ReadToEnd() | ConvertFrom-Json } catch { exit 0 }
+    if ($E.reason -in 'prompt_input_exit', 'clear', 'logout' -and $E.session_id) {
+        Get-ChildItem (Join-Path $HOME '.psmux\claude-sessions') -File -ErrorAction Ignore |
+            Where-Object { (Get-Content -LiteralPath $_.FullName -Raw) -eq $E.session_id } |
+            Remove-Item -ErrorAction Ignore
+    }
+    exit 0
+}
 
 # No statusline in an agent-team teammate (one pane per teammate would repeat the lead's
 # lines): Claude starts teammates with CLAUDE_CODE_SESSION_ATTENDED=0, the lead with 1.

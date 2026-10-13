@@ -35,7 +35,17 @@
           }
         ]
       }
-    ]
+    ]{{ if eq .chezmoi.os "windows" }},
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pwsh -NoLogo -NoProfile -File {{ .chezmoi.homeDir }}/.claude/statusline.ps1 -SessionEnd"
+          }
+        ]
+      }
+    ]{{ end }}
   },
   "teammateMode": "in-process",
   "statusLine": {
