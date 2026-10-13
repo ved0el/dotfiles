@@ -9,14 +9,11 @@
   "border_width": 4,
   "border_offset": 0,
   "border_style": "Square",
-{{- /* Focused border = the Windows accent colour, read at apply time (DWM AccentColor is
-       0xAABBGGRR). Change the accent → `chezmoi apply` + reload komorebi. */}}
-{{- $abgr := output "reg" "query" "HKCU\\Software\\Microsoft\\Windows\\DWM" "/v" "AccentColor" | regexFind "0x[0-9a-fA-F]{8}" | lower }}
-  "border_colours": {
-    "single": "#{{ substr 8 10 $abgr }}{{ substr 6 8 $abgr }}{{ substr 4 6 $abgr }}",
-    "stack": "#00a542",
-    "monocle": "#ff3399",
-    "unfocused": "#808080"
+  "theme": {
+    "palette": "Catppuccin",
+    "name": "Mocha",
+    "single_border": "Blue",
+    "unfocused_border": "Surface1"
   },
   "stackbar": {
     "height": 40,
