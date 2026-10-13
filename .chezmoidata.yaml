@@ -12,6 +12,6 @@ apps: false     # essential GUI apps from appList (each OS's own package manager
 # The `apps` profile's list, per OS: winget ids / brew casks / apt packages. Essentials only —
 # everything else is installed by hand. Brave/Tailscale aren't in Debian's own apt repos.
 appList:
-  windows: [Tuyenvm.OpenKey, Tailscale.Tailscale, Brave.Brave, Flow-Launcher.Flow-Launcher, ShareX.ShareX]
+  windows: [Tuyenvm.OpenKey, Tailscale.Tailscale, Brave.Brave, Flow-Launcher.Flow-Launcher, ShareX.ShareX, RamenSoftware.Windhawk]
   darwin: [openkey, tailscale-app, brave-browser, raycast]
   linux: []
