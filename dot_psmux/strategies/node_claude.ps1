@@ -21,7 +21,8 @@ function Out-Decision([string]$cmd, [string]$why) {
 }
 # cd first: a warm (pre-booted) pane is moved to its dir by psmux typing `cd ...; cls`,
 # which these keys could race — claude in ~ would resume nothing.
-function Resume([string]$id) { "Set-Location -LiteralPath '$($Directory -replace "'", "''")'; claude --resume $id" }
+# --remote-control: a resumed pane is reachable from claude.ai / the app right after boot, no /rc needed.
+function Resume([string]$id) { "Set-Location -LiteralPath '$($Directory -replace "'", "''")'; claude --resume $id --remote-control" }
 try {
     # The strategy contract passes only the dir; read the pane from the save being restored.
     $save = (Get-Content (Join-Path $HOME '.psmux\resurrect\last') -Raw).Trim()
