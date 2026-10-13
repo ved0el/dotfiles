@@ -294,7 +294,7 @@ bind-key r source-file ~/.tmux.conf\; display-message "Config reloaded"
 # =============================================================================
 # Options first: psmux sources each plugin's plugin.conf at its @plugin line.
 # tmux-resurrect & continuum
-set -g @continuum-save-interval '5'
+set -g @continuum-save-interval '1'
 set -g @continuum-boot 'off'
 {{ if eq .chezmoi.os "windows" -}}
 # psmux: restore is `tm` (pwsh profile), not continuum's session-created hook: psmux runs one
