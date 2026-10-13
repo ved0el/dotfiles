@@ -64,7 +64,7 @@
      from blur_effect.enabled, so the DWM blur was always there - an opaque fill was
      covering it. The alpha is the whole effect; the lit edge is what reads as a pane. */
   background-color: var(--crust-glass);
-  border-radius: 8px;
+  border-radius: 0;
   border: 1px solid var(--glass-edge);
 }
 
