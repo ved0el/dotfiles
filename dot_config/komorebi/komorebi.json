@@ -8,7 +8,7 @@
   "border": true,
   "border_width": 2,
   "border_offset": 0,
-  "border_style": "System",
+  "border_style": "Square",
   "border_colours": {
     "single": "#42a5f5",
     "stack": "#00a542",
