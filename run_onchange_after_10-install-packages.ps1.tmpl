@@ -365,7 +365,10 @@ if (Get-Command komorebic -ErrorAction SilentlyContinue) {
   # Drop the legacy logon task so it can't race the shortcut.
   Unregister-ScheduledTask -TaskName 'komorebi' -Confirm:$false -ErrorAction SilentlyContinue
 }
-Write-Host "[wm] Run yasb once (or add it to startup) to launch the status bar."
+# yasb's own autostart (its bar otherwise needs a manual `yasbc start` after every reboot).
+if (Get-Command yasbc -ErrorAction SilentlyContinue) {
+  Invoke-Step 'yasb autostart' { yasbc enable-autostart | Out-Null } 'run: yasbc enable-autostart'
+}
 {{ end -}}
 
 # --- wire the chezmoi-managed profile into the real $PROFILE for BOTH PowerShell 7
