@@ -6,7 +6,7 @@
   "default_workspace_padding": 4,
   "default_container_padding": 4,
   "border": true,
-  "border_width": 4,
+  "border_width": 2,
   "border_offset": 0,
   "border_style": "Square",
   "theme": {
