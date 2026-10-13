@@ -1,0 +1,78 @@
+# Alacritty: the one terminal on every OS. It only draws; tmux (Windows: psmux) keeps the
+# sessions, splits and restore. Rendered to ~/.config/alacritty (Unix) and
+# %APPDATA%\alacritty (Windows — Alacritty ignores XDG there).
+
+[general]
+{{- if eq .chezmoi.os "windows" }}
+{{- if stat "D:/work" }}
+working_directory = "D:/work"
+{{- end }}
+
+[terminal.shell]
+program = "pwsh"
+args = ["-NoLogo"]
+{{- end }}
+
+# The family the bootstrap installs (scoop JetBrainsMono-NF / brew font-jetbrains-mono-nerd-font).
+[font]
+normal = { family = "JetBrainsMonoNL Nerd Font" }
+size = 14
+
+# Keep text off the window edge.
+[window]
+padding = { x = 10, y = 8 }
+dynamic_padding = true
+{{- if eq .chezmoi.os "darwin" }}
+# Left Option = Alt (PSFzf/zsh Alt chords); right Option still composes accented chars.
+option_as_alt = "OnlyLeft"
+{{- end }}
+{{- if eq .chezmoi.os "windows" }}
+# No title bar: komorebi tiles and moves the window.
+decorations = "None"
+{{- end }}
+
+# Copy on select; right-click pastes.
+[selection]
+save_to_clipboard = true
+
+[mouse]
+bindings = [{ mouse = "Right", action = "Paste" }]
+
+# Claude's newline: Alt+Enter (ESC CR) is the one form psmux and SSH both pass through.
+[keyboard]
+bindings = [{ key = "Enter", mods = "Control", chars = "\u001b\r" }]
+
+# Catppuccin Mocha. CLI tools use ANSI names only, so swapping this block re-themes everything.
+# Dim (SGR 2) text needs no font trick: Alacritty darkens the colour itself.
+[colors.primary]
+background = "#1e1e2e"
+foreground = "#cdd6f4"
+dim_foreground = "#7f849c"
+
+[colors.cursor]
+text = "#1e1e2e"
+cursor = "#f5e0dc"
+
+[colors.selection]
+text = "#1e1e2e"
+background = "#f5e0dc"
+
+[colors.normal]
+black = "#45475a"
+red = "#f38ba8"
+green = "#a6e3a1"
+yellow = "#f9e2af"
+blue = "#89b4fa"
+magenta = "#f5c2e7"
+cyan = "#94e2d5"
+white = "#bac2de"
+
+[colors.bright]
+black = "#585b70"
+red = "#f38ba8"
+green = "#a6e3a1"
+yellow = "#f9e2af"
+blue = "#89b4fa"
+magenta = "#f5c2e7"
+cyan = "#94e2d5"
+white = "#a6adc8"

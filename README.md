@@ -30,7 +30,7 @@ the bootstrap exits non-zero, so the next `chezmoi apply` retries only what's mi
 re-run until it's clean. It stops up front, before changing anything, when run as administrator
 or when winget isn't ready yet (a new account: update "App Installer" in Microsoft Store). Hit the
 GitHub rate limit? `gh auth login` (gh is a mise tool) or set `GITHUB_TOKEN`, then `chezmoi apply`.
-When it's done, open a new terminal (restart WezTerm) to load PATH, fonts and profile.
+When it's done, open a new terminal (restart Alacritty) to load PATH, fonts and profile.
 
 It asks which profiles to enable, applies the dotfiles, then installs packages and plugins. The
 OS is auto-detected: brew/apt on macOS/Linux, scoop (+ winget for PowerShell 7, as the MSI at the
@@ -73,13 +73,13 @@ Shell aliases: `cz`, `cza`, `czd`, `czs`, `cze`, `czra`, `czu`, `czcd`; `..` / `
 - **Claude settings:** `~/.claude/settings.json` is merged with the tracked keys, so changes
   made in Claude Code survive `apply`. Copy a change into
   `.chezmoitemplates/claude-settings.json` to share it.
-- **Terminal:** WezTerm nightly on macOS and Windows, one `~/.wezterm.lua` (Linux: config
-  only, install it yourself). Theme = any [Gogh](https://gogh-co.github.io/Gogh/) name +
-  ` (Gogh)` in `color_scheme` (default `Catppuccin Mocha (Gogh)`; tmux, fzf, bat, rg,
-  starship, micro, vivid use ANSI colours only, so they follow any theme); JetBrainsMonoNL Nerd Font 14, copy-on-select, right-click pastes, `Ctrl+Enter` =
-  Claude newline. Tabs/panes stay in tmux/psmux. New build: `scoop update wezterm-nightly -f` /
-  `brew upgrade --cask wezterm@nightly --greedy`. Per-machine tweaks (borderless, start dir, …)
-  go in an unmanaged `~/.wezterm.local.lua` returning `function(config) … end`.
+- **Terminal:** Alacritty, one config template `.chezmoitemplates/alacritty.toml` (applied to
+  `%APPDATA%\alacritty` on Windows, `~/.config/alacritty` elsewhere). Windows installs it via
+  scoop (`scoop update alacritty`); macOS/Linux: install it yourself (Homebrew disabled the cask).
+  Theme = the `[colors]` block (Catppuccin Mocha; tmux, fzf, bat, rg, starship, micro, vivid use
+  ANSI colours only, so they follow any theme); JetBrainsMonoNL Nerd Font 14, copy-on-select,
+  right-click pastes, `Ctrl+Enter` = Claude newline, Windows starts in `D:/work` (if it exists).
+  Tabs/panes stay in tmux/psmux.
 - **Secrets:** never commit them — use chezmoi `encrypted_` files or password-manager template
   functions.
 
@@ -99,7 +99,7 @@ Shell aliases: `cz`, `cza`, `czd`, `czs`, `cze`, `czra`, `czu`, `czcd`; `..` / `
 - Claude Code finds scoop's Git Bash through
   `CLAUDE_CODE_GIT_BASH_PATH`; WinPS 5.1 gets `RemoteSigned` for CurrentUser (its default blocks scripts).
 - psmux: same keys as tmux. Not ported: `C-b f` (sessionizer), `C-b .` (pane-name reset); status shows the login user.
-  After a reboot / `kill-server` run `tm` (an interactive SSH login runs it itself; `C-b d` for a plain shell): attaches, or restores the last save (auto-saved every 5 min) first; Claude panes resume their conversation (by pane title), other `node` panes open idle. `Ctrl+Enter` = a newline in Claude, also over SSH (WezTerm sends Alt+Enter) (psmux has no extended-keys; a newline in Claude Code). Status bar: `W: <dir> | P: <process> | U: user@host` (names cut to 10 chars + `...`); `C-b W` renames the window, `C-b ,` the pane (a program's own title, e.g. Claude's, also shows). No psmux-cpu (it flashed a pwsh error every tick).
+  After a reboot / `kill-server` run `tm` (an interactive SSH login runs it itself; `C-b d` for a plain shell): attaches, or restores the last save (auto-saved every 5 min) first; Claude panes resume their conversation (by pane title), other `node` panes open idle. `Ctrl+Enter` = a newline in Claude, also over SSH (Alacritty sends Alt+Enter) (psmux has no extended-keys; a newline in Claude Code). Status bar: `W: <dir> | P: <process> | U: user@host` (names cut to 10 chars + `...`); `C-b W` renames the window, `C-b ,` the pane (a program's own title, e.g. Claude's, also shows). No psmux-cpu (it flashed a pwsh error every tick).
 
 ## Layout
 

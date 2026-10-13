@@ -37,9 +37,11 @@ renovate.json
 .claude/statusline.ps1
 {{ end }}
 
-# WezTerm isn't installed on Linux (no package); its dim-text fonts aren't needed there.
-{{ if eq .chezmoi.os "linux" }}
-.config/wezterm
+# Alacritty reads %APPDATA%\alacritty on Windows, ~/.config/alacritty elsewhere (one template).
+{{ if eq .chezmoi.os "windows" }}
+.config/alacritty
+{{ else }}
+AppData
 {{ end }}
 {{ if or (ne .chezmoi.os "darwin") (not .wm) }}
 .config/skhd

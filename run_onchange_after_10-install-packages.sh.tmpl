@@ -17,9 +17,9 @@ command -v curl >/dev/null 2>&1 || brew install curl
 {{ if .tmux }}command -v tmux >/dev/null 2>&1 || brew install tmux{{ end }}
 # mole — macOS cleanup/optimization CLI (macOS only).
 command -v mole >/dev/null 2>&1 || brew install mole
-# WezTerm nightly (the cross-OS terminal, ~/.wezterm.lua) + the font family it names.
-# `brew upgrade --cask wezterm@nightly --greedy` pulls a newer build.
-[ -d /Applications/WezTerm.app ] || brew install --cask wezterm@nightly
+# Alacritty (the cross-OS terminal, ~/.config/alacritty) + the font family it names. Homebrew
+# disabled its cask (fails Gatekeeper, 2026-09), so the app is installed by hand.
+[ -d /Applications/Alacritty.app ] || echo "[terminal] install Alacritty by hand: https://github.com/alacritty/alacritty/releases"
 [ -f "$HOME/Library/Fonts/JetBrainsMonoNLNerdFont-Regular.ttf" ] || brew install --cask font-jetbrains-mono-nerd-font
 {{ if .wm }}
 # macOS window manager (yabai + skhd) from the upstream tap — install only what's missing
