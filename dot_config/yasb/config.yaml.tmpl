@@ -16,10 +16,8 @@ bars:
     class_name: "yasb-bar"
     alignment:
       position: "top"
-      center: false
     blur_effect:
       enabled: true
-      acrylic: false
       dark_mode: true
       round_corners: true
       border_color: None
@@ -37,7 +35,8 @@ bars:
     widgets:
       left: ["home","komorebi_active_layout","active_window"]
       center: ["komorebi_workspaces"]
-      right: ["systray","weather", "pomodoro","language", "media", "clock", "notifications","power_menu"]
+      # weather only where its API key is set (yasb errors on every start without it)
+      right: ["systray",{{ if env "YASB_WEATHER_API_KEY" }}"weather", {{ end }}"pomodoro","language", "media", "clock", "notifications","power_menu"]
 
   secondary-bar:
     enabled: true
@@ -45,10 +44,8 @@ bars:
     class_name: "yasb-bar"
     alignment:
       position: "top"
-      center: false
     blur_effect:
       enabled: true
-      acrylic: false
       dark_mode: true
       round_corners: true
       border_color: None
@@ -142,7 +139,6 @@ widgets:
     type: "komorebi.workspaces.WorkspaceWidget"
     options:
       hide_if_offline: true
-      animation: true
 
   media:
     type: "yasb.media.MediaWidget"
@@ -427,8 +423,3 @@ widgets:
       callbacks:
         on_left: "toggle_notification"
         on_right: "do_nothing"
-      label_shadow:
-        enabled: true
-        color: "black"
-        radius: 3
-        offset: [ 1, 1 ]
