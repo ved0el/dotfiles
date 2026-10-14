@@ -117,12 +117,28 @@ if (Get-Command yasbc -ErrorAction SilentlyContinue) {
 # itself is ~/.psmux/tm-restore.ps1 (shared with the sshd profile's logon task).
 if (Get-Command psmux -ErrorAction SilentlyContinue) {
   function tm {
-    & (Join-Path $HOME '.psmux\tm-restore.ps1')
-    $running = @(psmux ls 2>$null | ForEach-Object { ($_ -split ':')[0] } | Where-Object { $_ })
-    if (-not $running) { psmux new-session; return }
-    $last = Join-Path $HOME '.psmux\resurrect\last'
-    $first = if (Test-Path $last) { @((Get-Content (Get-Content $last -Raw).Trim() -Raw | ConvertFrom-Json).sessions)[0].name }
-    if ($args) { psmux attach @args } elseif ($first -in $running) { psmux attach -t $first } else { psmux attach }
+    # The psmux client exits without restoring the console input mode (measured 0x1F7 → 0x1F0;
+    # over SSH VT input stays on), so after a detach PSReadLine reads → as ESC [ C — ESC reverts
+    # the line, leaving "[C". Save the mode and put it back. Add-Type only on the first `tm`.
+    if (-not ('Psmux.ConIn' -as [type])) {
+      Add-Type -Namespace Psmux -Name ConIn -MemberDefinition @'
+[DllImport("kernel32.dll")] public static extern IntPtr GetStdHandle(int n);
+[DllImport("kernel32.dll")] public static extern bool GetConsoleMode(IntPtr h, out uint m);
+[DllImport("kernel32.dll")] public static extern bool SetConsoleMode(IntPtr h, uint m);
+'@
+    }
+    $conIn = [Psmux.ConIn]::GetStdHandle(-10); $mode = [uint32]0
+    $saved = [Psmux.ConIn]::GetConsoleMode($conIn, [ref]$mode)
+    try {
+      & (Join-Path $HOME '.psmux\tm-restore.ps1')
+      $running = @(psmux ls 2>$null | ForEach-Object { ($_ -split ':')[0] } | Where-Object { $_ })
+      if (-not $running) { psmux new-session; return }
+      $last = Join-Path $HOME '.psmux\resurrect\last'
+      $first = if (Test-Path $last) { @((Get-Content (Get-Content $last -Raw).Trim() -Raw | ConvertFrom-Json).sessions)[0].name }
+      if ($args) { psmux attach @args } elseif ($first -in $running) { psmux attach -t $first } else { psmux attach }
+    } finally {
+      if ($saved) { [void][Psmux.ConIn]::SetConsoleMode($conIn, $mode) }
+    }
   }
 }
 

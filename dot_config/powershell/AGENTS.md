@@ -25,6 +25,9 @@ pwsh/WinPS rules are in the root `AGENTS.md`. The "why" behind each rule is in i
   merges it into PSFzf's `hidden` and re-opens the broken preview below 90 columns.
 - `cd`/`z` have a `-Native` argument completer (local dirs via `CompleteFilename` +
   `zoxide query --list`, zoxide skipped for path-like words); without it `cd ch<Tab>` only sees CWD.
+- **`tm` saves and restores the console input mode around `psmux attach`**: the psmux client
+  exits without restoring it (VT input left on over SSH), so after `C-b d` PSReadLine read → as
+  `ESC [ C` — ESC = RevertLine, the line became `[C`. Its `Add-Type` runs on the first `tm`, not at load.
 - Removals use `-ErrorAction Ignore` (`SilentlyContinue` still fills `$Error`).
 - `powershell` → `pwsh` is a pwsh-7-only alias (version-gated: 5.1 loads this file too). Never
   shim/redirect `powershell.exe` itself — the bootstrap and komorebi's whkd/yasb restart need real 5.1.
