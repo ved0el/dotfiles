@@ -153,20 +153,17 @@ bind-key q kill-pane
 set -g pane-active-border-style fg=blue,bg=default
 set -g pane-border-style fg=blue,bg=default
 # Pane bg left unset = the terminal theme's own bg.
+# No border label (same as psmux): the active pane's name is P: in status-left.
+set -g pane-border-status off
 {{ if eq .chezmoi.os "windows" -}}
 # psmux: no pane-scoped user options (`set -p @x` errors), so the pane name is the pane
 # title, and only C-b , sets it: allow-set-title off keeps programs' OSC titles (claude's,
 # pwsh's) out, so an unnamed pane's title stays the hostname and status-left (P: …) shows its
 # process instead. psmux exposes no "renamed" flag, hence names only a human sets.
 #   C-b ,    - Set pane name. No reset key: `select-pane -T ''` loses the '' in a bind.
-set -g pane-border-status off
 set -g allow-set-title off
 bind-key , command-prompt -p "Rename pane:" "select-pane -T '%%'"
 {{- else -}}
-set -g pane-border-status bottom
-# Show custom name if set, otherwise fall back to current command
-set -g pane-border-format " #P: #{?#{@pane_name},#[bold]#{@pane_name}#[nobold],#{pane_current_command}} PID:#{pane_pid} "
-
 # Rename pane (name persists, immune to terminal escape sequences)
 #   C-b ,    - Set custom pane name
 #   C-b .    - Clear custom name (reverts to current command)
@@ -239,6 +236,8 @@ set -g status-justify right
 set -g status-interval 1
 set -g status-left-length 150
 set -g status-right-length 0
+# Empty, not just length 0: psmux keeps its default (pane title + clock) otherwise.
+set -g status-right ''
 set -g status-style bg=default,fg=brightblack
 
 # Window = current dir's name until renamed (C-b W); Pane = the process until renamed (C-b ,).
@@ -257,7 +256,7 @@ set -g status-left ' #[fg=yellow,bold]W: #{=/10/...:#{?#{==:#{window_name},pwsh}
 # rename-window turns automatic-rename off for that window, so a manual name sticks.
 set -g automatic-rename on
 set -g automatic-rename-format '#{b:pane_current_path}'
-set -g status-left ' #[fg=yellow,bold]W: #{=/10/...:window_name}#[fg=default,nobold] | #[fg=white]P: #{=/10/...:#{?#{@pane_name},#{@pane_name},#{pane_current_command}}}#[fg=default] | #[fg=brightblack]U: #(~/.local/bin/tmux-user "#{pane_tty}")@#h#[fg=default] #{prefix_highlight}#[fg=default] '
+set -g status-left ' #[fg=yellow,bold]W: #{=/10/...:window_name}#[fg=default,nobold] | #[fg=white]P: #{=/10/...:#{?#{@pane_name},#{@pane_name},#{pane_current_command}}}#[fg=default] | #[fg=brightblack]U: #(~/.local/bin/tmux-user "#{pane_tty}")@#h#[fg=default] #{?client_prefix,#[fg=white]#[bg=blue] Wait #[bg=default],}#[fg=default] '
 {{- end }}
 
 # Window status format (simple numbers: 1 2 3 4)
@@ -316,8 +315,8 @@ set -g @resurrect-capture-pane-contents 'on'
 # plain `set -g` + binds (escape-time 50, `R` → ~/.psmux.conf, `|`/`-` without the cwd),
 # overriding this file — everything else it sets is already set above. No psmux-cpu: its
 # status-interval hook spawns pwsh every tick (an error flashes each time) for stats the
-# status bar doesn't show. No psmux-prefix-highlight: it only sets status-right, which is
-# hidden — status-left shows its own `Wait` badge.
+# status bar doesn't show. No prefix-highlight plugin (either OS): it only sets status-right,
+# which is hidden — status-left shows its own `Wait` badge.
 set -g @plugin 'psmux-plugins/ppm'
 set -g @plugin 'psmux-plugins/psmux-resurrect'
 set -g @plugin 'psmux-plugins/psmux-continuum'
@@ -332,7 +331,6 @@ set -g @plugin 'tmux-plugins/tmux-sensible'
 set -g @plugin 'tmux-plugins/tmux-yank'
 set -g @plugin 'tmux-plugins/tmux-resurrect'
 set -g @plugin 'tmux-plugins/tmux-continuum'
-set -g @plugin 'tmux-plugins/tmux-prefix-highlight'
 
 # Plugin Config
 # tmux-yank: clipboard selection and mouse support
