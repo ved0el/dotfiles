@@ -76,6 +76,6 @@ ctrl + alt + n          : komorebic cycle-monitor next
 win + shift + left      : komorebic cycle-move-to-monitor previous
 win + shift + right     : komorebic cycle-move-to-monitor next
 # Numbered move-to-monitor kept as a conflict-free fallback for 3 screens.
-ctrl + shift + 1        : komorebic move-to-monitor 0
-ctrl + shift + 2        : komorebic move-to-monitor 1
-ctrl + shift + 3        : komorebic move-to-monitor 2
+alt + shift + 1         : komorebic move-to-monitor 0
+alt + shift + 2         : komorebic move-to-monitor 1
+alt + shift + 3         : komorebic move-to-monitor 2
