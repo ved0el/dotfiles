@@ -1,4 +1,4 @@
-# PowerShell profile — Windows analogue of ~/.zshrc + ~/.config/zsh/conf.d/*.
+﻿# PowerShell profile — Windows analogue of ~/.zshrc + ~/.config/zsh/conf.d/*.
 # Dot-sourced from the real $PROFILE by the chezmoi bootstrap (OneDrive-proof).
 # Each block self-gates on Get-Command so a tool absent from PATH silently no-ops,
 # mirroring the `command -v` guards in the zsh config.
