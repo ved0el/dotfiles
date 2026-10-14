@@ -47,9 +47,18 @@ command -v zsh  >/dev/null 2>&1 || _pkgs="$_pkgs zsh"
 # Colour emoji: Linux ships no colour emoji font (macOS/Windows do); fontconfig picks it up.
 dpkg -s fonts-noto-color-emoji >/dev/null 2>&1 || _pkgs="$_pkgs fonts-noto-color-emoji"
 {{ if .develop }}command -v make >/dev/null 2>&1 || _pkgs="$_pkgs make"{{ end }}
-{{ if .apps }}{{ range .appList.linux }}dpkg -s {{ . }} >/dev/null 2>&1 || _pkgs="$_pkgs {{ . }}"
-{{ end }}{{ end -}}
 if [ -n "$_pkgs" ]; then sudo apt-get update -y && sudo apt-get install -y $_pkgs; fi
+{{ if .apps -}}
+# Essential GUI apps (the `apps` profile) from vendor repos, after the batch above so curl exists.
+# Tailscale: its official script (picks the right repo per distro). Brave Origin (free on Linux):
+# Brave's apt repo, package brave-origin.
+command -v tailscale >/dev/null 2>&1 || curl -fsSL https://tailscale.com/install.sh | sh
+if ! dpkg -s brave-origin >/dev/null 2>&1; then
+  sudo curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
+  sudo curl -fsSLo /etc/apt/sources.list.d/brave-browser-release.sources https://brave-browser-apt-release.s3.brave.com/brave-browser.sources
+  sudo apt-get update -y && sudo apt-get install -y brave-origin
+fi
+{{ end -}}
 {{ end -}}
 
 # chsh is interactive (it prompts for a password), so it is NOT run here — just say so once.

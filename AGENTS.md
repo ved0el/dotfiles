@@ -70,7 +70,8 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   scope — no `--location`/`--scope` (self-updaters write back to the default); only pin an
   installer (pwsh's MSI) when a config or task hardcodes the exe path.
 - **`apps` profile** = the essential GUI apps in `.chezmoidata.yaml` `appList.<os>` (winget ids /
-  brew casks / apt packages). Essentials only — anything else is installed by hand. winget runs
+  brew casks; Linux: Tailscale + Brave Origin from vendor repos, hardcoded in the .sh bootstrap).
+  Essentials only — anything else is installed by hand. winget runs
   with `--no-upgrade` (installed = `0x8A150061`, success); casks are guarded on `brew list --cask`.
 - **scoop/brew/apt (+winget) only for tools ONE OS needs** (starship, psfzf, psmux, gsudo, fonts,
   WMs, mole, zsh, …) **and bootstrap prerequisites** that must exist before mise runs (git, curl,

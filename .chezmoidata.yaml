@@ -9,9 +9,9 @@ miseDataDir: "" # Windows: MISE_DATA_DIR (prompted; "" = bootstrap default ~/.lo
 sshd: false     # Windows: this box is an SSH server (scoop no_junction + one-time reset)
 wm: false       # tiling WM: macOS yabai+skhd / Windows komorebi+whkd+yasb (off on Linux)
 apps: false     # essential GUI apps from appList (each OS's own package manager)
-# The `apps` profile's list, per OS: winget ids / brew casks / apt packages. Essentials only —
-# everything else is installed by hand. Brave/Tailscale aren't in Debian's own apt repos.
+# The `apps` profile's list, per OS: winget ids / brew casks. Essentials only — everything else
+# is installed by hand. Linux has no list: Tailscale + Brave Origin come from their vendor repos
+# (not in Debian's own apt), set up in run_onchange_after_10-install-packages.sh.tmpl.
 appList:
-  windows: [Tuyenvm.OpenKey, Tailscale.Tailscale, Brave.Brave, Flow-Launcher.Flow-Launcher, ShareX.ShareX, RamenSoftware.Windhawk]
-  darwin: [openkey, tailscale-app, brave-browser, raycast]
-  linux: []
+  windows: [Tailscale.Tailscale, Brave.Brave, Flow-Launcher.Flow-Launcher, ShareX.ShareX, RamenSoftware.Windhawk]
+  darwin: [tailscale-app, brave-browser]
