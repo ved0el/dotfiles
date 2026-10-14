@@ -13,5 +13,5 @@ apps: false     # essential GUI apps from appList (each OS's own package manager
 # is installed by hand. Linux has no list: Tailscale + Brave Origin come from their vendor repos
 # (not in Debian's own apt), set up in run_onchange_after_10-install-packages.sh.tmpl.
 appList:
-  windows: [Tailscale.Tailscale, Brave.Brave, Flow-Launcher.Flow-Launcher, ShareX.ShareX, RamenSoftware.Windhawk]
-  darwin: [tailscale-app, brave-browser]
+  windows: [PhatMT97.VKey.Classic, Tailscale.Tailscale, Brave.Brave, Flow-Launcher.Flow-Launcher, ShareX.ShareX, RamenSoftware.Windhawk]
+  darwin: [openkey, tailscale-app, brave-browser]
