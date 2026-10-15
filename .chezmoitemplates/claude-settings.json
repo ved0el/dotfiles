@@ -20,7 +20,10 @@
       "Bash(fd:*)",
       "Bash(rg:*)",
       "mcp__codegraph__*",
-      "Bash(codegraph:*)"
+      "Bash(codegraph:*)",
+      "PowerShell(scoop:*)",
+      "PowerShell(winget:*)",
+      "PowerShell(Remove-Item:*)"
     ],
     "defaultMode": "auto"
   },
