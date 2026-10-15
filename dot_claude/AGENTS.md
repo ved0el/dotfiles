@@ -20,7 +20,7 @@ behind each rule is in its commit (`git log -S`). Repo-wide rules: root `AGENTS.
   each (psmux's `claude` wrapper injects `--teammate-mode tmux` only while the key is unset).
   One run in panes: `claude --teammate-mode tmux`.
 - **`~/.claude/CLAUDE.md` is managed** (`dot_claude/CLAUDE.md`): the `@RTK.md` import (so rtk
-  finds it present) + the codegraph rule. `RTK.md` stays rtk-written and machine-local.
+  finds it present) + the codegraph rule + the shell-tools rule (rg/fd/sd/eza/jq/yq over the classics). `RTK.md` stays rtk-written and machine-local.
 
 ## Claude Code install
 - Bootstrap part 2 installs it only when `claude` is missing, with the official native one-liners
