@@ -27,7 +27,6 @@ renovate.json
 .config/zsh
 .config/sheldon
 .local/bin/tmux-sessionizer
-.local/bin/tmux-user
 .claude/statusline.sh
 {{ else }}
 .config/powershell

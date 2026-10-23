@@ -98,8 +98,8 @@ Shell aliases: `cz`, `cza`, `czd`, `czs`, `cze`, `czra`, `czu`, `czcd`; `..` / `
   starship…) work in an sshd session too (sshd won't follow scoop's `current` junctions).
 - Claude Code finds scoop's Git Bash through
   `CLAUDE_CODE_GIT_BASH_PATH`; WinPS 5.1 gets `RemoteSigned` for CurrentUser (its default blocks scripts).
-- psmux: same keys as tmux. Not ported: `C-b f` (sessionizer), `C-b .` (pane-name reset); status shows the login user.
-  After a reboot / `kill-server` run `tm` (an interactive SSH login runs it itself; `C-b d` for a plain shell): attaches, or restores the last save (auto-saved every 5 min) first; Claude panes resume their conversation (by pane title), other `node` panes open idle. `Ctrl+Enter` = a newline in Claude, also over SSH (Alacritty sends Alt+Enter) (psmux has no extended-keys; a newline in Claude Code). Status bar: `W: <dir> | P: <process> | U: user@host` (names cut to 10 chars + `...`); `C-b W` renames the window, `C-b ,` the pane (a program's own title, e.g. Claude's, also shows). No psmux-cpu (it flashed a pwsh error every tick).
+- psmux: same keys as tmux. Not ported: `C-b f` (sessionizer), `C-b .` (pane-name reset).
+  After a reboot / `kill-server` run `tm` (an interactive SSH login runs it itself; `C-b d` for a plain shell): attaches, or restores the last save (auto-saved every 5 min) first; Claude panes resume their conversation (by pane title), other `node` panes open idle. `Ctrl+Enter` = a newline in Claude, also over SSH (Alacritty sends Alt+Enter) (psmux has no extended-keys; a newline in Claude Code). Status bar: `W: <window number> | P: <dir> | H: hostname` (W/P until renamed) (names cut to 10 chars + `...`); `C-b W` renames the window, `C-b ,` the pane (a program's own title, e.g. Claude's, also shows). No psmux-cpu (it flashed a pwsh error every tick).
 
 ## Layout
 

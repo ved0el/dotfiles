@@ -148,10 +148,10 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
 - **psmux** reads `~/.tmux.conf`; Windows-only lines are `{{ if eq .chezmoi.os "windows" }}` blocks
   in `dot_tmux.conf.tmpl`. Plugins are copied from the `psmux/psmux-plugins` monorepo into
   `~/.psmux/plugins/` (their `plugin.conf` hardcodes that path) — keep the bootstrap list and the
-  `@plugin` lines in sync. Not ported: the sessionizer (`C-b f`), `tmux-user`.
+  `@plugin` lines in sync. Not ported: the sessionizer (`C-b f`).
   Its border label is a literal replace of `#{pane_title}`/`#{pane_index}`/`#P` only (`#P` = pane
   id), so the pane name is the pane title. psmux exposes no "renamed" flag for a window or pane, so only a human names them:
-  `allow-set-title`/`allow-rename`/`automatic-rename` off; status-left shows the dir while a window is still `pwsh`, the process
+  `allow-set-title`/`allow-rename`/`automatic-rename` off; status-left shows the window number while a window is still `pwsh`, the dir
   while a pane title is still `#{host}` (`#H` isn't expanded inside `#{==:}`). Claude panes are found for restore by the
   session id `statusline.ps1` records in `~/.psmux/claude-sessions/<dir>`, not by their (now unset) titles.
   No extended-keys, so `C-Enter` is bound to `send-keys C-j`; over SSH the client can't send C-Enter at all, so Alacritty's `[keyboard]` binds `Control+Enter` to `chars = "\u001b\r"` (ESC CR = Alt+Enter, which psmux's SSH and console input forwards as `\x1b\r` — Claude's newline; a bare `\n` is parsed as Enter). No `psmux-cpu` (pwsh every status tick).
@@ -195,8 +195,8 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   `zoxide: no match found` into Claude's piped output.
 - tmux plugins are `git clone`d by the bootstrap. Do NOT switch to TPM's `install_plugins` — it
   needs a live server, installs 0 plugins non-interactively and leaves a stale server behind.
-- tmux `#(…)` runs as the SERVER's user; `tmux-user` reads the pane tty's foreground process
-  instead. `#(…)` is async — test the script directly, not via `display-message`.
+- tmux `#(…)` runs as the SERVER's user and is async — test the script directly, not via
+  `display-message`.
 - `skhdrc` (macOS) and `whkdrc` (Windows) share one keymap scheme — **edit them as a pair**.
   Deliberate divergences: monitor-move `⌃⌘←/→` vs `win+shift+←/→`; macOS-only recent-workspace,
   balance, sticky/pip; Windows has NO workspace binds — komorebi keeps ONE workspace per monitor,
