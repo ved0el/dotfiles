@@ -133,18 +133,7 @@ if (Get-ChildItem (Join-Path $ScoopDir 'shims\*.shim') -ErrorAction SilentlyCont
 
 # git via scoop (per-user, no elevation); curl ships with Windows 10+.
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) { Invoke-Step 'git' { scoop install git } }
-# Claude Code runs its shell tool in Git Bash, found from git.exe's location - scoop's git.exe is
-# a shim in <scoop>\shims, so that lookup misses bash. Point it there when unset, or when it
-# still points into scoop's git at another path (the old `current` junction — unreachable over
-# SSH — or a previous version); a path outside scoop is the user's and stays.
-# A git from elsewhere (Git for Windows, a CI runner) has no scoop prefix ('' — and both
-# Join-Path and Test-Path throw on ''): skip, Claude Code finds that git's bash itself.
-$gitPrefix = "$(scoop prefix git 6>$null)"
-$gitBash = if ($gitPrefix) { Join-Path $gitPrefix 'bin\bash.exe' }
-$curBash = [Environment]::GetEnvironmentVariable('CLAUDE_CODE_GIT_BASH_PATH', 'User')
-if ($gitBash -and (Test-Path $gitBash) -and (-not $curBash -or ($curBash -like "$ScoopDir\apps\git\*" -and $curBash -ne $gitBash))) {
-  [Environment]::SetEnvironmentVariable('CLAUDE_CODE_GIT_BASH_PATH', $gitBash, 'User')
-}
+# CLAUDE_CODE_GIT_BASH_PATH: run_after_15-git-bash-path.ps1 (every apply, so it follows git updates).
 
 # pwsh 7 — the shell the managed profile targets (this bootstrap itself runs under WinPS 5.1).
 # winget's MSI (`--installer-type wix`), NOT its default MSIX: the MSIX lives in a versioned

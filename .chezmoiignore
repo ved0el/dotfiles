@@ -17,6 +17,7 @@ renovate.json
 *-install-*.sh
 {{ else }}
 *-install-*.ps1
+15-git-bash-path.ps1
 {{ end }}
 
 # OS split for shell config. Windows uses the PowerShell profile; Unix uses the zsh

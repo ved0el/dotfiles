@@ -130,7 +130,8 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
 - Part 1 also sets: CurrentUser `RemoteSigned` for WinPS 5.1 (default Restricted blocks its
   profile + scoop shims) only if unset; `CLAUDE_CODE_GIT_BASH_PATH` → scoop's versioned `bash.exe`
   (Claude can't derive it from the `git.exe` shim) if unset or still pointing into scoop's git
-  elsewhere (the old `current` junction fails over SSH). `bootstrap-steps.ps1`'s `Set-GitHubToken`
+  elsewhere (the old `current` junction fails over SSH) — in `run_after_15-git-bash-path.ps1`
+  (every apply: under `no_junction` each `scoop update git` deletes the versioned dir). `bootstrap-steps.ps1`'s `Set-GitHubToken`
   exports a logged-in gh's token (gh = a mise tool) as `GITHUB_TOKEN` for mise's API calls;
   part 1 calls it again right before `mise install`, once mise's shims are on PATH.
 - **`SCOOP` / `MISE_DATA_DIR` are User scope, set BEFORE installing** (the installers read them;
