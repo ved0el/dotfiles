@@ -49,7 +49,7 @@ existing scoop/mise elsewhere is kept, not moved.
 | **tmux** | on | tmux + TPM plugins · Windows: psmux (same `~/.tmux.conf`, `tmux` works) + psmux-plugins |
 | **apps** | off | essential GUI apps (`.chezmoidata.yaml` `appList`, essentials only — the rest by hand) · Windows: winget (Tailscale, Brave, Flow Launcher, ShareX, Windhawk) · macOS: brew casks (OpenKey, Tailscale, Brave) · Linux: vendor repos (Tailscale, Brave Origin) |
 | **wm** | off (not Linux) | macOS: yabai + skhd · Windows: komorebi + whkd + yasb |
-| **sshd** | off (Windows only) | this box is an SSH server: scoop `no_junction` (+ a one-time `scoop reset *`) so scoop apps work over SSH; a logon task restores the psmux sessions (with autologon: at boot) |
+| **sshd** | off (Windows only) | this box is an SSH server: scoop `no_junction` (+ a one-time `scoop reset *`) so scoop apps work over SSH; a logon task restores the psmux sessions (with autologon: at boot), their Claude panes reachable from the Claude app; another runs `claude remote-control` so new sessions start from the app without SSH |
 
 Answers are stored in `~/.config/chezmoi/chezmoi.toml`. To change them:
 `chezmoi init --prompt`, then `chezmoi apply`.

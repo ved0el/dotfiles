@@ -293,6 +293,24 @@ if (-not $restoreTask -or $restoreTask.Actions[0].Arguments -ne $restoreArgs) {
       -Settings (New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Minutes 10)) | Out-Null
   }
 }
+# sshd profile: `claude remote-control` (server mode) at logon, so a NEW session can be started
+# from claude.ai / the app after a reboot without an SSH login (restored panes already come back
+# with --remote-control). Not elevated (gsudo for admin commands); not in psmux — a second node
+# pane in the same dir would make the resurrect strategy skip both. No pre-created session: one
+# idle session per boot would pile up. Looped, not the task's RestartCount: Task Scheduler only
+# restarts a task that fails to START, and the server exits 1 on a network drop or while a
+# killed one's registration is still live ("already served", ~3 min).
+$rcDir = '{{ if stat "D:/work" }}D:\work{{ else }}{{ .chezmoi.homeDir | replace "/" "\\" }}{{ end }}'
+$rcArgs = '-NoLogo -NoProfile -WindowStyle Hidden -Command while ($true) { claude remote-control --spawn same-dir --no-create-session-in-dir; Start-Sleep 60 }'
+$rcTask = Get-ScheduledTask -TaskName 'claude-rc' -ErrorAction SilentlyContinue
+if (-not $rcTask -or $rcTask.Actions[0].Arguments -ne $rcArgs -or $rcTask.Actions[0].WorkingDirectory -ne $rcDir) {
+  Invoke-Step 'claude-rc task' {
+    Register-ScheduledTask -TaskName 'claude-rc' -Force -ErrorAction Stop `
+      -Action (New-ScheduledTaskAction -Execute 'pwsh.exe' -Argument $rcArgs -WorkingDirectory $rcDir) `
+      -Trigger (New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME) `
+      -Settings (New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero)) | Out-Null
+  }
+}
 {{   end -}}
 {{ end -}}
 

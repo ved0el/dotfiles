@@ -166,6 +166,13 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   test its output) (`@continuum-restore` off: one server per session re-fires its once-per-server
   guard); `node` panes go through `~/.psmux/strategies/node_claude.ps1` (title → `custom-title` →
   `Set-Location <dir>; claude --resume` — cd first, a warm pane's own `cd` can lose the race, else a comment line — never empty, resurrect falls back to `node`).
+- **`claude-rc`** (`sshd` only): an AtLogOn task (not elevated — admin commands go through gsudo) runs
+  `claude remote-control --spawn same-dir --no-create-session-in-dir` hidden in `D:\work` (if it exists, else
+  `~`), so a new session can start from claude.ai / the app after a reboot with no SSH login; restored panes
+  come back with `--remote-control` (`node_claude.ps1`). Wrapped in `while ($true) { …; Start-Sleep 60 }`:
+  Task Scheduler only restarts a task that fails to START, and the server exits 1 on a network drop or
+  while a killed one's registration is still live ("already served", ~3 min). Not a psmux pane: a second
+  `node` pane in the same dir makes the resurrect strategy skip both.
 - WinPS 5.1 is an OS component — never "remove" it; pwsh's profile only aliases `powershell` → `pwsh`.
 - scoop is per-user and never elevated. **pwsh 7 comes from winget's MSI** (`--installer-type wix
   --scope machine`, one UAC prompt) at the FIXED `$env:ProgramFiles\PowerShell\7` — NOT winget's
