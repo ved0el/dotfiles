@@ -2,14 +2,15 @@
 {{- /* Merge the curated keys from .chezmoitemplates/claude-settings.json into the LIVE
      ~/.claude/settings.json instead of replacing it: Claude writes machine-local keys
      (plugin toggles, approved commands) here all the time. Object-valued keys merge one
-     level deep with the curated entry winning; permissions.allow is a union; hooks and
-     scalars are replaced. Keys only the live file has are kept. */ -}}
+     level deep with the curated entry winning (hooks per event, so tool-installed events
+     like herdr's SessionStart survive); permissions.allow is a union; scalars are replaced.
+     Keys only the live file has are kept. */ -}}
 {{- $live := dict -}}
 {{- if .chezmoi.stdin -}}{{- $live = fromJson .chezmoi.stdin -}}{{- end -}}
 {{- $want := includeTemplate "claude-settings.json" . | fromJson -}}
 {{- range $k, $v := $want -}}
 {{-   $old := get $live $k -}}
-{{-   if and (kindIs "map" $v) (kindIs "map" $old) (ne $k "hooks") -}}
+{{-   if and (kindIs "map" $v) (kindIs "map" $old) -}}
 {{- /* not sprig merge: mergo treats false/""/0 as empty and lets the live value win */ -}}
 {{-     $m := deepCopy $old -}}
 {{-     range $kk, $vv := $v -}}{{- $_ := set $m $kk $vv -}}{{- end -}}
