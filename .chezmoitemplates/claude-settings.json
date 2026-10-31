@@ -123,6 +123,10 @@
     "wizard": "off",
     "writing-for-agents": "off"
   },
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
   "advisorModel": "fable",
   "awaySummaryEnabled": false,
   "pluginConfigs": {
