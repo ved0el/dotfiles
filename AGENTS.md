@@ -102,8 +102,11 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   terminal theme change breaks them. zsh caches vivid's output and feeds completion `list-colors`.
 - fzf-tab REQUIRES `zstyle ':completion:*' menu no` — never `menu select`.
 - **Alacritty = the terminal** (picked for speed over WezTerm). Windows: scoop `extras/alacritty`,
-  guarded on the command. macOS: installed BY HAND — Homebrew disabled the cask (fails Gatekeeper,
-  2026-09); the bootstrap only prints the link. Linux: config only. One template
+  guarded on the command. macOS: Homebrew disabled the cask (fails Gatekeeper,
+  2026-09), so the bootstrap curls the latest release `.dmg` into `/Applications` (guarded on the
+  .app; ad-hoc signed — curl sets no quarantine, a browser download would). Linux: apt `alacritty` under the `apps` profile (headless
+  boxes skip it); warns when apt's is < 0.13 (Debian 12 = 0.11, YAML only); its font = Nerd Fonts'
+  `JetBrainsMono.tar.xz` into `~/.local/share/fonts` (no apt package), guarded on the .ttf. One template
   `.chezmoitemplates/alacritty.toml` → `dot_config/alacritty/` on EVERY OS (one path shared with
   other tools); Windows reads only `%APPDATA%`, never XDG, so `AppData/Roaming/alacritty/` is a stub
   whose `general.import` loads `~/.config/alacritty/alacritty.toml` (`.chezmoiignore` drops it on Unix). It only draws —

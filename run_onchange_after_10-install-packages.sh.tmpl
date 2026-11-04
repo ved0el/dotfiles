@@ -18,8 +18,20 @@ command -v curl >/dev/null 2>&1 || brew install curl
 # mole — macOS cleanup/optimization CLI (macOS only).
 command -v mole >/dev/null 2>&1 || brew install mole
 # Alacritty (the cross-OS terminal, ~/.config/alacritty) + the font family it names. Homebrew
-# disabled its cask (fails Gatekeeper, 2026-09), so the app is installed by hand.
-[ -d /Applications/Alacritty.app ] || echo "[terminal] install Alacritty by hand: https://github.com/alacritty/alacritty/releases"
+# disabled its cask (fails Gatekeeper, 2026-09), so the .dmg comes from the GitHub release. It's
+# only ad-hoc signed: curl sets no quarantine flag, so it opens; a browser download wouldn't.
+if [ ! -d /Applications/Alacritty.app ]; then
+  _url=$(curl -fsSL ${GITHUB_TOKEN:+-H "Authorization: Bearer $GITHUB_TOKEN"} \
+    https://api.github.com/repos/alacritty/alacritty/releases/latest \
+    | sed -n 's/.*"browser_download_url": *"\([^"]*\.dmg\)".*/\1/p' | head -n 1)
+  [ -n "$_url" ] || { echo "[terminal] no Alacritty .dmg in the latest release" >&2; exit 1; }
+  _tmp=$(mktemp -d)
+  curl -fsSLo "$_tmp/alacritty.dmg" "$_url"
+  hdiutil attach -quiet -nobrowse -readonly -mountpoint "$_tmp/mnt" "$_tmp/alacritty.dmg"
+  cp -R "$_tmp/mnt/Alacritty.app" /Applications/
+  hdiutil detach -quiet "$_tmp/mnt"
+  rm -rf "$_tmp"
+fi
 [ -f "$HOME/Library/Fonts/JetBrainsMonoNLNerdFont-Regular.ttf" ] || brew install --cask font-jetbrains-mono-nerd-font
 {{ if .wm }}
 # macOS window manager (yabai + skhd) from the upstream tap — install only what's missing
@@ -47,7 +59,26 @@ command -v zsh  >/dev/null 2>&1 || _pkgs="$_pkgs zsh"
 # Colour emoji: Linux ships no colour emoji font (macOS/Windows do); fontconfig picks it up.
 dpkg -s fonts-noto-color-emoji >/dev/null 2>&1 || _pkgs="$_pkgs fonts-noto-color-emoji"
 {{ if .develop }}command -v make >/dev/null 2>&1 || _pkgs="$_pkgs make"{{ end }}
+# Alacritty (the cross-OS terminal): a GUI app, so the `apps` profile — a headless server skips it.
+{{ if .apps -}}
+command -v alacritty >/dev/null 2>&1 || _pkgs="$_pkgs alacritty"
+command -v xz        >/dev/null 2>&1 || _pkgs="$_pkgs xz-utils"   # Nerd Font tarball below
+command -v fc-cache  >/dev/null 2>&1 || _pkgs="$_pkgs fontconfig"
+{{ end -}}
 if [ -n "$_pkgs" ]; then sudo apt-get update -y && sudo apt-get install -y $_pkgs; fi
+{{ if .apps -}}
+# The font family Alacritty names (no apt package): Nerd Fonts' release tarball, per-user.
+if [ ! -f "$HOME/.local/share/fonts/JetBrainsMono/JetBrainsMonoNLNerdFont-Regular.ttf" ]; then
+  mkdir -p "$HOME/.local/share/fonts/JetBrainsMono"
+  curl -fsSL https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.tar.xz \
+    | tar -xJ -C "$HOME/.local/share/fonts/JetBrainsMono"
+  fc-cache -f "$HOME/.local/share/fonts" >/dev/null
+fi
+# The shared config is TOML (Alacritty >= 0.13); Debian 12's apt ships 0.11 (YAML only).
+case "$(alacritty --version | cut -d' ' -f2)" in
+  0.[0-9].*|0.1[0-2].*) echo "[terminal] apt's Alacritty is too old for ~/.config/alacritty/alacritty.toml (needs >= 0.13)" ;;
+esac
+{{ end -}}
 {{ if .apps -}}
 # Essential GUI apps (the `apps` profile) from vendor repos, after the batch above so curl exists.
 # Tailscale: its official script (picks the right repo per distro). Brave Origin (free on Linux):
