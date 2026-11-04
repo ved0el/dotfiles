@@ -22,8 +22,9 @@ fail() { echo "$1" >&2; failed=1; }
 # Claude Code itself — the marketplace step below is a no-op without it, and since the
 # run_onchange fingerprint wouldn't change afterwards it would never retry on a fresh box.
 # Official installer; lands in ~/.local/bin (already on PATH above) and self-updates after that.
+# Download first: `curl | bash` would turn a failed download into an empty script that exits 0.
 command -v claude >/dev/null 2>&1 || \
-  curl -fsSL https://claude.ai/install.sh | bash || \
+  { _s=$(curl -fsSL https://claude.ai/install.sh) && printf '%s\n' "$_s" | bash; } || \
   fail "[claude] install failed"
 
 # Claude Code marketplaces + plugins — INSTALL ONLY WHAT'S MISSING. The ids below are

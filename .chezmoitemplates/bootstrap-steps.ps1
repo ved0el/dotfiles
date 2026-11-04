@@ -40,5 +40,6 @@ function Set-GitHubToken {
   $ghToken = & { $ErrorActionPreference = 'Continue'; gh auth token 2>$null }
   if ($LASTEXITCODE -eq 0 -and $ghToken) { $env:GITHUB_TOKEN = "$ghToken".Trim() }
 }
-Set-GitHubToken
+# Not called here: part 2 (npx skills, the Claude installer) never needs the token, so only part 1
+# exports it, right before `mise install`.
 $GhHint = 'GitHub rate limit? run: gh auth login (or set GITHUB_TOKEN) - then chezmoi apply'

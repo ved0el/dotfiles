@@ -42,6 +42,10 @@ renovate.json
 {{ if ne .chezmoi.os "windows" }}
 AppData
 {{ end }}
+# macOS: Rex replaces Alacritty (and tmux).
+{{ if eq .chezmoi.os "darwin" }}
+.config/alacritty
+{{ end }}
 # Rex (terminal + multiplexer) is a macOS-only app.
 {{ if ne .chezmoi.os "darwin" }}
 .config/rex
@@ -58,6 +62,7 @@ AppData
 {{ if not .tmux }}
 .tmux.conf
 .psmux
+.local/bin/tmux-sessionizer
 {{ end }}
 {{ if not .tools }}
 .config/bat

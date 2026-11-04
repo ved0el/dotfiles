@@ -6,6 +6,9 @@
 # all dotfiles are applied, so mise's conf.d/*.toml are in place when `mise install`
 # runs.
 set -eu
+# run_url <url> <shell> [args]: run an installer script. Never `curl | sh`: a failed download
+# feeds sh an empty script, which exits 0, so the failure is lost and the run is never retried.
+run_url() { _s=$(curl --proto '=https' --tlsv1.2 -fsSL "$1") && shift && printf '%s\n' "$_s" | "$@"; }
 
 # --- base packages: install only what's missing. btop→bottom and tree→eza are handled
 #     by mise + shell aliases now, so they're no longer installed via brew/apt. ---
@@ -14,24 +17,28 @@ command -v brew >/dev/null 2>&1 || /bin/bash -c "$(curl -fsSL https://raw.github
 # git/curl ship with macOS — only install if somehow absent.
 command -v git  >/dev/null 2>&1 || brew install git
 command -v curl >/dev/null 2>&1 || brew install curl
-{{ if .tmux }}command -v tmux >/dev/null 2>&1 || brew install tmux{{ end }}
 # mole — macOS cleanup/optimization CLI (macOS only).
 command -v mole >/dev/null 2>&1 || brew install mole
-# Alacritty (the cross-OS terminal, ~/.config/alacritty) + the font family it names. Homebrew
-# disabled its cask (fails Gatekeeper, 2026-09), so the .dmg comes from the GitHub release. It's
-# only ad-hoc signed: curl sets no quarantine flag, so it opens; a browser download wouldn't.
-if [ ! -d /Applications/Alacritty.app ]; then
-  _url=$(curl -fsSL ${GITHUB_TOKEN:+-H "Authorization: Bearer $GITHUB_TOKEN"} \
-    https://api.github.com/repos/alacritty/alacritty/releases/latest \
-    | sed -n 's/.*"browser_download_url": *"\([^"]*\.dmg\)".*/\1/p' | head -n 1)
-  [ -n "$_url" ] || { echo "[terminal] no Alacritty .dmg in the latest release" >&2; exit 1; }
+# install_dmg <url> [--verify]: copy the .app(s) in a .dmg into /Applications. curl sets no
+# quarantine flag, so Gatekeeper never checks it: --verify demands a notarized app (spctl).
+install_dmg() {
+  [ -n "$1" ] || { echo "[dmg] no .dmg url found" >&2; exit 1; }
   _tmp=$(mktemp -d)
-  curl -fsSLo "$_tmp/alacritty.dmg" "$_url"
-  hdiutil attach -quiet -nobrowse -readonly -mountpoint "$_tmp/mnt" "$_tmp/alacritty.dmg"
-  cp -R "$_tmp/mnt/Alacritty.app" /Applications/
-  hdiutil detach -quiet "$_tmp/mnt"
-  rm -rf "$_tmp"
-fi
+  trap 'hdiutil detach -quiet "$_tmp/mnt" 2>/dev/null; rm -rf "$_tmp"' EXIT
+  curl -fsSLo "$_tmp/app.dmg" "$1"
+  hdiutil attach -quiet -nobrowse -readonly -mountpoint "$_tmp/mnt" "$_tmp/app.dmg"
+  for _app in "$_tmp"/mnt/*.app; do
+    [ "${2:-}" != --verify ] || spctl -a -t exec "$_app"
+    cp -R "$_app" /Applications/
+  done
+  hdiutil detach -quiet "$_tmp/mnt"; rm -rf "$_tmp"; trap - EXIT
+}
+# Rex = the macOS terminal AND multiplexer (replaces Alacritty + tmux; ~/.config/rex/init.lua). No
+# cask: the newest .dmg of its Sparkle appcast (first <enclosure>). Notarized -> --verify; self-updates.
+[ -d "/Applications/Rex Beta.app" ] || [ -d /Applications/Rex.app ] || \
+  install_dmg "$(curl -fsSL https://blob.superlogical.com/public/rex-app/snapshot/appcast.xml \
+    | sed -n 's/.*<enclosure url="\([^"]*\.dmg\)".*/\1/p' | head -n 1)" --verify
+# The font family the terminal configs name.
 [ -f "$HOME/Library/Fonts/JetBrainsMonoNLNerdFont-Regular.ttf" ] || brew install --cask font-jetbrains-mono-nerd-font
 {{ if .wm }}
 # macOS window manager (yabai + skhd) from the upstream tap — install only what's missing
@@ -42,19 +49,6 @@ skhd --start-service || true
 echo "[wm] yabai installed — run 'yabai --start-service' (needs SIP setup; see the yabai wiki)"
 {{ end }}
 {{ if .apps -}}
-# Rex (terminal + multiplexer, config ~/.config/rex/init.lua): no cask, so the newest .dmg from its
-# Sparkle appcast (the first <enclosure>). Developer ID signed; it updates itself after that.
-if [ ! -d "/Applications/Rex Beta.app" ]; then
-  _url=$(curl -fsSL https://blob.superlogical.com/public/rex-app/snapshot/appcast.xml \
-    | sed -n 's/.*<enclosure url="\([^"]*\.dmg\)".*/\1/p' | head -n 1)
-  [ -n "$_url" ] || { echo "[rex] no .dmg in the appcast" >&2; exit 1; }
-  _tmp=$(mktemp -d)
-  curl -fsSLo "$_tmp/rex.dmg" "$_url"
-  hdiutil attach -quiet -nobrowse -readonly -mountpoint "$_tmp/mnt" "$_tmp/rex.dmg"
-  cp -R "$_tmp/mnt/Rex Beta.app" /Applications/
-  hdiutil detach -quiet "$_tmp/mnt"
-  rm -rf "$_tmp"
-fi
 # Essential GUI apps (the `apps` profile; list = .chezmoidata.yaml appList.darwin).
 for _c in {{ .appList.darwin | join " " }}; do
   brew list --cask "$_c" >/dev/null 2>&1 || brew install --cask "$_c"
@@ -96,7 +90,7 @@ esac
 # Essential GUI apps (the `apps` profile) from vendor repos, after the batch above so curl exists.
 # Tailscale: its official script (picks the right repo per distro). Brave Origin (free on Linux):
 # Brave's apt repo, package brave-origin.
-command -v tailscale >/dev/null 2>&1 || curl -fsSL https://tailscale.com/install.sh | sh
+command -v tailscale >/dev/null 2>&1 || run_url https://tailscale.com/install.sh sh
 if ! dpkg -s brave-origin >/dev/null 2>&1; then
   sudo curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
   sudo curl -fsSLo /etc/apt/sources.list.d/brave-browser-release.sources https://brave-browser-apt-release.s3.brave.com/brave-browser.sources
@@ -118,12 +112,11 @@ export PATH="$HOME/.local/bin:$PATH"
 
 # --- sheldon (zsh plugin manager) — idempotent; --force overwrites on upgrade ---
 command -v sheldon >/dev/null 2>&1 || \
-  curl --proto '=https' -fLsS https://rossmacarthur.github.io/install/crate.sh | \
+  run_url https://rossmacarthur.github.io/install/crate.sh \
     bash -s -- --force --repo rossmacarthur/sheldon --to "$HOME/.local/bin"
 
 # --- mise (runtimes + CLI tools, cross-platform — drives the tools/develop profiles) ---
-command -v mise >/dev/null 2>&1 || \
-  curl --proto '=https' --tlsv1.2 -fsSL https://mise.run | sh
+command -v mise >/dev/null 2>&1 || run_url https://mise.run sh
 
 {{ if .tmux -}}
 # --- tmux plugins (TPM) — server-free install --------------------------------

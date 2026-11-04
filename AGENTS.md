@@ -45,10 +45,10 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
 | `dot_config/{yabai,skhd}` / `{komorebi,whkd,yasb}` | tiling WM: macOS / Windows |
 | `dot_claude/`, `.chezmoitemplates/claude-settings.json` | Claude settings (merged), CLAUDE.md, statuslines |
 | `dot_tmux.conf.tmpl`, `dot_local/bin/` | tmux + its helper scripts (Unix); psmux reads the same file (Windows blocks) |
-| `.chezmoitemplates/alacritty.toml` | Alacritty, the main terminal on every OS (rendered to `~/.config/alacritty`; Windows' `%APPDATA%\alacritty` only imports it) |
+| `.chezmoitemplates/alacritty.toml` | Alacritty, the terminal on Windows + Linux (macOS: Rex) (rendered to `~/.config/alacritty`; Windows' `%APPDATA%\alacritty` only imports it) |
 
 ## Profiles & OS
-- Profile keys `tools`, `develop`, `tmux` (Windows = psmux), `wm` (macOS + Windows), `apps` — plus the
+- Profile keys `tools`, `develop`, `tmux` (Linux; Windows = psmux; macOS = off, Rex), `wm` (macOS + Windows), `apps` — plus the
   Windows-only `sshd` (bool) and strings `scoopDir`/`miseDataDir` — are prompted by
   `chezmoi init` (`.chezmoi.toml.tmpl` → `~/.config/chezmoi/chezmoi.toml`, which overrides
   `.chezmoidata.yaml`). `apply` never re-prompts: re-run `init` or edit that file.
@@ -101,24 +101,9 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   `ansi`, ripgrep, starship palette, micro `simple`, vivid `ansi`); never a hex/`colourNNN`, or a
   terminal theme change breaks them. zsh caches vivid's output and feeds completion `list-colors`.
 - fzf-tab REQUIRES `zstyle ':completion:*' menu no` — never `menu select`.
-- **Alacritty = the terminal** (picked for speed over WezTerm). Windows: scoop `extras/alacritty`,
-  guarded on the command. macOS: Homebrew disabled the cask (fails Gatekeeper,
-  2026-09), so the bootstrap curls the latest release `.dmg` into `/Applications` (guarded on the
-  .app; ad-hoc signed — curl sets no quarantine, a browser download would). Linux: apt `alacritty` under the `apps` profile (headless
-  boxes skip it); warns when apt's is < 0.13 (Debian 12 = 0.11, YAML only); its font = Nerd Fonts'
-  `JetBrainsMono.tar.xz` into `~/.local/share/fonts` (no apt package), guarded on the .ttf. One template
-  `.chezmoitemplates/alacritty.toml` → `dot_config/alacritty/` on EVERY OS (one path shared with
-  other tools); Windows reads only `%APPDATA%`, never XDG, so `AppData/Roaming/alacritty/` is a stub
-  whose `general.import` loads `~/.config/alacritty/alacritty.toml` (`.chezmoiignore` drops it on Unix). It only draws —
-  sessions, splits and restore stay in tmux/psmux (it has no tabs; never bind `C-b`). Theme = the
-  inline `[colors]` block (Catppuccin Mocha); tmux sets NO pane bg (`window-(active-)style`) so
-  every pane uses the theme's bg (fzf too: `bg:` unset, `bg+:-1`). Dim (SGR 2) is darkened by
-  Alacritty itself — no font trick. Windows start dir `D:/work` renders only when it exists
-  (`stat`). Its font family must be one the bootstrap installs (macOS: cask
-  `font-jetbrains-mono-nerd-font`, guarded on the .ttf).
-- **Rex** (macOS only, `apps` profile): terminal + multiplexer app, config `dot_config/rex/init.lua`
-  (tmux keys, ignored off macOS). No cask: the bootstrap curls the first `<enclosure>` `.dmg` of its
-  Sparkle appcast into `/Applications/Rex Beta.app` (guarded on the .app); Sparkle updates it after.
+- **Alacritty = the terminal** on Windows + Linux (one config: `.chezmoitemplates/alacritty.toml`); install
+  paths, font and theme rules: `dot_config/alacritty/AGENTS.md`.
+- **Rex** = the macOS terminal + multiplexer (replaces Alacritty and tmux there): `dot_config/rex/AGENTS.md`.
 - Claude install / plugins / skills: read `dot_claude/AGENTS.md` before editing them.
 
 ## Windows
@@ -153,33 +138,8 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   the bootstrap installs — check the FAMILY NAME the package registers (its manifest's `-Filter`,
   then the .ttf's name table), not just the files it ships: `JetBrainsMono-NF` →
   `JetBrainsMonoNL Nerd Font`, `-NF-Mono` → only `… Nerd Font Mono`.
-- **psmux** reads `~/.tmux.conf`; Windows-only lines are `{{ if eq .chezmoi.os "windows" }}` blocks
-  in `dot_tmux.conf.tmpl`. Plugins are copied from the `psmux/psmux-plugins` monorepo into
-  `~/.psmux/plugins/` (their `plugin.conf` hardcodes that path) — keep the bootstrap list and the
-  `@plugin` lines in sync. Not ported: the sessionizer (`C-b f`).
-  Its border label is a literal replace of `#{pane_title}`/`#{pane_index}`/`#P` only (`#P` = pane
-  id), so the pane name is the pane title. psmux exposes no "renamed" flag for a window or pane, so only a human names them:
-  `allow-set-title`/`allow-rename`/`automatic-rename` off; status-left shows the window number while a window is still `pwsh`, the dir
-  while a pane title is still `#{host}` (`#H` isn't expanded inside `#{==:}`). Claude panes are found for restore by the
-  session id `statusline.ps1` records in `~/.psmux/claude-sessions/<dir>`, not by their (now unset) titles.
-  No extended-keys, so `C-Enter` is bound to `send-keys C-j`; over SSH the client can't send C-Enter at all, so Alacritty's `[keyboard]` binds `Control+Enter` to `chars = "\u001b\r"` (ESC CR = Alt+Enter, which psmux's SSH and console input forwards as `\x1b\r` — Claude's newline; a bare `\n` is parsed as Enter). No `psmux-cpu` (pwsh every status tick).
-  psmux re-runs `Set-PSReadLineOption -PredictionSource None` after the profile unless
-  `allow-predictions on` (+ `prediction-dimming off`) — both set in the Windows block.
-  Restore = `~/.psmux/tm-restore.ps1` (never attaches), run by profile `tm` (+ attach) and, `sshd` only, the
-  `psmux-restore` AtLogOn task (autologon = at boot; a logon task needs no elevation, a boot/S4U one does
-  and lacks the user's creds — a hand-made boot task running bare `claude` once clobbered the save). `tm` is
-  auto-run at the end of the profile on an interactive SSH login — not `pwsh -c`,
-  psmux, `CLAUDECODE`; restore runs whenever a saved session isn't running (`psmux ls` exits 0 with no server —
-  test its output) (`@continuum-restore` off: one server per session re-fires its once-per-server
-  guard); `node` panes go through `~/.psmux/strategies/node_claude.ps1` (title → `custom-title` →
-  `Set-Location <dir>; claude --resume` — cd first, a warm pane's own `cd` can lose the race, else a comment line — never empty, resurrect falls back to `node`).
-- **`claude-rc`** (`sshd` only): an AtLogOn task (not elevated — admin commands go through gsudo) runs
-  `claude remote-control --spawn same-dir --no-create-session-in-dir` hidden in `D:\work` (if it exists, else
-  `~`), so a new session can start from claude.ai / the app after a reboot with no SSH login; restored panes
-  come back with `--remote-control` (`node_claude.ps1`). Wrapped in `while ($true) { …; Start-Sleep 60 }`:
-  Task Scheduler only restarts a task that fails to START, and the server exits 1 on a network drop or
-  while a killed one's registration is still live ("already served", ~3 min). Not a psmux pane: a second
-  `node` pane in the same dir makes the resurrect strategy skip both.
+- **psmux** (tmux for Windows) + its session restore: read `dot_psmux/AGENTS.md` before editing
+  `dot_psmux/`, the Windows blocks of `dot_tmux.conf.tmpl`, or the psmux steps of the `.ps1` bootstrap.
 - WinPS 5.1 is an OS component — never "remove" it; pwsh's profile only aliases `powershell` → `pwsh`.
 - scoop is per-user and never elevated. **pwsh 7 comes from winget's MSI** (`--installer-type wix
   --scope machine`, one UAC prompt) at the FIXED `$env:ProgramFiles\PowerShell\7` — NOT winget's

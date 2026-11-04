@@ -318,7 +318,7 @@ if (-not $rcTask -or $rcTask.Actions[0].Arguments -ne $rcArgs -or $rcTask.Action
 # --cd $HOME: mise only auto-discovers the global conf.d/*.toml when CWD is inside the home
 # tree; chezmoi may run this script from elsewhere, so anchor it at $HOME or nothing installs.
 if (Get-Command mise -ErrorAction SilentlyContinue) {
-  Set-GitHubToken  # again: mise's shims (a gh from an earlier run) are on PATH only from here
+  Set-GitHubToken  # here, not earlier: mise's shims (a gh from an earlier run) are on PATH only from here
   Invoke-Step 'mise install' { mise --cd $HOME install --yes } $GhHint
 }
 

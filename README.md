@@ -46,8 +46,8 @@ existing scoop/mise elsewhere is kept, not moved.
 | base | always | zsh + powerlevel10k + sheldon (Unix) or PowerShell + starship (Windows), mise, Claude Code + plugins |
 | **tools** | on | CLI tools via mise (bat, eza, fd, ripgrep, fzf, micro, rtk, codegraph, vivid, …), delta for git |
 | **develop** | off | language runtimes via mise (`conf.d/develop.toml`: node, python, go, bun, pnpm, uv; Cloudflare's `cf` by hand: `pnpm add -g cf`) + Claude agent skills (need node) · Windows: scoop `make` (Linux: apt) |
-| **tmux** | on | tmux + TPM plugins · Windows: psmux (same `~/.tmux.conf`, `tmux` works) + psmux-plugins |
-| **apps** | off | essential GUI apps (`.chezmoidata.yaml` `appList`, essentials only — the rest by hand) · Windows: winget (Tailscale, Brave, Flow Launcher, ShareX, Windhawk) · macOS: brew casks (Tailscale, Brave) + Rex (its appcast; config `~/.config/rex/init.lua`) · Linux: vendor repos (Tailscale, Brave Origin) + apt Alacritty |
+| **tmux** | on (not macOS) | tmux + TPM plugins (Linux) · macOS: none, Rex is the multiplexer · Windows: psmux (same `~/.tmux.conf`, `tmux` works) + psmux-plugins |
+| **apps** | off | essential GUI apps (`.chezmoidata.yaml` `appList`, essentials only — the rest by hand) · Windows: winget (Tailscale, Brave, Flow Launcher, ShareX, Windhawk) · macOS: brew casks (Tailscale, Brave) · Linux: vendor repos (Tailscale, Brave Origin) + apt Alacritty |
 | **wm** | off (not Linux) | macOS: yabai + skhd · Windows: komorebi + whkd + yasb |
 | **sshd** | off (Windows only) | this box is an SSH server: scoop `no_junction` (+ a one-time `scoop reset *`) so scoop apps work over SSH; a logon task restores the psmux sessions (with autologon: at boot), their Claude panes reachable from the Claude app; another runs `claude remote-control` so new sessions start from the app without SSH |
 
@@ -73,10 +73,11 @@ Shell aliases: `cz`, `cza`, `czd`, `czs`, `cze`, `czra`, `czu`, `czcd`; `..` / `
 - **Claude settings:** `~/.claude/settings.json` is merged with the tracked keys, so changes
   made in Claude Code survive `apply`. Copy a change into
   `.chezmoitemplates/claude-settings.json` to share it.
-- **Terminal:** Alacritty, one config template `.chezmoitemplates/alacritty.toml` (applied to
-  `~/.config/alacritty` on every OS; Windows' `%APPDATA%\alacritty` just imports it). Windows installs it via
-  scoop (`scoop update alacritty`); macOS: the bootstrap installs the latest GitHub release (Homebrew disabled the cask; to update, delete
-  `/Applications/Alacritty.app` and `cza`); Linux: apt, with the `apps` profile (needs >= 0.13 — Debian 12's is too old).
+- **Terminal:** macOS = **Rex** (terminal + multiplexer, replaces Alacritty and tmux; installed from its
+  appcast, self-updates; config `~/.config/rex/init.lua`). Windows + Linux = Alacritty, one config template
+  `.chezmoitemplates/alacritty.toml` (applied to `~/.config/alacritty`; Windows' `%APPDATA%\alacritty` just
+  imports it). Windows installs it via scoop (`scoop update alacritty`); Linux: apt, with the `apps` profile
+  (needs >= 0.13 — Debian 12's is too old).
   Theme = the `[colors]` block (Catppuccin Mocha; tmux, fzf, bat, rg, starship, micro, vivid use
   ANSI colours only, so they follow any theme); JetBrainsMonoNL Nerd Font 14, copy-on-select,
   right-click pastes, `Ctrl+Enter` = Claude newline, Windows starts in `D:/work` (if it exists).

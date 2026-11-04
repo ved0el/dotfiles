@@ -6,8 +6,11 @@
 {{- $miseDataDir := "" -}}
 {{- $tmux := false -}}
 {{- $sshd := false -}}
-{{- if ne .chezmoi.os "windows" -}}
+{{- /* macOS: Rex is the terminal AND the multiplexer, so no tmux (forced, not prompted: an
+       existing tmux = true in chezmoi.toml would otherwise survive). */ -}}
+{{- if eq .chezmoi.os "linux" -}}
 {{-   $tmux = promptBoolOnce . "tmux" "Install tmux + plugins (and manage ~/.tmux.conf)" true -}}
+{{- else if eq .chezmoi.os "darwin" -}}
 {{- else -}}
 {{-   $tmux = promptBoolOnce . "tmux" "Install psmux (tmux for Windows) + plugins (and manage ~/.tmux.conf)" true -}}
 {{- /* User-scope install roots (SCOOP / MISE_DATA_DIR). Enter keeps the default; an existing
