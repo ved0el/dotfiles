@@ -42,6 +42,19 @@ skhd --start-service || true
 echo "[wm] yabai installed — run 'yabai --start-service' (needs SIP setup; see the yabai wiki)"
 {{ end }}
 {{ if .apps -}}
+# Rex (terminal + multiplexer, config ~/.config/rex/init.lua): no cask, so the newest .dmg from its
+# Sparkle appcast (the first <enclosure>). Developer ID signed; it updates itself after that.
+if [ ! -d "/Applications/Rex Beta.app" ]; then
+  _url=$(curl -fsSL https://blob.superlogical.com/public/rex-app/snapshot/appcast.xml \
+    | sed -n 's/.*<enclosure url="\([^"]*\.dmg\)".*/\1/p' | head -n 1)
+  [ -n "$_url" ] || { echo "[rex] no .dmg in the appcast" >&2; exit 1; }
+  _tmp=$(mktemp -d)
+  curl -fsSLo "$_tmp/rex.dmg" "$_url"
+  hdiutil attach -quiet -nobrowse -readonly -mountpoint "$_tmp/mnt" "$_tmp/rex.dmg"
+  cp -R "$_tmp/mnt/Rex Beta.app" /Applications/
+  hdiutil detach -quiet "$_tmp/mnt"
+  rm -rf "$_tmp"
+fi
 # Essential GUI apps (the `apps` profile; list = .chezmoidata.yaml appList.darwin).
 for _c in {{ .appList.darwin | join " " }}; do
   brew list --cask "$_c" >/dev/null 2>&1 || brew install --cask "$_c"

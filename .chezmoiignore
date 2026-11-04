@@ -42,6 +42,10 @@ renovate.json
 {{ if ne .chezmoi.os "windows" }}
 AppData
 {{ end }}
+# Rex (terminal + multiplexer) is a macOS-only app.
+{{ if ne .chezmoi.os "darwin" }}
+.config/rex
+{{ end }}
 {{ if or (ne .chezmoi.os "darwin") (not .wm) }}
 .config/skhd
 .config/yabai

@@ -116,6 +116,9 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   Alacritty itself — no font trick. Windows start dir `D:/work` renders only when it exists
   (`stat`). Its font family must be one the bootstrap installs (macOS: cask
   `font-jetbrains-mono-nerd-font`, guarded on the .ttf).
+- **Rex** (macOS only, `apps` profile): terminal + multiplexer app, config `dot_config/rex/init.lua`
+  (tmux keys, ignored off macOS). No cask: the bootstrap curls the first `<enclosure>` `.dmg` of its
+  Sparkle appcast into `/Applications/Rex Beta.app` (guarded on the .app); Sparkle updates it after.
 - Claude install / plugins / skills: read `dot_claude/AGENTS.md` before editing them.
 
 ## Windows
