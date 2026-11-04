@@ -17,7 +17,9 @@ command -v brew >/dev/null 2>&1 || /bin/bash -c "$(curl -fsSL https://raw.github
 # git/curl ship with macOS — only install if somehow absent.
 command -v git  >/dev/null 2>&1 || brew install git
 command -v curl >/dev/null 2>&1 || brew install curl
-# mole — macOS cleanup/optimization CLI (macOS only).
+# mole — cleanup/optimization CLI. One project, a separate build per OS (Linux/Windows: their
+# own installer below / in the .ps1), so never mise: its github:tw93/Mole picks the newest tag,
+# a macOS-only release. `brew upgrade` updates it here.
 command -v mole >/dev/null 2>&1 || brew install mole
 # install_dmg <url> [--verify]: copy the .app(s) in a .dmg into /Applications. curl sets no
 # quarantine flag, so Gatekeeper never checks it: --verify demands a notarized app (spctl).
@@ -73,6 +75,9 @@ command -v xz        >/dev/null 2>&1 || _pkgs="$_pkgs xz-utils"   # Nerd Font ta
 command -v fc-cache  >/dev/null 2>&1 || _pkgs="$_pkgs fontconfig"
 {{ end -}}
 if [ -n "$_pkgs" ]; then sudo apt-get update -y && sudo apt-get install -y $_pkgs; fi
+# mole (Linux build): its official installer -> ~/.local/share/mole, linking mo/mole into
+# ~/.local/bin (no sudo). After the batch above so curl exists; `mo update` updates it in place.
+[ -e "$HOME/.local/bin/mo" ] || run_url https://raw.githubusercontent.com/tw93/Mole/linux/install.sh bash
 {{ if .apps -}}
 # The font family Alacritty names (no apt package): Nerd Fonts' release tarball, per-user.
 if [ ! -f "$HOME/.local/share/fonts/JetBrainsMono/JetBrainsMonoNLNerdFont-Regular.ttf" ]; then

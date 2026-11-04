@@ -239,6 +239,18 @@ if ((scoop list 2>$null | Out-String) -notmatch '(?im)^\s*psfzf\b') {
   }
 }
 
+# mole (Windows build of the cleanup CLI): its official quick installer, but into
+# ~/.local/share/mole like the Linux build (default: %LOCALAPPDATA%\Programs\mole-cli). It clones
+# the windows branch there and puts that dir on the User PATH; `mo update` git-pulls in place.
+# Not mise: see the .sh's mole note. Needs git (above). A child process: the installer `exit 1`s
+# on failure, which in-process would end this whole bootstrap; its exit code feeds Invoke-Step.
+$MoleDir = Join-Path $HOME '.local\share\mole'
+if (-not (Test-Path (Join-Path $MoleDir 'mole.ps1'))) {
+  Invoke-Step 'mole' {
+    powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "& ([scriptblock]::Create((Invoke-WebRequest -UseBasicParsing 'https://raw.githubusercontent.com/tw93/Mole/windows/quick-install.ps1').Content)) -InstallDir '$MoleDir'"
+  }
+}
+
 {{ if .develop -}}
 # make: Windows-only gap (Unix gets it from the OS), so scoop — the `develop` profile.
 if (-not (Get-Command make -ErrorAction SilentlyContinue)) { Invoke-Step 'make' { scoop install make } }

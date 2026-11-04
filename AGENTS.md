@@ -77,7 +77,8 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   WMs, mole, zsh, …) **and bootstrap prerequisites** that must exist before mise runs (git, curl,
   mise itself). Never move a cross-platform tool off mise on one OS — not even gh: the lists drift.
 - OS package managers only for what mise can't do, installed only if missing: brew/apt `git curl
-  tmux` (+`zsh` on Linux, `mole`/`yabai`/`skhd` on macOS); scoop `git mise openssl starship gsudo
+  tmux` (+`zsh` on Linux, `mole`/`yabai`/`skhd` on macOS; mole on Linux/Windows = its official
+  installer into `~/.local/share/mole`, never mise — one repo tags all 3 OS builds); scoop `git mise openssl starship gsudo
   JetBrainsMono-NF psfzf` (+`psmux` for `tmux`); winget `Microsoft.PowerShell` + `Microsoft.VCRedist.2015+.{x64,x86}` (+arm64) — always run:
   `winget install` upgrades an installed package, exit `0x8A15002B`/`0x8A150061` = already current. Guard on the
   COMMAND (a module: on `scoop list | Out-String` — `Select-String` on its objects never matches; a
