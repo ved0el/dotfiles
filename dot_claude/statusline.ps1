@@ -8,8 +8,8 @@
 # in sync. See the "statusline flash" gotcha in dot_claude/AGENTS.md.
 #
 # Line 1  WHERE:    📁 cwd  🔀 branch[✱] [↑↓]  +adds −dels  🌳 worktree
-# Line 2  ENGINE:   🪪 account  🤖 model  🎚️ effort  🎯 cache-hit%  🧠 used%
-# Line 3  STATUS:   💵 cost  ⏱️ duration  🚦 5h X% (14:50)  🚦 7d Y% (Mon 09:05)  👤 agent
+# Line 2  ENGINE:   📧 account  🤖 model  🔥 effort  🎯 cache-hit%  🧠 used%
+# Line 3  STATUS:   💰 cost  ⏳ duration  🔋 5h X% (14:50) / 7d Y% (Mon 09:05), each only if the plan has it  👤 agent
 # =============================================================================
 
 param([switch]$SessionEnd)
@@ -116,10 +116,16 @@ $C = "$e[36m"; $M = "$e[35m"; $G = "$e[32m"; $Y = "$e[33m"; $R = "$e[31m"
 $K = "$e[90m"; $W = "$e[1m"; $D = "$e[2m"; $X = "$e[0m"
 $BR = "$e[1;31m"; $BY = "$e[1;33m"; $BM = "$e[1;35m"; $BC = "$e[1;36m"
 
-# --- Icons (swap to taste; keep in sync with statusline.sh) -------------------
-$ICON_DIR = "📁"; $ICON_GIT = "🔀"; $ICON_MODEL = "🤖"; $ICON_EFFORT = "🎚️"
-$ICON_CACHE = "🎯"; $ICON_CTX = "🧠"; $ICON_COST = "💵"; $ICON_TIME = "⏱️"
-$ICON_LIMIT = "🚦"; $ICON_AGENT = "👤"; $ICON_TREE = "🌳"; $ICON_ACCOUNT = "🪪"
+# --- Icons: ONE style = colour emoji, all wide (2 cells). Never pick one the Nerd Font also has
+# (e.g. HIGH VOLTAGE U+26A1): the terminal then draws the font's monochrome glyph. Never a narrow,
+# text-default symbol + VS16 (e.g. STOPWATCH U+23F1): squeezed into 1 cell, it renders small.
+# Ordered as displayed; keep in sync with statusline.sh.
+# Line 1 WHERE
+$ICON_DIR = "📁";     $ICON_GIT = "🔀";   $ICON_TREE = "🌳"
+# Line 2 ENGINE
+$ICON_ACCOUNT = "📧"; $ICON_MODEL = "🤖"; $ICON_EFFORT = "🔥"; $ICON_CACHE = "🎯"; $ICON_CTX = "🧠"
+# Line 3 STATUS
+$ICON_COST = "💰";    $ICON_TIME = "⏳";  $ICON_LIMIT = "🔋"; $ICON_AGENT = "👤"
 
 # --- Helpers -----------------------------------------------------------------
 function Pct-Color([int]$v, [int]$hi, [int]$mid) {
@@ -158,7 +164,8 @@ function Fmt-Reset($ts) {
 }
 
 function Fmt-Rl([string]$label, $pct, $reset) {
-    if ($null -eq $pct -or "$pct" -eq '') { return '' }
+    # A limit the plan doesn't have (e.g. no 5h window) comes without a reset time: hide it.
+    if ($null -eq $pct -or "$pct" -eq '' -or $null -eq $reset -or "$reset" -eq '') { return '' }
     $p = [int][math]::Round([double]$pct)
     $out = "$ICON_LIMIT $(Pct-Color $p 80 50)$label $p%$X"
     $rs = Fmt-Reset $reset

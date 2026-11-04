@@ -3,15 +3,14 @@
 # Claude Code 3-line statusline — vibe-coding edition
 # =============================================================================
 # Line 1  WHERE:    📁 cwd  🔀 branch[✱] [↑↓]  +adds −dels  🌳 worktree
-# Line 2  ENGINE:   🪪 account  🤖 model  🎚️ effort  🎯 cache-hit%  🧠 used%
-# Line 3  STATUS:   💵 cost  ⏱️ duration  🚦 5h X% (14:50)  🚦 7d Y% (Mon 09:05)  👤 agent
+# Line 2  ENGINE:   📧 account  🤖 model  🔥 effort  🎯 cache-hit%  🧠 used%
+# Line 3  STATUS:   💰 cost  ⏳ duration  🔋 5h X% (14:50) / 7d Y% (Mon 09:05), each only if the plan has it  👤 agent
 # =============================================================================
 
 # No statusline in an agent-team teammate (one pane per teammate would repeat the lead's
 # lines): Claude starts teammates with CLAUDE_CODE_SESSION_ATTENDED=0, the lead with 1.
 [ "${CLAUDE_CODE_SESSION_ATTENDED:-}" = 0 ] && exit 0
 input=$(cat)
-J() { jq -r "$1 // empty" 2>/dev/null <<<"$input"; }
 SETTINGS="$HOME/.claude/settings.json"
 
 # Optional: capture last render for debugging (set DEBUG_STATUSLINE=1 in env)
@@ -23,10 +22,18 @@ if [ "${DEBUG_STATUSLINE:-0}" = "1" ]; then
 fi
 
 # --- Extract (official schema) -----------------------------------------------
-MODEL=$(J '.model.display_name')
-DIR=$(J '.workspace.current_dir // .cwd')
-AGENT=$(J '.agent.name')
-WORKTREE=$(J '.worktree.name // .workspace.git_worktree')
+# One jq for every field (it runs on each refresh; a jq per field cost ~10ms each).
+# \x1f (unit separator) never occurs in these values and, unlike a tab, keeps empty fields.
+IFS=$'\x1f' read -r MODEL DIR AGENT WORKTREE EFFORT COST DUR_MS PCT_USED TRANSCRIPT \
+	RL5_PCT RL5_RESET RL7_PCT RL7_RESET < <(jq -r '[
+	.model.display_name, (.workspace.current_dir // .cwd), .agent.name,
+	(.worktree.name // .workspace.git_worktree), .effort.level,
+	(.cost.total_cost_usd // 0), (.cost.total_duration_ms // 0),
+	(.context_window.used_percentage // 0), .transcript_path,
+	.rate_limits.five_hour.used_percentage, .rate_limits.five_hour.resets_at,
+	.rate_limits.seven_day.used_percentage, .rate_limits.seven_day.resets_at
+] | map(if . == null then "" else tostring end) | join("\u001f")' 2>/dev/null <<<"$input")
+PCT_USED=${PCT_USED%%.*}
 
 # Logged-in Claude account — not in the statusline payload, so read it from the
 # CLI config (~/.claude.json → .oauthAccount.emailAddress). jq parses it in ~15ms.
@@ -36,13 +43,9 @@ ACCOUNT=""
 # Mask for shoulder-surfing / screenshots: keep the first 3 chars, hide the rest.
 [ -n "$ACCOUNT" ] && ACCOUNT="${ACCOUNT:0:3}***"
 
-EFFORT=$(J '.effort.level')
 [ -z "$EFFORT" ] && [ -f "$SETTINGS" ] &&
 	EFFORT=$(jq -r '.effortLevel // empty' "$SETTINGS" 2>/dev/null)
 
-COST=$(J '.cost.total_cost_usd // 0')
-DUR_MS=$(J '.cost.total_duration_ms // 0')
-PCT_USED=$(J '.context_window.used_percentage // 0' | cut -d. -f1)
 
 # Cache hit rate — read token usage from the transcript JSONL, since the
 # statusline JSON payload does not expose per-token cache counters.
@@ -52,7 +55,6 @@ PCT_USED=$(J '.context_window.used_percentage // 0' | cut -d. -f1)
 # (cache_creation is uncached input, so it belongs in the denominator.)
 # Performance: cap at the last 2000 lines so large transcripts stay fast.
 CACHE_HIT=""
-TRANSCRIPT=$(J '.transcript_path')
 if [ -n "$TRANSCRIPT" ] && [ -f "$TRANSCRIPT" ]; then
 	read -r _cr _inp _cc < <(
 		tail -n 2000 "$TRANSCRIPT" \
@@ -73,29 +75,22 @@ if [ -n "$TRANSCRIPT" ] && [ -f "$TRANSCRIPT" ]; then
 	fi
 fi
 
-RL5_PCT=$(J '.rate_limits.five_hour.used_percentage')
-RL5_RESET=$(J '.rate_limits.five_hour.resets_at')
-RL7_PCT=$(J '.rate_limits.seven_day.used_percentage')
-RL7_RESET=$(J '.rate_limits.seven_day.resets_at')
 
 # --- Colors ------------------------------------------------------------------
 C='\033[36m' M='\033[35m' G='\033[32m' Y='\033[33m' R='\033[31m'
 K='\033[90m' W='\033[1m' D='\033[2m' X='\033[0m'
 BR='\033[1;31m' BY='\033[1;33m' BM='\033[1;35m' BC='\033[1;36m'
 
-# --- Icons (emoji set — swap any of these to taste) --------------------------
-ICON_DIR="📁"
-ICON_GIT="🔀"
-ICON_MODEL="🤖"
-ICON_EFFORT="🎚️"
-ICON_CACHE="🎯"
-ICON_CTX="🧠"
-ICON_COST="💵"
-ICON_TIME="⏱️"
-ICON_LIMIT="🚦"
-ICON_AGENT="👤"
-ICON_TREE="🌳"
-ICON_ACCOUNT="🪪"
+# --- Icons: ONE style = colour emoji, all wide (2 cells). Never pick one the Nerd Font also has
+# (e.g. HIGH VOLTAGE U+26A1): the terminal then draws the font's monochrome glyph. Never a narrow,
+# text-default symbol + VS16 (e.g. STOPWATCH U+23F1): squeezed into 1 cell, it renders small.
+# Ordered as displayed; keep in sync with statusline.ps1.
+# Line 1 WHERE
+ICON_DIR="📁"     ICON_GIT="🔀"    ICON_TREE="🌳"
+# Line 2 ENGINE
+ICON_ACCOUNT="📧" ICON_MODEL="🤖"  ICON_EFFORT="🔥"  ICON_CACHE="🎯"  ICON_CTX="🧠"
+# Line 3 STATUS
+ICON_COST="💰"    ICON_TIME="⏳"   ICON_LIMIT="🔋"   ICON_AGENT="👤"
 
 # --- Helpers -----------------------------------------------------------------
 short_path() {
@@ -218,7 +213,8 @@ if [ "$COST_INT" -ge 5 ]; then COST_C="$BR"; else COST_C="$BY"; fi
 # --- Rate-limit segment ------------------------------------------------------
 fmt_rl() {
 	local label="$1" pct="$2" reset_ts="$3"
-	[ -z "$pct" ] && return
+	# A limit the plan doesn't have (e.g. no 5h window) comes without a reset time: hide it.
+	[ -z "$pct" ] || [ -z "$reset_ts" ] && return
 	pct=$(printf '%.0f' "$pct")
 	local pct_c
 	pct_c=$(pct_color "$pct" 80 50)
