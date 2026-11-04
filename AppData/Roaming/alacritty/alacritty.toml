@@ -1,0 +1,4 @@
+# Windows Alacritty only reads %APPDATA%\alacritty; the real config is ~/.config/alacritty
+# (the same path as every other OS), so edits there apply here too.
+[general]
+import = ["~/.config/alacritty/alacritty.toml"]

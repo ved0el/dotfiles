@@ -45,7 +45,7 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
 | `dot_config/{yabai,skhd}` / `{komorebi,whkd,yasb}` | tiling WM: macOS / Windows |
 | `dot_claude/`, `.chezmoitemplates/claude-settings.json` | Claude settings (merged), CLAUDE.md, statuslines |
 | `dot_tmux.conf.tmpl`, `dot_local/bin/` | tmux + its helper scripts (Unix); psmux reads the same file (Windows blocks) |
-| `.chezmoitemplates/alacritty.toml` | Alacritty, the main terminal on every OS (rendered to `~/.config/alacritty` / `%APPDATA%\alacritty`) |
+| `.chezmoitemplates/alacritty.toml` | Alacritty, the main terminal on every OS (rendered to `~/.config/alacritty`; Windows' `%APPDATA%\alacritty` only imports it) |
 
 ## Profiles & OS
 - Profile keys `tools`, `develop`, `tmux` (Windows = psmux), `wm` (macOS + Windows), `apps` — plus the
@@ -104,8 +104,9 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
 - **Alacritty = the terminal** (picked for speed over WezTerm). Windows: scoop `extras/alacritty`,
   guarded on the command. macOS: installed BY HAND — Homebrew disabled the cask (fails Gatekeeper,
   2026-09); the bootstrap only prints the link. Linux: config only. One template
-  `.chezmoitemplates/alacritty.toml` → `dot_config/alacritty/` (Unix) and `AppData/Roaming/alacritty/`
-  (Windows reads only `%APPDATA%`, never XDG); `.chezmoiignore` drops the other. It only draws —
+  `.chezmoitemplates/alacritty.toml` → `dot_config/alacritty/` on EVERY OS (one path shared with
+  other tools); Windows reads only `%APPDATA%`, never XDG, so `AppData/Roaming/alacritty/` is a stub
+  whose `general.import` loads `~/.config/alacritty/alacritty.toml` (`.chezmoiignore` drops it on Unix). It only draws —
   sessions, splits and restore stay in tmux/psmux (it has no tabs; never bind `C-b`). Theme = the
   inline `[colors]` block (Catppuccin Mocha); tmux sets NO pane bg (`window-(active-)style`) so
   every pane uses the theme's bg (fzf too: `bg:` unset, `bg+:-1`). Dim (SGR 2) is darkened by

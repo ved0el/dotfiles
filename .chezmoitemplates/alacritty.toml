@@ -1,6 +1,6 @@
 # Alacritty: the one terminal on every OS. It only draws; tmux (Windows: psmux) keeps the
-# sessions, splits and restore. Rendered to ~/.config/alacritty (Unix) and
-# %APPDATA%\alacritty (Windows — Alacritty ignores XDG there).
+# sessions, splits and restore. Rendered to ~/.config/alacritty on every OS (shared with other
+# tools); Windows' %APPDATA%\alacritty\alacritty.toml only imports it (Alacritty ignores XDG there).
 
 [general]
 {{- if eq .chezmoi.os "windows" }}

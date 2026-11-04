@@ -37,10 +37,9 @@ renovate.json
 .claude/statusline.ps1
 {{ end }}
 
-# Alacritty reads %APPDATA%\alacritty on Windows, ~/.config/alacritty elsewhere (one template).
-{{ if eq .chezmoi.os "windows" }}
-.config/alacritty
-{{ else }}
+# Alacritty's real config is ~/.config/alacritty on every OS; Windows only reads
+# %APPDATA%\alacritty, so AppData holds a stub that imports it (Unix drops AppData).
+{{ if ne .chezmoi.os "windows" }}
 AppData
 {{ end }}
 {{ if or (ne .chezmoi.os "darwin") (not .wm) }}
