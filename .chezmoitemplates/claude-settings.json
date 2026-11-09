@@ -44,7 +44,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "pwsh -NoLogo -NoProfile -File \"{{ .chezmoi.homeDir }}/.claude/statusline.ps1\" -SessionEnd"
+            "command": "IFS= read -r -d '' j; case $j in *'\"reason\":\"prompt_input_exit\"'*|*'\"reason\":\"clear\"'*|*'\"reason\":\"logout\"'*) printf '%s' \"$j\" | pwsh -NoLogo -NoProfile -File \"{{ .chezmoi.homeDir }}/.claude/statusline.ps1\" -SessionEnd ;; esac"
           }
         ]
       }

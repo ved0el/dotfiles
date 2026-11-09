@@ -19,6 +19,9 @@ param([switch]$SessionEnd)
 # -SessionEnd (a SessionEnd hook): the conversation was exited on purpose, so drop its
 # ~/.psmux/claude-sessions record — tm-restore resumes every record left behind at a reboot.
 # Only explicit exits: a shutdown that kills Claude may still fire the hook (reason "other").
+# The hook command (claude-settings.json, run by Git Bash) already filters those reasons with bash
+# builtins, so a shutdown never starts pwsh: a process started mid-logoff fails with 0xc0000142
+# and pops an "unable to start correctly" dialog. The check below stays as the authority.
 if ($SessionEnd) {
     try { $E = [Console]::In.ReadToEnd() | ConvertFrom-Json } catch { exit 0 }
     if ($E.reason -in 'prompt_input_exit', 'clear', 'logout' -and $E.session_id) {
