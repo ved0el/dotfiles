@@ -56,7 +56,7 @@ RULES = [
      # Deny-style entries (a `*` mid-pattern, e.g. `git *--output*`) aren't allow rules and pass.
      r"^\s*\"(Bash|PowerShell)(\((\*|(sudo|scoop|winget|choco|brew|apt|apt-get|npm|npx|pnpm|pnpx|yarn|bun|bunx"
      r"|pip|pipx|uv|uvx|cargo|go|node|python|docker|mise|git|gh|curl|wget|irm|iwr|iex|Invoke-Expression"
-     r"|Invoke-WebRequest|Invoke-RestMethod|Start-Process|Remove-Item|rm|del|agent-browser|rtk|delta|rg|fd|find|bat|cat|head|tail|less|more|jq|yq|sd|sed|awk|grep|Get-Content)\b"
+     r"|Invoke-WebRequest|Invoke-RestMethod|Start-Process|Remove-Item|rm|del|agent-browser|agent-desktop|rtk|delta|rg|fd|find|bat|cat|head|tail|less|more|jq|yq|sd|sed|awk|grep|Get-Content)\b"
      r"((?!(\s+[\w-]+)?\s+(--version|version|status|diff|log|show|blame|ls|list|ls-files|ls-tree|rev-parse"
      r"|describe|shortlog|cat-file|merge-base|rev-list|for-each-ref|current|which|where|doctor|outdated"
      r"|registry|view|checks|search|--list|--get|--show-current)\b)[^\"*]*(:\*)?|\s+\*))\))?\"",
@@ -174,6 +174,7 @@ def selftest():
         (".chezmoitemplates/claude-settings.json", '      "Bash(mise install:*)",'),
         (".chezmoitemplates/claude-settings.json", '      "Bash(rg:*)",'),
         (".chezmoitemplates/claude-settings.json", '      "PowerShell(jq:*)",'),
+        (".chezmoitemplates/claude-settings.json", '      "Bash(agent-desktop:*)",'),
     ]
     ok = [
         ("dot_config/zsh/conf.d/10-env.zsh", "unset MISE_GLOBAL_CONFIG_FILE MISE_CONFIG_DIR"),

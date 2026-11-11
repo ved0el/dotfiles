@@ -99,6 +99,8 @@ Render one template: `chezmoi execute-template < <source-file>`.
   to the unmanaged `~/.config/git/ignore`. Permission in `claude-settings.json`; the auto-init
   rule in `dot_claude/CLAUDE.md`.
 - **agent-browser** = the agents' browser tool (mise `aqua:`): read `dot_agent-browser/AGENTS.md`.
+- **agent-desktop** = the agents' desktop-app tool (mise `github:`; aqua registry lacks it). No
+  policy file: NEVER auto-allow it (hook-enforced); its app rules are in `dot_claude/CLAUDE.md`.
 - **delta** — wired by an idempotent `include.path` in the UNMANAGED `~/.gitconfig`; never
   manage `~/.gitconfig` (identity/signing stay machine-local).
 - **Colours follow the terminal theme** — CLI configs use ANSI names only (fzf, tmux, bat/delta

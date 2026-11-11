@@ -44,7 +44,7 @@ existing scoop/mise elsewhere is kept, not moved.
 | Profile | Default | Adds |
 |---|---|---|
 | base | always | zsh + powerlevel10k + sheldon (Unix) or PowerShell + starship (Windows), mise, Claude Code + plugins |
-| **tools** | on | CLI tools via mise (bat, eza, fd, ripgrep, fzf, micro, rtk, codegraph, agent-browser, vivid, …), delta for git |
+| **tools** | on | CLI tools via mise (bat, eza, fd, ripgrep, fzf, micro, rtk, codegraph, agent-browser, agent-desktop, vivid, …), delta for git |
 | **develop** | off | language runtimes via mise (`conf.d/develop.toml`: node, python, go, bun, pnpm, uv; Cloudflare's `cf` by hand: `pnpm add -g cf`) + Claude agent skills (need node) · Windows: scoop `make` (Linux: apt) |
 | **tmux** | on (not macOS) | tmux + TPM plugins (Linux) · macOS: none, Rex is the multiplexer · Windows: psmux (same `~/.tmux.conf`, `tmux` works) + psmux-plugins |
 | **apps** | off | essential GUI apps (`.chezmoidata.yaml` `appList`, essentials only — the rest by hand) · Windows: winget (Tailscale, Brave, Flow Launcher, ShareX, Windhawk) · macOS: brew casks (Tailscale, Brave) · Linux: vendor repos (Tailscale, Brave Origin) + apt Alacritty |
@@ -81,6 +81,9 @@ Shell aliases: `cz`, `cza`, `czd`, `czs`, `cze`, `czra`, `czu`, `czcd`; `..` / `
   user, so log in once per machine. Agents can't run page JS, download, upload or save/load cookies
   (`~/.agent-browser/policy.json`); moving a login is yours: set `AGENT_BROWSER_ENCRYPTION_KEY`
   (per machine, kept in your password manager) and run `agent-browser --action-policy <a looser policy file> state save` by hand (Claude is denied that flag).
+- **Desktop apps:** agents use `agent-desktop` (mise) through the OS accessibility tree. It has no
+  policy of its own, so every call goes through Claude's permission prompt and `~/.claude/CLAUDE.md`
+  keeps it off terminals, browsers, password managers, mail/chat and system settings.
 - **Claude permissions:** only read-only commands are auto-allowed (git/gh/mise read subcommands,
   `ls`, `wc`, `eza`, codegraph); everything else goes through auto mode's check. Secrets and browser
   data (`~/.ssh`, `.env*`, gh/Claude tokens, Brave/Zen/agent profiles) are denied to Read/Edit.

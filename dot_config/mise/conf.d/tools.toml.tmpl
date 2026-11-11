@@ -36,6 +36,10 @@ ripgrep = "latest"
 # binary driving Chromium over CDP (aqua = prebuilt, all 3 OSes). It launches Brave
 # (~/.agent-browser/config.json); per-client profiles + the agent rules: ~/.claude/CLAUDE.md.
 "aqua:vercel-labs/agent-browser" = "latest"
+# agent-desktop (vercel-labs/agent-desktop): the same for desktop apps, through the OS
+# accessibility tree (github = prebuilt, all 3 OSes; mise's bundled aqua registry lacks it). No app allowlist of its own, so the guard
+# is Claude's permission prompt + the rules in ~/.claude/CLAUDE.md.
+"github:vercel-labs/agent-desktop" = "latest"
 sd = "latest"
 # vivid: generates LS_COLORS. github backend = prebuilt binary (cross-platform), not the
 # cargo source build. zsh uses its built-in `ansi` theme for file + completion list colors.

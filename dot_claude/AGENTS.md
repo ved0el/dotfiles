@@ -24,7 +24,7 @@ behind each rule is in its commit (`git log -S`). Repo-wide rules: root `AGENTS.
   `eza` whole, and `deny` (also guards the classifier path) for exec/write/escape flags (`rg --pre`,
   `fd -x/--exec`, `bat --pager`, `yq -i`, `git --output/--ext-diff/--no-index`, agent-browser
   policy overrides). NEVER allow a whole git/gh, package managers, runtimes, downloaders, deletes,
-  file readers, `rtk` (proxies anything) or `agent-browser` — hook-enforced.
+  file readers, `rtk` (proxies anything), `agent-browser` or `agent-desktop` — hook-enforced.
   Write/exec rules a project needs go in ITS `.claude/settings.json` (or `settings.local.json`).
   Union merge: remove a dropped entry from the live file by hand too.
   Test what rtk auto-allows: `printf '{"tool_name":"Bash","tool_input":{"command":"git push"}}' | rtk hook claude`
@@ -35,7 +35,8 @@ behind each rule is in its commit (`git log -S`). Repo-wide rules: root `AGENTS.
   One run in panes: `claude --teammate-mode tmux`.
 - **`~/.claude/CLAUDE.md` is managed** (`dot_claude/CLAUDE.md`): the `@RTK.md` import (so rtk
   finds it present) + the codegraph rule + the shell-tools rule (built-in Read/Grep/Glob first; rg/fd/… preferred if installed, never
-  auto-allowed) + the browser rule (agent-browser, per-client profiles, policy, never Zen). `RTK.md` stays rtk-written and machine-local.
+  auto-allowed) + the browser rule (agent-browser, per-client profiles, policy, never Zen) + the desktop rule
+  (agent-desktop has no policy, so the rule lists the apps it never drives). `RTK.md` stays rtk-written and machine-local.
 
 ## Claude Code install
 - Bootstrap part 2 installs it only when `claude` is missing, with the official native one-liners
