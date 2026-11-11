@@ -44,7 +44,7 @@ existing scoop/mise elsewhere is kept, not moved.
 | Profile | Default | Adds |
 |---|---|---|
 | base | always | zsh + powerlevel10k + sheldon (Unix) or PowerShell + starship (Windows), mise, Claude Code + plugins |
-| **tools** | on | CLI tools via mise (bat, eza, fd, ripgrep, fzf, micro, rtk, codegraph, vivid, …), delta for git |
+| **tools** | on | CLI tools via mise (bat, eza, fd, ripgrep, fzf, micro, rtk, codegraph, agent-browser, vivid, …), delta for git |
 | **develop** | off | language runtimes via mise (`conf.d/develop.toml`: node, python, go, bun, pnpm, uv; Cloudflare's `cf` by hand: `pnpm add -g cf`) + Claude agent skills (need node) · Windows: scoop `make` (Linux: apt) |
 | **tmux** | on (not macOS) | tmux + TPM plugins (Linux) · macOS: none, Rex is the multiplexer · Windows: psmux (same `~/.tmux.conf`, `tmux` works) + psmux-plugins |
 | **apps** | off | essential GUI apps (`.chezmoidata.yaml` `appList`, essentials only — the rest by hand) · Windows: winget (Tailscale, Brave, Flow Launcher, ShareX, Windhawk) · macOS: brew casks (Tailscale, Brave) · Linux: vendor repos (Tailscale, Brave Origin) + apt Alacritty |
@@ -64,7 +64,7 @@ chezmoi re-add ~/.tmux.conf  # capture a $HOME edit (not for .tmpl / modify_ tar
 chezmoi cd                   # open the source repo to commit/push
 ```
 
-Shell aliases: `cz`, `cza`, `czd`, `czs`, `cze`, `czra`, `czu`, `czcd`; `..` / `...` / `....`, `lsal` (`ls -al`), `mkcd`, `reload`, `path`, `e` (editor), git `g` `gs` `gl` `gp` `gsw` `glg`, `cat` → bat without line numbers (plain text when piped), `top` → btm, `clc` / `clr` (claude --continue / --resume), `tm` (tmux) — same on zsh and pwsh (+ `which` on pwsh).
+Shell aliases: `cz`, `cza`, `czd`, `czs`, `cze`, `czra`, `czu`, `czcd`; `..` / `...` / `....`, `lsal` (`ls -al`), `mkcd`, `reload`, `path`, `e` (editor), git `g` `gs` `gl` `gp` `gsw` `glg`, `cat` → bat without line numbers (plain text when piped), `top` → btm, `clc` / `clr` (claude --continue / --resume), `tm` (tmux), `bp` (browser profile, below) — same on zsh and pwsh (+ `which` on pwsh).
 
 - **Add a package:** CLI tools go in `dot_config/mise/conf.d/tools.toml.tmpl` (all OSes).
   OS packages go in `run_onchange_after_10-install-packages.{sh,ps1}.tmpl`.
@@ -73,6 +73,17 @@ Shell aliases: `cz`, `cza`, `czd`, `czs`, `cze`, `czra`, `czu`, `czcd`; `..` / `
 - **Claude settings:** `~/.claude/settings.json` is merged with the tracked keys, so changes
   made in Claude Code survive `apply`. Copy a change into
   `.chezmoitemplates/claude-settings.json` to share it.
+- **Browsers:** Zen = personal (Firefox-based, so no agent tool can drive it), Brave's default
+  profile = your work, and one Brave user-data-dir per agent context or client in
+  `~/.local/share/browser-profiles/<name>`. Agents use `agent-browser` (mise; launches Brave via the
+  rendered `~/.agent-browser/config.json`, closes an idle headless browser after 30m; agents `close` a headed one); `bp <name>` opens a
+  profile by hand, `bp` lists them. Profile dirs are machine-local — cookies are encrypted per OS
+  user, so log in once per machine. Agents can't run page JS, download, upload or save/load cookies
+  (`~/.agent-browser/policy.json`); moving a login is yours: set `AGENT_BROWSER_ENCRYPTION_KEY`
+  (per machine, kept in your password manager) and run `agent-browser --action-policy <a looser policy file> state save` by hand (Claude is denied that flag).
+- **Claude permissions:** only read-only commands are auto-allowed (git/gh/mise read subcommands,
+  `ls`, `wc`, `eza`, codegraph); everything else goes through auto mode's check. Secrets and browser
+  data (`~/.ssh`, `.env*`, gh/Claude tokens, Brave/Zen/agent profiles) are denied to Read/Edit.
 - **Terminal:** macOS = **Rex** (terminal + multiplexer, replaces Alacritty and tmux; installed from its
   appcast, self-updates; config `~/.config/rex/init.lua`). Windows + Linux = Alacritty, one config template
   `.chezmoitemplates/alacritty.toml` (applied to `~/.config/alacritty`; Windows' `%APPDATA%\alacritty` just

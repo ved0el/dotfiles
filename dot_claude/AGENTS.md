@@ -15,12 +15,27 @@ behind each rule is in its commit (`git log -S`). Repo-wide rules: root `AGENTS.
   - Output is sorted `toPrettyJson`; the first apply after Claude reorders keys shows `M`.
   - Never symlink it: Claude saves by rename, replacing the link.
 - The template is a template only so `statusLine.command` can branch per OS.
+- **`permissions.allow` = read-only commands only, Bash + PowerShell twins.** An allow rule skips
+  auto mode's safety check, and **rtk's hook returns `allow` for any command an allow rule matches**
+  (with `Bash(git:*)` it auto-ran `git push --force`). No file-content readers either (rg, fd,
+  bat, cat, head, jq, yq, …): the Read/Edit secret-path denies (`~/.ssh`, `.env*`, gh/Claude
+  tokens, Brave/Zen/agent-browser data) don't cover the shell. So: git/gh/mise/codegraph as
+  read-only SUBCOMMANDS (`git status`, `gh pr view`, `mise ls`, `codegraph explore`, …), `ls`/`wc`/
+  `eza` whole, and `deny` (also guards the classifier path) for exec/write/escape flags (`rg --pre`,
+  `fd -x/--exec`, `bat --pager`, `yq -i`, `git --output/--ext-diff/--no-index`, agent-browser
+  policy overrides). NEVER allow a whole git/gh, package managers, runtimes, downloaders, deletes,
+  file readers, `rtk` (proxies anything) or `agent-browser` — hook-enforced.
+  Write/exec rules a project needs go in ITS `.claude/settings.json` (or `settings.local.json`).
+  Union merge: remove a dropped entry from the live file by hand too.
+  Test what rtk auto-allows: `printf '{"tool_name":"Bash","tool_input":{"command":"git push"}}' | rtk hook claude`
+  (`"permissionDecision":"allow"` = runs unchecked).
 - **No `model` key**: picking "Default" in `/model` deletes the key, so a tracked value drifts.
 - **`teammateMode: "in-process"`**: inside psmux/tmux, agent-team teammates otherwise open a pane
   each (psmux's `claude` wrapper injects `--teammate-mode tmux` only while the key is unset).
   One run in panes: `claude --teammate-mode tmux`.
 - **`~/.claude/CLAUDE.md` is managed** (`dot_claude/CLAUDE.md`): the `@RTK.md` import (so rtk
-  finds it present) + the codegraph rule + the shell-tools rule (rg/fd/sd/eza/jq/yq over the classics). `RTK.md` stays rtk-written and machine-local.
+  finds it present) + the codegraph rule + the shell-tools rule (built-in Read/Grep/Glob first; rg/fd/… preferred if installed, never
+  auto-allowed) + the browser rule (agent-browser, per-client profiles, policy, never Zen). `RTK.md` stays rtk-written and machine-local.
 
 ## Claude Code install
 - Bootstrap part 2 installs it only when `claude` is missing, with the official native one-liners

@@ -32,6 +32,10 @@ ripgrep = "latest"
 # its own node runtime; the github backend exposes its bin/ launcher (codegraph.cmd on
 # Windows). MCP registration is in the bootstrap; per-repo `codegraph init` is ~/.claude/CLAUDE.md's.
 "github:colbymchenry/codegraph" = "latest"
+# agent-browser (vercel-labs/agent-browser): browser automation CLI for AI agents, one Rust
+# binary driving Chromium over CDP (aqua = prebuilt, all 3 OSes). It launches Brave
+# (~/.agent-browser/config.json); per-client profiles + the agent rules: ~/.claude/CLAUDE.md.
+"aqua:vercel-labs/agent-browser" = "latest"
 sd = "latest"
 # vivid: generates LS_COLORS. github backend = prebuilt binary (cross-platform), not the
 # cargo source build. zsh uses its built-in `ansi` theme for file + completion list colors.

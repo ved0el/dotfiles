@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# bp — open an agent browser profile by hand: Brave with its own user-data-dir under
+# ~/.local/share/browser-profiles/<name> (the dirs agents pass to `agent-browser --profile`).
+# `bp` lists them. Brave's path comes from ~/.agent-browser/config.json (chezmoi-rendered).
+# Windows: the same function lives in the PowerShell profile.
+set -euo pipefail
+
+root="$HOME/.local/share/browser-profiles"
+if [[ $# -eq 0 ]]; then
+  ls -1 "$root" 2>/dev/null || true
+  exit 0
+fi
+name="$1"; shift
+[[ $name =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || { echo "bp: invalid profile name '$name'" >&2; exit 1; }
+
+exe=$(jq -r '.executablePath // empty' "$HOME/.agent-browser/config.json" 2>/dev/null || true)
+[[ -n $exe ]] || { echo "bp: no executablePath in ~/.agent-browser/config.json (install Brave, then chezmoi apply)" >&2; exit 1; }
+
+# A profile an agent already has open hands this window to that browser (one process per dir).
+nohup "$exe" --user-data-dir="$root/$name" "$@" >/dev/null 2>&1 &

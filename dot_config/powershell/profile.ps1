@@ -97,6 +97,17 @@ if (-not $env:CLAUDECODE) {
 # `ls -al` = eza's `ls` function (below) when installed; Get-ChildItem has no -al.
 function lsal { if (Test-Path Function:\ls) { ls -al @args } else { Get-ChildItem -Force @args } }
 
+# ── bp: open an agent browser profile by hand (Unix: dot_local/bin/executable_bp) ──
+# Brave with its own user-data-dir under ~/.local/share/browser-profiles/<name>; `bp` lists them.
+function bp([string]$Name) {
+  $root = Join-Path $HOME '.local\share\browser-profiles'
+  if (-not $Name) { if (Test-Path $root) { (Get-ChildItem -Directory $root).Name }; return }
+  if ($Name -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]*$') { Write-Error "bp: invalid profile name '$Name'"; return }
+  $exe = try { (Get-Content -Raw (Join-Path $HOME '.agent-browser\config.json') | ConvertFrom-Json).executablePath } catch { $null }
+  if (-not $exe) { Write-Error 'bp: no executablePath in ~/.agent-browser/config.json (install Brave, then chezmoi apply)'; return }
+  Start-Process $exe "--user-data-dir=`"$(Join-Path $root $Name)`""
+}
+
 # ── Antigravity IDE (VS Code fork; its CLI ships as `antigravity-ide`, no short name) ──
 if (Get-Command antigravity-ide -ErrorAction SilentlyContinue) {
   Set-Alias agide antigravity-ide

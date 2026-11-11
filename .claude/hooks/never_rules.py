@@ -50,6 +50,18 @@ RULES = [
      r"#[0-9a-fA-F]{8}\b",
      "Write yasb alpha as rgba(), NEVER 8-digit hex: yasb 2.0.7 passes #RRGGBBAA to Qt raw, which reads "
      "it alpha-first. See dot_config/yasb/AGENTS.md."),
+    ("claude-allow-risky", r"^\.chezmoitemplates/claude-settings\.json$",
+     # A risky tool passes only as `<tool> [<word>] <read-only subcommand>` (`mise ls`, `gh pr view`).
+     # Deny-style entries (a `*` mid-pattern, e.g. `git *--output*`) aren't allow rules and pass.
+     r"^\s*\"(Bash|PowerShell)(\((\*|(sudo|scoop|winget|choco|brew|apt|apt-get|npm|npx|pnpm|pnpx|yarn|bun|bunx"
+     r"|pip|pipx|uv|uvx|cargo|go|node|python|docker|mise|git|gh|curl|wget|irm|iwr|iex|Invoke-Expression"
+     r"|Invoke-WebRequest|Invoke-RestMethod|Start-Process|Remove-Item|rm|del|agent-browser|rtk|delta|rg|fd|find|bat|cat|head|tail|less|more|jq|yq|sd|sed|awk|grep|Get-Content)\b"
+     r"((?!(\s+[\w-]+)?\s+(--version|version|status|diff|log|show|blame|ls|list|ls-files|ls-tree|rev-parse"
+     r"|describe|shortlog|cat-file|merge-base|rev-list|for-each-ref|current|which|where|doctor|outdated"
+     r"|registry|view|checks|search|--list|--get|--show-current)\b)[^\"*]*(:\*)?|\s+\*))\))?\"",
+     "NEVER allow-list a command that reads file contents (Read deny rules don't cover the shell), writes, installs packages, runs downloaded code, deletes files or "
+     "drives a logged-in browser: an allow rule skips auto mode's safety check, and rtk's hook auto-allows "
+     "whatever it matches. Read-only subcommands only. See dot_claude/AGENTS.md -> Settings."),
 ]
 COMMENT = re.compile(r"^\s*(#|//|;|<#|\{\{-?\s*/\*)")
 
@@ -150,6 +162,17 @@ def selftest():
         ("run_onchange_after_10-install-packages.ps1.tmpl", "scoop config use_external_7zip true"),
         ("dot_config/zsh/conf.d/50-completions.zsh", "zstyle ':completion:*' menu select"),
         ("dot_config/yasb/styles.css", "  background-color: #11111b8c;"),
+        (".chezmoitemplates/claude-settings.json", '      "PowerShell(scoop:*)",'),
+        (".chezmoitemplates/claude-settings.json", '      "Bash(npx:*)",'),
+        (".chezmoitemplates/claude-settings.json", '      "PowerShell(Remove-Item:*)"'),
+        (".chezmoitemplates/claude-settings.json", '      "Bash",'),
+        (".chezmoitemplates/claude-settings.json", '      "Bash(git:*)",'),
+        (".chezmoitemplates/claude-settings.json", '      "Bash(git push:*)",'),
+        (".chezmoitemplates/claude-settings.json", '      "Bash(git *)",'),
+        (".chezmoitemplates/claude-settings.json", '      "PowerShell(gh api:*)",'),
+        (".chezmoitemplates/claude-settings.json", '      "Bash(mise install:*)",'),
+        (".chezmoitemplates/claude-settings.json", '      "Bash(rg:*)",'),
+        (".chezmoitemplates/claude-settings.json", '      "PowerShell(jq:*)",'),
     ]
     ok = [
         ("dot_config/zsh/conf.d/10-env.zsh", "unset MISE_GLOBAL_CONFIG_FILE MISE_CONFIG_DIR"),
@@ -163,6 +186,10 @@ def selftest():
         ("dot_config/yasb/styles.css", "  color: #ff5189;  --crust-glass: rgba(17, 17, 27, 0.55);"),
         ("dot_config/yasb/styles.css", "/* never #11111b8c,\n   it is read alpha-first */"),
         ("dot_config/komorebi/AGENTS.md", "NEVER wrap it in `conhost.exe --headless`"),
+        (".chezmoitemplates/claude-settings.json", '      "Bash(mise ls:*)",'),
+        (".chezmoitemplates/claude-settings.json", '      "PowerShell(gh pr view:*)",'),
+        (".chezmoitemplates/claude-settings.json", '      "Bash(git branch --list:*)",'),
+        (".chezmoitemplates/claude-settings.json", '      "Bash(git *--output*)",'),
     ]
     for rel, line in bad:
         assert violations(rel, [line]), f"missed: {rel}: {line}"

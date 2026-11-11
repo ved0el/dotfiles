@@ -1,0 +1,22 @@
+{{- /* agent-browser user config (~/.agent-browser/config.json): launch Brave, auto-close
+       an idle headless browser so a profile's lock + debugging port don't linger; page output in
+       boundary markers (untrusted) and capped; policy.json denies eval/download/upload/state (a
+       logged-in client page must not run agent JS, move files or dump cookies). Brave is found at
+       apply time; on a fresh box it is installed after files apply, so the key appears on
+       the next `chezmoi apply` (until then agent-browser uses its own Chrome). */ -}}
+{{- $brave := "" -}}
+{{- if eq .chezmoi.os "windows" -}}
+{{-   range list (joinPath (env "LOCALAPPDATA") "BraveSoftware\\Brave-Browser\\Application\\brave.exe") (joinPath (env "ProgramFiles") "BraveSoftware\\Brave-Browser\\Application\\brave.exe") -}}
+{{-     if and (not $brave) (stat .) }}{{ $brave = . }}{{ end -}}
+{{-   end -}}
+{{- else if eq .chezmoi.os "darwin" -}}
+{{-   $app := "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser" -}}
+{{-   if stat $app }}{{ $brave = $app }}{{ end -}}
+{{- else -}}
+{{-   range list "brave-origin" "brave-browser" "brave" -}}
+{{-     if and (not $brave) (lookPath .) }}{{ $brave = lookPath . }}{{ end -}}
+{{-   end -}}
+{{- end -}}
+{{- $cfg := dict "idleTimeout" "30m" "contentBoundaries" true "maxOutput" 50000 "actionPolicy" (joinPath .chezmoi.homeDir ".agent-browser" "policy.json") -}}
+{{- if $brave }}{{ $_ := set $cfg "executablePath" $brave }}{{ end -}}
+{{ $cfg | toPrettyJson }}

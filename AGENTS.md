@@ -21,6 +21,7 @@ Aliases: `dot_config/zsh/conf.d/70-aliases.zsh`, `dot_config/powershell/profile.
 Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .tmux }}|{{ .wm }}'`,
 `chezmoi cat-config`, `chezmoi apply -n -v` (script text shows in the diff — grep
 `^diff --git a/.config/` for real file changes), `chezmoi managed` / `chezmoi ignored`.
+Render one template: `chezmoi execute-template < <source-file>`.
 
 ## Layout
 - `dot_X` → `~/.X`, `executable_` → +x, `private_` → 0600, `*.tmpl` → Go template,
@@ -90,12 +91,14 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
 - **NanaZip / the archive extractor is NOT managed** — no `scoop install nanazip`, no 7z shim,
   no `use_external_7zip`. scoop pulling its own 7zip is fine.
 - **rtk** — `rtk init -g --auto-patch` (`--auto-patch` is required: non-interactive). Its hook
-  also ships in the managed settings; `RTK.md` is machine-local.
+  also ships in the managed settings; `RTK.md` is machine-local. The hook AUTO-ALLOWS any command a
+  `permissions.allow` rule matches — keep that list read-only (`dot_claude/AGENTS.md` -> Settings).
 - **codegraph** — mise `github:` bundle (own node). NEVER `codegraph install` (it writes into
   managed settings/CLAUDE.md). Bootstrap part 2 does `claude mcp add-json --scope user`
   (`alwaysLoad`; `cmd /c` on Windows — the launcher is a `.cmd`); part 1 appends `.codegraph/`
   to the unmanaged `~/.config/git/ignore`. Permission in `claude-settings.json`; the auto-init
   rule in `dot_claude/CLAUDE.md`.
+- **agent-browser** = the agents' browser tool (mise `aqua:`): read `dot_agent-browser/AGENTS.md`.
 - **delta** — wired by an idempotent `include.path` in the UNMANAGED `~/.gitconfig`; never
   manage `~/.gitconfig` (identity/signing stay machine-local).
 - **Colours follow the terminal theme** — CLI configs use ANSI names only (fzf, tmux, bat/delta
@@ -108,58 +111,15 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
 - Claude install / plugins / skills: read `dot_claude/AGENTS.md` before editing them.
 
 ## Windows
-- **A failed step must fail the script** — chezmoi records a `run_onchange` script that exits 0
-  and never re-runs it, so a swallowed failure (try/catch + Write-Host, an unchecked
-  `$LASTEXITCODE`) leaves that tool missing for good. Every install/network step goes through
-  `Invoke-Step` (`.chezmoitemplates/bootstrap-steps.ps1`: runs under `Continue`, counts a throw
-  or non-zero exit) and each part ends with `Complete-Bootstrap` (`exit 1` if any failed). (Unix:
-  same rule — part 1 `set -e` + a tracked tmux-clone loop, part 2 `fail()` + `exit 1` at the end.) Steps
-  stay idempotent so the retry only redoes what's missing. README's one-liner uses `--keep-going`
-  so a failed part 1 doesn't skip part 2; part 2 itself stops when part 1 left no mise.
-- **Preflight, before changing anything** (part 1): exit on an elevated terminal (scoop's
-  installer `break`s out mid-way; `$env:CI` is exempt, as in scoop's own check) and, when pwsh is
-  missing, on a winget that isn't ready (new account) — NO scoop-pwsh fallback; the user updates
-  App Installer and re-runs.
-- Part 1 also sets: CurrentUser `RemoteSigned` for WinPS 5.1 (default Restricted blocks its
-  profile + scoop shims) only if unset; `CLAUDE_CODE_GIT_BASH_PATH` → scoop's versioned `bash.exe`
-  (Claude can't derive it from the `git.exe` shim) if unset or still pointing into scoop's git
-  elsewhere (the old `current` junction fails over SSH) — in `run_after_15-git-bash-path.ps1`
-  (every apply: under `no_junction` each `scoop update git` deletes the versioned dir). `bootstrap-steps.ps1`'s `Set-GitHubToken`
-  exports a logged-in gh's token (gh = a mise tool) as `GITHUB_TOKEN` for mise's API calls;
-  part 1 calls it again right before `mise install`, once mise's shims are on PATH.
-- **`SCOOP` / `MISE_DATA_DIR` are User scope, set BEFORE installing** (the installers read them;
-  default `~/.local/share/{scoop,mise}`); their shims go on User PATH. An existing root elsewhere
-  is kept with a warning — never moved (scoop's shims/junctions hold absolute paths). Part 2 is a
-  separate process: it reloads both from User env. `MISE_DATA_DIR` is NOT a NEVER var.
-- **scoop `no_junction`** — `sshd` profile only (its one-time `scoop reset *` fails while an app runs, so clients skip it); set before any install; a junction-era install is `scoop reset *` once:
-  sshd runs with RedirectionGuard, which won't follow a non-admin junction, so a shim through
-  `apps\<app>\current` fails over SSH (Scoop#6594). So paths are versioned: never hardcode
-  `apps\<app>\current` (use `scoop prefix <app>`). An app's `persist` junctions aren't covered.
-- **Windows Terminal is not managed** (Alacritty is the terminal). A font a config names must be one
-  the bootstrap installs — check the FAMILY NAME the package registers (its manifest's `-Filter`,
-  then the .ttf's name table), not just the files it ships: `JetBrainsMono-NF` →
-  `JetBrainsMonoNL Nerd Font`, `-NF-Mono` → only `… Nerd Font Mono`.
+- **A failed step must fail the script** (both OSes): chezmoi never re-runs a `run_onchange` script
+  that exited 0, so a swallowed failure leaves that tool missing for good. Windows: every install/
+  network step goes through `Invoke-Step` + `Complete-Bootstrap`; Unix: part 1 `set -e`, part 2
+  `fail()` + `exit 1`. Steps stay idempotent so the retry only redoes what's missing.
+- **Before editing a `.ps1` bootstrap or any Windows setup step, read `.chezmoitemplates/AGENTS.md`**
+  (preflight, `SCOOP`/`MISE_DATA_DIR`, `no_junction`, pwsh MSI, fonts, WinPS 5.1 quirks).
 - **psmux** (tmux for Windows) + its session restore: read `dot_psmux/AGENTS.md` before editing
   `dot_psmux/`, the Windows blocks of `dot_tmux.conf.tmpl`, or the psmux steps of the `.ps1` bootstrap.
-- WinPS 5.1 is an OS component — never "remove" it; pwsh's profile only aliases `powershell` → `pwsh`.
-- scoop is per-user and never elevated. **pwsh 7 comes from winget's MSI** (`--installer-type wix
-  --scope machine`, one UAC prompt) at the FIXED `$env:ProgramFiles\PowerShell\7` — NOT winget's
-  default MSIX, whose `WindowsApps\Microsoft.PowerShell_<version>_…` dir moves on every update.
-  Guarded on that path (an MSIX pwsh doesn't count); success = the file exists. A leftover MSIX is
-  only reported, never removed by the bootstrap (it usually runs from that pwsh). Flags also
-  `--silent --accept-package-agreements --accept-source-agreements --disable-interactivity`.
-- Every `.ps1` bootstrap **resets `PSModulePath` to 5.1's own list first** — inherited from pwsh
-  7, 5.1 autoloads pwsh's modules and dies (only when pwsh's `$PSHOME` is readable, e.g. CI).
-- A module the pwsh profile needs comes **from scoop** (PSFzf = extras `psfzf`): scoop's
-  `<scoop>\modules` is on the USER PSModulePath, seen by both 5.1 and 7. NEVER `Install-Module`/
-  `Install-PSResource` from the 5.1 bootstrap — 5.1 and 7 don't see each other's CurrentUser modules.
-- WinPS 5.1 strips `"` from native args — escape JSON as `\"` (see the codegraph MCP add).
-- Under `$ErrorActionPreference = 'Stop'`, 5.1 turns a native command's REDIRECTED stderr
-  (`2>$null`, `*>`) into a terminating error. Probe native exit codes inside
-  `& { $ErrorActionPreference = 'Continue'; <cmd> 2>&1 | Out-Null; $LASTEXITCODE -eq 0 }`.
 - `XDG_CONFIG_HOME=~/.config` is persisted on Windows and exported on Unix (`10-env.zsh`).
-- `powershell.exe` "not recognized" = `System32\WindowsPowerShell\v1.0` fell off PATH; add it to
-  the User PATH by hand (not a bootstrap step).
 - Profile, PSReadLine/PSFzf, starship, load budget: `dot_config/powershell/AGENTS.md`.
   WM: `dot_config/komorebi/AGENTS.md`, `dot_config/yasb/AGENTS.md`.
 
@@ -180,16 +140,26 @@ Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .t
   partly off + the scripting addition.
 - CI (workflows, verify, GITHUB_TOKEN, Renovate): `.github/AGENTS.md`. A new file the bootstrap
   reads goes into e2e's `paths`.
+- Scripted edits on Windows: Python `write_text` writes CRLF — pass `newline="\n"` (or use Edit);
+  a whole-file diff after a small change = line endings.
 
 ## Enforced NEVER rules (hook)
 `.claude/hooks/never_rules.py` (PreToolUse, from the checked-in `.claude/settings.json`) blocks an
 Edit/Write that adds a non-comment line breaking a NEVER rule above (mise env vars, baked pwsh
 path, `conhost --headless`, `claude-mem install`, winget/brew/npm Claude Code install, NanaZip,
-fzf-tab `menu select`, 8-digit hex alpha in yasb CSS), and edits to managed `$HOME` targets.
+fzf-tab `menu select`, 8-digit hex alpha in yasb CSS, risky Claude `permissions.allow` entries),
+and edits to managed `$HOME` targets.
 `*.md` and comments are exempt. A new rule = `RULES` entry + `selftest` case. `--selftest` and
 `--scan` run in CI `lint`; `--scan` also catches `sed -i` edits the hook can't see.
 
 ## Before committing
 Update docs in the SAME commit: `README.md` (user-facing), this file (conventions, profiles,
 tools, gotchas), and the nested `AGENTS.md` beside what changed (`dot_claude/`,
-`dot_config/{powershell,komorebi,yasb,mise}/`, `.github/`).
+`dot_config/{powershell,komorebi,yasb,mise}/`, `dot_agent-browser/`, `.chezmoitemplates/`, `.github/`).
+Run `python .claude/hooks/never_rules.py --selftest && python .claude/hooks/never_rules.py --scan`
+(CI `lint` does).
+
+Where a rule goes: root = repo-wide conventions + one-line pointers; a tool with 3+ rules gets a
+nested `AGENTS.md` beside its files. One rule, one place — link, never duplicate. AGENTS files are
+shared across machines and OSes: no secrets, usernames, hostnames, absolute or drive paths,
+versions or measurements that drift — write `~`/`$HOME`, placeholders and the stable rule.

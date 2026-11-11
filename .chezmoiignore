@@ -28,6 +28,7 @@ renovate.json
 .config/zsh
 .config/sheldon
 .local/bin/tmux-sessionizer
+.local/bin/bp
 .claude/statusline.sh
 {{ else }}
 .config/powershell
@@ -72,6 +73,8 @@ AppData
 .config/ripgrep
 .config/zsh/conf.d/75-tools.zsh
 .config/mise/conf.d/tools.toml
+.agent-browser
+.local/bin/bp
 {{ end }}
 {{ if not .develop }}
 .config/mise/conf.d/develop.toml
