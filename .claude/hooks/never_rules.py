@@ -32,8 +32,9 @@ RULES = [
      "See dot_config/komorebi/AGENTS.md."),
     ("claude-mem-install", r"^run_",
      r"claude-mem\s+install",
-     "Do NOT add `npx claude-mem install`: claude-mem is plugin-managed and this double-registers its "
-     "hooks. See dot_claude/AGENTS.md."),
+     "Do NOT add `npx claude-mem install`: the marketplace install registers the same plugin, and the "
+     "installer is interactive (PTY prompts, browser sign-in, a pre-selected paid trial), needs node "
+     "and rewrites settings.json/PATH. See dot_claude/AGENTS.md."),
     ("claude-install", r"^run_",
      r"winget\s+install.*Anthropic\.ClaudeCode|brew\s+install\s+--cask\s+claude-code"
      r"|npm\s+(i|install)\s+(-g|--global)\s+@anthropic-ai/claude-code",

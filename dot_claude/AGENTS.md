@@ -65,8 +65,16 @@ behind each rule is in its commit (`git log -S`). Repo-wide rules: root `AGENTS.
   ECC's rules aren't in the plugin — copy only what a project needs:
   `cp -r ~/.claude/plugins/cache/ecc/ecc/*/rules/{common,<lang>} .claude/rules/ecc/`
   (never globally: ~4.4k tokens per session).
-- **claude-mem is fully plugin-managed**: its own Setup hook installs its runtime; data lives in
-  `~/.claude-mem/`. **NEVER `npx claude-mem install`** (double-registers hooks; hook-enforced).
+- **claude-mem = the marketplace install only** (`claude-mem@thedotmack`); data in `~/.claude-mem/`.
+  Its hooks call a compiled `claude-mem` launcher on PATH (`~/.local/bin`; Windows
+  `%LOCALAPPDATA%\claude-mem\bin`, appended to the User Path); the plugin's SessionStart
+  `ensure-launcher` places it, so a fresh box's FIRST session runs without memory. Needs a Claude
+  Code with exec-form hook `args` (the native installer auto-updates). **NEVER `npx claude-mem
+  install`** (hook-enforced): same plugin registration, but interactive (PTY prompts, browser
+  sign-in, a pre-selected paid trial), needs node, and rewrites settings.json (`enabledPlugins`,
+  optionally `CLAUDE_CODE_DISABLE_AUTO_MEMORY`) and PATH. Telemetry is off on every box via the
+  managed `env` (`CLAUDE_MEM_TELEMETRY=0`, `CLAUDE_MEM_TELEMETRY_ERRORS=0`; default is on).
+  Diagnose with `npx claude-mem doctor` (Hook launcher row).
 
 ## Skills
 - Overlapping skills: keep the standard/official one (no `document-skills`; the claude.ai-synced
