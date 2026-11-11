@@ -148,7 +148,7 @@ Render one template: `chezmoi execute-template < <source-file>`.
 ## Enforced NEVER rules (hook)
 `.claude/hooks/never_rules.py` (PreToolUse, from the checked-in `.claude/settings.json`) blocks an
 Edit/Write that adds a non-comment line breaking a NEVER rule above (mise env vars, baked pwsh
-path, `conhost --headless`, `claude-mem install`, winget/brew/npm Claude Code install, NanaZip,
+path, `conhost --headless`, `agentmemory connect`, winget/brew/npm Claude Code install, NanaZip,
 fzf-tab `menu select`, 8-digit hex alpha in yasb CSS, risky Claude `permissions.allow` entries),
 and edits to managed `$HOME` targets.
 `*.md` and comments are exempt. A new rule = `RULES` entry + `selftest` case. `--selftest` and

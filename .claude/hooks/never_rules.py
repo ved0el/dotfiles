@@ -30,11 +30,11 @@ RULES = [
      r"conhost(\.exe)?['\"]?\s+--headless",
      "NEVER wrap a komorebi logon launcher in `conhost.exe --headless`: it dies with 0x80070003 at logon. "
      "See dot_config/komorebi/AGENTS.md."),
-    ("claude-mem-install", r"^run_",
-     r"claude-mem\s+install",
-     "Do NOT add `npx claude-mem install`: the marketplace install registers the same plugin, and the "
-     "installer is interactive (PTY prompts, browser sign-in, a pre-selected paid trial), needs node "
-     "and rewrites settings.json/PATH. See dot_claude/AGENTS.md."),
+    ("agentmemory-connect", r"^run_",
+     r"agentmemory(@\S+)?\s+connect",
+     "Do NOT add `agentmemory connect`: the marketplace plugin already ships its hooks + MCP, and "
+     "connect writes a second copy into the managed settings.json / ~/.claude.json (double capture, "
+     "every tool twice). See dot_claude/AGENTS.md."),
     ("claude-install", r"^run_",
      r"winget\s+install.*Anthropic\.ClaudeCode|brew\s+install\s+--cask\s+claude-code"
      r"|npm\s+(i|install)\s+(-g|--global)\s+@anthropic-ai/claude-code",
@@ -157,7 +157,7 @@ def selftest():
         (".chezmoi.toml.tmpl", "command = \"C:/Program Files/PowerShell/7/pwsh.exe\""),
         ("run_onchange_after_10-install-packages.ps1.tmpl", "$exe = 'conhost.exe' --headless powershell.exe"),
         ("run_onchange_after_10-install-packages.ps1.tmpl", "  $a = New-ScheduledTaskAction -Execute conhost.exe --headless"),
-        ("run_onchange_after_20-install-claude.sh.tmpl", "npx claude-mem install"),
+        ("run_onchange_after_20-install-claude.sh.tmpl", "mise exec -- agentmemory connect claude-code --with-hooks"),
         ("run_onchange_after_20-install-claude.ps1.tmpl", "winget install Anthropic.ClaudeCode"),
         ("run_onchange_after_20-install-claude.sh.tmpl", "npm i -g @anthropic-ai/claude-code"),
         ("run_onchange_after_10-install-packages.ps1.tmpl", "scoop config use_external_7zip true"),

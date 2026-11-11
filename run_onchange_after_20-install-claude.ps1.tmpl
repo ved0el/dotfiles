@@ -79,6 +79,11 @@ if (Get-Command claude -ErrorAction SilentlyContinue) {
 {{- range $id, $_ := $settings.enabledPlugins }}
   if ($havePlugin -notcontains '{{ $id }}') { Invoke-Step 'plugin {{ $id }}' { claude plugin install -y '{{ $id }}' } }
 {{- end }}
+  # claude-mem was replaced by agentmemory: uninstall it + its marketplace (~/.claude-mem data stays).
+  # ponytail: one-shot cleanup; delete this block once every box has applied it.
+  if ($havePlugin -contains 'claude-mem@thedotmack') {
+    Invoke-Step 'claude-mem removal' { claude plugin uninstall claude-mem@thedotmack; if ($LASTEXITCODE -eq 0) { claude plugin marketplace remove thedotmack } }
+  }
 }
 
 # Agent skills from repos with no plugin marketplace — `skills` CLI, the official method in their
@@ -114,6 +119,22 @@ if ((Test-Path (Join-Path $HOME '.claude\skills\brandkit')) -or (Test-Path (Join
                'imagegen-frontend-mobile', 'imagegen-frontend-web', 'industrial-brutalist-ui',
                'minimalist-ui', 'redesign-existing-projects', 'stitch-design-taste')
   Invoke-Step 'skills cleanup' { mise --cd $HOME exec -- npx -y skills remove -g -y @retired }
+}
+
+# agentmemory's server (the agentmemory plugin's hooks + MCP talk to it; mise tool in develop.toml)
+# at logon. It detaches its engine and exits, so a one-shot task; CI=1 keeps a first run's
+# onboarding non-interactive. Started right away too, so the next session has memory.
+# Re-registered only when missing or its action differs.
+$amArgs = '-NoLogo -NoProfile -WindowStyle Hidden -Command $env:CI = ''1''; mise --cd $HOME exec -- agentmemory'
+$amTask = Get-ScheduledTask -TaskName 'agentmemory' -ErrorAction SilentlyContinue
+if (-not $amTask -or $amTask.Actions[0].Arguments -ne $amArgs) {
+  Invoke-Step 'agentmemory task' {
+    Register-ScheduledTask -TaskName 'agentmemory' -Force -ErrorAction Stop `
+      -Action (New-ScheduledTaskAction -Execute 'pwsh.exe' -Argument $amArgs) `
+      -Trigger (New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME) `
+      -Settings (New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Minutes 10)) | Out-Null
+    Start-ScheduledTask -TaskName 'agentmemory' -ErrorAction Stop
+  }
 }
 {{ end -}}
 

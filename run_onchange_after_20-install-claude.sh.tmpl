@@ -48,6 +48,12 @@ if command -v claude >/dev/null 2>&1; then
   printf '%s' "$have_plugin" | grep -qF '"{{ $id }}"' || \
     claude plugin install -y '{{ $id }}' || fail "[claude] install {{ $id }} failed"
 {{- end }}
+  # claude-mem was replaced by agentmemory: uninstall it + its marketplace (~/.claude-mem data stays).
+  # ponytail: one-shot cleanup; delete this block once every box has applied it.
+  if printf '%s' "$have_plugin" | grep -qF '"claude-mem@thedotmack"'; then
+    { claude plugin uninstall claude-mem@thedotmack && claude plugin marketplace remove thedotmack; } || \
+      fail "[claude] claude-mem removal failed"
+  fi
 fi
 
 # Agent skills from repos with no plugin marketplace — `skills` CLI, the official method in their
@@ -91,6 +97,67 @@ if [ -e "$HOME/.claude/skills/brandkit" ] || [ -e "$HOME/.claude/skills/humanize
     industrial-brutalist-ui minimalist-ui redesign-existing-projects stitch-design-taste \
     || fail "[skills] retired-skill cleanup failed"
 fi
+
+# agentmemory's server (the agentmemory plugin's hooks + MCP talk to it; mise tool in develop.toml)
+# at login: a systemd user unit (Linux) / LaunchAgent (macOS). It detaches its engine and exits,
+# so oneshot + RemainAfterExit / AbandonProcessGroup keep the engine alive; CI=1 keeps a first
+# run's onboarding non-interactive. mise's absolute path: neither gets shell activation.
+# Rewritten + (re)loaded only when the unit's content changes; loading also starts it now.
+_mise=$(command -v mise || true)
+{{- if eq .chezmoi.os "darwin" }}
+_unit="$HOME/Library/LaunchAgents/local.agentmemory.plist"
+_want=$(cat <<UNIT
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>local.agentmemory</string>
+  <key>ProgramArguments</key><array>
+    <string>$_mise</string><string>--cd</string><string>$HOME</string><string>exec</string><string>--</string><string>agentmemory</string>
+  </array>
+  <key>EnvironmentVariables</key><dict><key>CI</key><string>1</string></dict>
+  <key>WorkingDirectory</key><string>$HOME</string>
+  <key>RunAtLoad</key><true/>
+  <key>AbandonProcessGroup</key><true/>
+</dict></plist>
+UNIT
+)
+if [ -z "$_mise" ]; then
+  fail "[agentmemory] mise not found"
+elif [ "$(cat "$_unit" 2>/dev/null)" != "$_want" ]; then
+  { mkdir -p "${_unit%/*}" && printf '%s\n' "$_want" > "$_unit" && \
+    { launchctl bootout "gui/$(id -u)/local.agentmemory" 2>/dev/null || true; } && \
+    launchctl bootstrap "gui/$(id -u)" "$_unit"; } || fail "[agentmemory] LaunchAgent failed"
+fi
+{{- else }}
+_unit="$HOME/.config/systemd/user/agentmemory.service"
+_want=$(cat <<UNIT
+[Unit]
+Description=agentmemory memory server
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=%h
+Environment=CI=1
+ExecStart=$_mise --cd %h exec -- agentmemory
+ExecStop=$_mise --cd %h exec -- agentmemory stop
+
+[Install]
+WantedBy=default.target
+UNIT
+)
+if [ -z "$_mise" ]; then
+  fail "[agentmemory] mise not found"
+elif ! systemctl --user show-environment >/dev/null 2>&1; then
+  # No user systemd (container, WSL without systemd): nothing can register it.
+  echo "[agentmemory] no systemd user session; start the server by hand: agentmemory" >&2
+elif [ "$(cat "$_unit" 2>/dev/null)" != "$_want" ]; then
+  { mkdir -p "${_unit%/*}" && printf '%s\n' "$_want" > "$_unit" && \
+    systemctl --user daemon-reload && systemctl --user enable agentmemory.service && \
+    systemctl --user restart agentmemory.service; } || fail "[agentmemory] systemd unit failed"
+fi
+{{- end }}
+unset _mise _unit _want
 {{ end -}}
 
 {{ if .tools -}}

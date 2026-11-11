@@ -66,16 +66,20 @@ behind each rule is in its commit (`git log -S`). Repo-wide rules: root `AGENTS.
   ECC's rules aren't in the plugin — copy only what a project needs:
   `cp -r ~/.claude/plugins/cache/ecc/ecc/*/rules/{common,<lang>} .claude/rules/ecc/`
   (never globally: ~4.4k tokens per session).
-- **claude-mem = the marketplace install only** (`claude-mem@thedotmack`); data in `~/.claude-mem/`.
-  Its hooks call a compiled `claude-mem` launcher on PATH (`~/.local/bin`; Windows
-  `%LOCALAPPDATA%\claude-mem\bin`, appended to the User Path); the plugin's SessionStart
-  `ensure-launcher` places it, so a fresh box's FIRST session runs without memory. Needs a Claude
-  Code with exec-form hook `args` (the native installer auto-updates). **NEVER `npx claude-mem
-  install`** (hook-enforced): same plugin registration, but interactive (PTY prompts, browser
-  sign-in, a pre-selected paid trial), needs node, and rewrites settings.json (`enabledPlugins`,
-  optionally `CLAUDE_CODE_DISABLE_AUTO_MEMORY`) and PATH. Telemetry is off on every box via the
-  managed `env` (`CLAUDE_MEM_TELEMETRY=0`, `CLAUDE_MEM_TELEMETRY_ERRORS=0`; default is on).
-  Diagnose with `npx claude-mem doctor` (Hook launcher row).
+- **Memory = agentmemory** (`agentmemory@agentmemory`, `develop` only: its hooks + MCP bridge run
+  `node`). It replaced claude-mem (part 2 uninstalls `claude-mem@thedotmack` once; `~/.claude-mem/`
+  data is left alone). Two halves:
+  - the **plugin** (hooks, MCP, skills) — marketplace install; `userConfig` URL/secret stay empty
+    for the local server;
+  - the **server** — mise `npm:@agentmemory/agentmemory` (`develop.toml`, trust check excluded:
+    0.9.32+ lost npm provenance), started at login by part 2 (Windows logon task `agentmemory`,
+    Linux systemd user unit, macOS LaunchAgent `local.agentmemory`). It detaches and exits, so
+    one-shot units. With the server down, hooks spool to disk and recall is empty.
+  - **NEVER `agentmemory connect claude-code`** (hook-enforced): the plugin already wires hooks +
+    MCP; connect adds a second copy to settings.json / `~/.claude.json`. Same for a hand-added
+    user-scope `agentmemory` MCP — remove it (`claude mcp remove -s user agentmemory`).
+  - Diagnose: `agentmemory status` / `doctor`; viewer `http://localhost:3113`. Updating the
+    server is the user's (`agentmemory upgrade` after a backup), never the bootstrap.
 
 ## Skills
 - Overlapping skills: keep the standard/official one (no `document-skills`; the claude.ai-synced

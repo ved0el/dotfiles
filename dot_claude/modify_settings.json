@@ -22,4 +22,15 @@
 {{-     $_ := set $live $k $v -}}
 {{-   end -}}
 {{- end -}}
+{{- /* Retired keys: live-only keys survive the merge above, so a key dropped from the template
+     must be unset here. claude-mem -> agentmemory.
+     ponytail: one-shot; delete once every box has applied it. */ -}}
+{{- $retired := dict
+      "env" (list "CLAUDE_MEM_CONTEXT_SHOW_TERMINAL_OUTPUT" "CLAUDE_MEM_WELCOME_HINT_ENABLED" "CLAUDE_MEM_TELEMETRY" "CLAUDE_MEM_TELEMETRY_ERRORS")
+      "enabledPlugins" (list "claude-mem@thedotmack")
+      "extraKnownMarketplaces" (list "thedotmack") -}}
+{{- range $k, $keys := $retired -}}
+{{-   $m := get $live $k -}}
+{{-   if kindIs "map" $m -}}{{- range $keys -}}{{- $_ := unset $m . -}}{{- end -}}{{- end -}}
+{{- end -}}
 {{ toPrettyJson $live }}

@@ -10,3 +10,7 @@ pnpm = "latest"
 uv = "latest"
 # Cloudflare's `cf` is NOT here: mise hides npm prereleases (it stays at 0.15.0) while cf ships as
 # 1.0.0-beta.x on npm's `latest` tag — install it the way its docs say: `pnpm add -g cf`.
+# agentmemory's memory server for the agentmemory Claude plugin (plugin hooks + MCP need node,
+# hence develop). Bootstrap part 2 starts it at login; it detaches and exits. Trust check off for
+# the whole package (user's call): 0.9.32+ ship without the npm provenance 0.7-0.9.x had.
+"npm:@agentmemory/agentmemory" = { version = "latest", trust_policy_excludes = ["@agentmemory/agentmemory"] }
