@@ -76,7 +76,7 @@ Shell aliases: `cz`, `cza`, `czd`, `czs`, `cze`, `czra`, `czu`, `czcd`; `..` / `
 - **Browsers:** Zen = personal (Firefox-based, so no agent tool can drive it), Brave's default
   profile = your work, and one Brave user-data-dir per agent context or client in
   `~/.local/share/browser-profiles/<name>`. Agents use `agent-browser` (mise; launches Brave via the
-  rendered `~/.agent-browser/config.json`, closes an idle headless browser after 30m; agents `close` a headed one); `bp <name>` opens a
+  rendered `~/.agent-browser/config.json`, closes an idle headless browser after 15m; agents `close` a headed one); `bp <name>` opens a
   profile by hand, `bp` lists them. Profile dirs are machine-local — cookies are encrypted per OS
   user, so log in once per machine. Agents can't run page JS, download, upload or save/load cookies
   (`~/.agent-browser/policy.json`); moving a login is yours: set `AGENT_BROWSER_ENCRYPTION_KEY`

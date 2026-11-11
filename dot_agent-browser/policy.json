@@ -1,4 +1,17 @@
 {
   "default": "allow",
-  "deny": ["eval", "download", "upload", "state"]
+  "deny": [
+    "evaluate",
+    "download",
+    "waitfordownload",
+    "upload",
+    "state_save",
+    "state_load",
+    "state_show",
+    "cookies_get",
+    "cookies_set",
+    "storage_get",
+    "storage_set",
+    "har_start"
+  ]
 }
