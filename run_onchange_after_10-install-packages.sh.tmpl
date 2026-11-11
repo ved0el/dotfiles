@@ -55,6 +55,13 @@ echo "[wm] yabai installed — run 'yabai --start-service' (needs SIP setup; see
 for _c in {{ .appList.darwin | join " " }}; do
   brew list --cask "$_c" >/dev/null 2>&1 || brew install --cask "$_c"
 done
+# Brave ~ Brave Origin, no telemetry: the policies in .chezmoidata.yaml bravePolicy (Windows: the
+# .ps1). User-domain defaults, no sudo: Chromium on macOS reads a non-forced value as a
+# RECOMMENDED policy - the default, still changeable in Settings. Mandatory would need an MDM /
+# configuration profile, which macOS won't install silently. Idempotent; takes effect on relaunch.
+{{ range $k, $v := .bravePolicy -}}
+defaults write com.brave.Browser {{ $k }} {{ if kindIs "bool" $v }}-bool {{ $v }}{{ else }}-integer {{ $v }}{{ end }}
+{{ end -}}
 {{ end -}}
 {{ else if eq .chezmoi.os "linux" -}}
 # Batch a single apt-get for whatever is missing (skip the update entirely if nothing is).

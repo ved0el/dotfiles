@@ -267,19 +267,14 @@ foreach ($id in @('{{ .appList.windows | join "','" }}')) {
     if ($LASTEXITCODE -in -1978335189, -1978335135) { $global:LASTEXITCODE = 0 }
   }
 }
-# Brave ~ Brave Origin (the paid build without the extras; Linux installs brave-origin itself):
-# machine policies drop what Origin removes - Rewards/Ads, Wallet, VPN, News, Talk, Tor, Leo,
-# Playlist, Speedreader, Wayback, Web Discovery, email aliases, IPFS - plus its telemetry (stats
-# ping, P3A, crash/usage reports). Shields and the privacy features stay. HKLM (HKCU\...\Policies
-# isn't user-writable either), so one UAC prompt, and only while a value differs.
+# Brave ~ Brave Origin, no telemetry: the policies in .chezmoidata.yaml bravePolicy (macOS: the
+# .sh). HKLM (HKCU\...\Policies isn't user-writable either), so one UAC prompt, and only while a
+# value differs. DWORDs: a bool policy is 1/0.
 $braveKey = 'HKLM:\SOFTWARE\Policies\BraveSoftware\Brave'
 $bravePolicy = [ordered]@{
-  BraveRewardsDisabled = 1; BraveWalletDisabled = 1; BraveVPNDisabled = 1; BraveNewsDisabled = 1
-  BraveTalkDisabled = 1; TorDisabled = 1; BraveAIChatEnabled = 0; BraveLocalAIEnabled = 0
-  BravePlaylistEnabled = 0; BraveSpeedreaderEnabled = 0; BraveWaybackMachineEnabled = 0
-  BraveWebDiscoveryEnabled = 0; EmailAliasesEnabled = 0; IPFSEnabled = 0
-  BraveStatsPingEnabled = 0; BraveP3AEnabled = 0; MetricsReportingEnabled = 0
-  UrlKeyedAnonymizedDataCollectionEnabled = 0; SafeBrowsingExtendedReportingEnabled = 0; BackgroundModeEnabled = 0
+{{- range $k, $v := .bravePolicy }}
+  {{ $k }} = {{ if kindIs "bool" $v }}{{ if $v }}1{{ else }}0{{ end }}{{ else }}{{ $v }}{{ end }}
+{{- end }}
 }
 $braveHave = Get-ItemProperty $braveKey -ErrorAction SilentlyContinue
 $braveTodo = @($bravePolicy.Keys | Where-Object { -not $braveHave -or $braveHave.$_ -ne $bravePolicy[$_] })

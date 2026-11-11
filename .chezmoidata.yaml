@@ -15,3 +15,38 @@ apps: false     # essential GUI apps from appList (each OS's own package manager
 appList:
   windows: [Tailscale.Tailscale, Brave.Brave, Flow-Launcher.Flow-Launcher, ShareX.ShareX, RamenSoftware.Windhawk]
   darwin: [tailscale-app, brave-browser]
+# Brave ~ Brave Origin (the paid build without the extras; Linux installs brave-origin itself) with
+# no telemetry. Browser policies set by the `apps` profile on Windows (HKLM) and macOS (defaults).
+# Shields and the privacy features stay. bool = feature switch, int = enum policy.
+bravePolicy:
+  # what Brave Origin removes
+  BraveRewardsDisabled: true
+  BraveWalletDisabled: true
+  BraveVPNDisabled: true
+  BraveNewsDisabled: true
+  BraveTalkDisabled: true
+  TorDisabled: true
+  BraveAIChatEnabled: false
+  BraveLocalAIEnabled: false
+  BravePlaylistEnabled: false
+  BraveSpeedreaderEnabled: false
+  BraveWaybackMachineEnabled: false
+  BraveWebDiscoveryEnabled: false
+  EmailAliasesEnabled: false
+  IPFSEnabled: false
+  # telemetry: Origin's (stats ping, P3A, crash/usage reports) + Chromium's remaining reporters
+  BraveStatsPingEnabled: false
+  BraveP3AEnabled: false
+  MetricsReportingEnabled: false
+  UrlKeyedAnonymizedDataCollectionEnabled: false
+  SafeBrowsingExtendedReportingEnabled: false
+  DomainReliabilityAllowed: false        # network-error reports to Google
+  SpellCheckServiceEnabled: false        # cloud spellcheck (sends typed text)
+  AlternateErrorPagesEnabled: false      # "similar page" lookups on errors
+  UserFeedbackAllowed: false
+  FeedbackSurveysEnabled: false
+  WebRtcEventLogCollectionAllowed: false
+  PromotionsEnabled: false
+  ShoppingListEnabled: false
+  NetworkPredictionOptions: 2            # no prefetch/preconnect
+  BackgroundModeEnabled: false           # nothing left running after the last window closes
