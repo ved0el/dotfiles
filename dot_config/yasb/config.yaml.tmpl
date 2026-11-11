@@ -213,7 +213,7 @@ widgets:
     options:
       label: "<span class='icon'>󰖟</span> {lang[country_code]}"
       label_alt: "<span class='icon'>󰖟</span> {lang[full_name]}"
-      update_interval: 5
+      update_interval: 1 # seconds; yasb's minimum, the widget only polls (no layout-change event)
       callbacks:
         on_left: "toggle_menu"
         on_right: "toggle_label"
