@@ -4,6 +4,10 @@
     "ECC_HOOK_PROFILE": "minimal",
     "ECC_GATEGUARD": "off"
   },
+  "deniedMcpServers": [
+    { "serverName": "plugin:ecc:chrome-devtools" },
+    { "serverName": "claude.ai Microsoft 365" }
+  ],
   "permissions": {
     "allow": [
       "Bash(ls:*)",
