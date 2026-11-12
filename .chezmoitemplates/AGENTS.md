@@ -34,8 +34,11 @@ pointers (PowerShell profile, WM) are in the root `AGENTS.md`; the "why" is in t
 - scoop is per-user and never elevated. **pwsh 7 comes from winget's MSI** (`--installer-type wix
   --scope machine`, one UAC prompt) at the FIXED `$env:ProgramFiles\PowerShell\7` — NOT winget's
   default MSIX, whose `WindowsApps\Microsoft.PowerShell_<version>_…` dir moves on every update.
+  `--custom 'USE_MU=1 ENABLE_MU=1'` opts it into Microsoft Update (patches via Windows Update; a new
+  7.x line = the user's `winget upgrade … --installer-type wix`, README — the bootstrap only installs).
   Guarded on that path (an MSIX pwsh doesn't count); success = the file exists. A leftover MSIX is
-  only reported, never removed by the bootstrap (it usually runs from that pwsh). Flags also
+  only reported, never removed by the bootstrap (it usually runs from that pwsh); it shares the winget
+  id, so `winget upgrade` compares it and skips the MSI. Flags also
   `--silent --accept-package-agreements --accept-source-agreements --disable-interactivity`.
 - Every `.ps1` bootstrap **resets `PSModulePath` to 5.1's own list first** — inherited from pwsh
   7, 5.1 autoloads pwsh's modules and dies (only when pwsh's `$PSHOME` is readable, e.g. CI).

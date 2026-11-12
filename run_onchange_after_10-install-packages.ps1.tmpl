@@ -136,27 +136,29 @@ if (-not (Get-Command git -ErrorAction SilentlyContinue)) { Invoke-Step 'git' { 
 # CLAUDE_CODE_GIT_BASH_PATH: run_after_15-git-bash-path.ps1 (every apply, so it follows git updates).
 
 # pwsh 7 — the shell the managed profile targets (this bootstrap itself runs under WinPS 5.1).
-# winget's MSI (`--installer-type wix`), NOT its default MSIX: the MSIX lives in a versioned
-# WindowsApps\Microsoft.PowerShell_7.x.y.z_... dir that moves on every update, while the MSI
-# installs to the FIXED $env:ProgramFiles\PowerShell\7 and puts it on the Machine PATH (ahead of
-# any MSIX alias on the user PATH). Machine scope = one UAC prompt, like the VC++ runtimes.
-# Guarded on that path, not `Get-Command pwsh`, so an MSIX/Store pwsh doesn't count. [cd] and
-# Claude's statusLine still call bare `pwsh` (AGENTS.md "never bake pwsh's path"); it now
-# resolves here. winget readiness was checked in the preflight.
+# ONE install: winget's MSI (`--installer-type wix`), NOT its default MSIX/Store package. The MSI
+# lives at the FIXED $env:ProgramFiles\PowerShell\7 (sshd, tasks, WinPS 5.1 can all reach it); the
+# MSIX's WindowsApps\Microsoft.PowerShell_<version>_... dir moves on every update and is ACL-hidden.
+# Updates: USE_MU/ENABLE_MU opt the MSI into Microsoft Update, so Windows Update patches it within
+# its release line (7.x.y); a new line (7.x -> 7.y) is the user's `winget upgrade ... wix` (README).
+# Machine scope = one UAC prompt, like the VC++ runtimes. Guarded on that path, not
+# `Get-Command pwsh`, so an MSIX/Store pwsh doesn't count. [cd] and Claude's statusLine call bare
+# `pwsh` (AGENTS.md "never bake pwsh's path"). winget readiness was checked in the preflight.
 if (-not (Test-Path $PwshExe)) {
   Invoke-Step 'pwsh' {
     winget install --id Microsoft.PowerShell --exact --source winget --installer-type wix --scope machine `
+      --custom 'USE_MU=1 ENABLE_MU=1' `
       --silent --accept-package-agreements --accept-source-agreements --disable-interactivity
     # Success = the file exists (winget's exit code alone doesn't prove which installer ran).
     if (-not (Test-Path $PwshExe)) { throw "pwsh MSI not at $PwshExe" }
     $global:LASTEXITCODE = 0
   } 'accept the UAC prompt, then chezmoi apply'
 }
-# A Store/MSIX pwsh left beside the MSI keeps a `pwsh` alias in ...\WindowsApps that can come first
-# on PATH and shadow the fixed one. NOT removed here: this script usually runs FROM that pwsh, and
-# removing a running package can kill the terminal mid-install - so only say how.
+# A Store/MSIX pwsh beside the MSI shares its winget id (so `winget upgrade` compares the MSIX and
+# skips the MSI) and its WindowsApps alias can shadow the fixed pwsh on PATH. NOT removed here: this
+# script usually runs FROM that pwsh, and removing a running package kills the terminal - so only say how.
 if ((Test-Path $PwshExe) -and (Get-AppxPackage Microsoft.PowerShell -ErrorAction SilentlyContinue)) {
-  Write-Host "[pwsh] a Store/MSIX PowerShell is also installed and may shadow $PwshExe. Close every pwsh window, then from Windows PowerShell run: Get-AppxPackage Microsoft.PowerShell | Remove-AppxPackage"
+  Write-Host "[pwsh] a Store/MSIX PowerShell is also installed: it shadows $PwshExe and hides the MSI from winget upgrade. Close every pwsh window, then from Windows PowerShell run: Get-AppxPackage Microsoft.PowerShell | Remove-AppxPackage" -ForegroundColor Yellow
 }
 
 # Visual C++ 2015-2022 runtimes (x64 + x86 for 32-bit apps; + arm64 on ARM) — most native Windows
