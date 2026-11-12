@@ -322,6 +322,11 @@ set -g @plugin 'psmux-plugins/psmux-continuum'
 # Initialize
 # =============================================================================
 run '~/.psmux/plugins/ppm/ppm.ps1'
+# Override continuum's hooks (set by its plugin.conf above): psmux run-shell gives a plain `pwsh`
+# a visible console, so every attach/new session flashed a black window titled with pwsh's path.
+# session-created only runs auto_restore, which is off here (restore = `tm`), so drop it.
+set-hook -g client-attached 'run-shell "pwsh -NoProfile -WindowStyle Hidden -File \"~/.psmux/plugins/psmux-continuum/scripts/auto_save.ps1\" -IntervalMinutes 15"'
+set-hook -gu session-created
 {{- else -}}
 set -g @plugin 'tmux-plugins/tpm'
 set -g @plugin 'tmux-plugins/tmux-sensible'
