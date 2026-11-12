@@ -30,7 +30,9 @@ the bootstrap exits non-zero, so the next `chezmoi apply` retries only what's mi
 re-run until it's clean. It stops up front, before changing anything, when run as administrator
 or when winget isn't ready yet (a new account: update "App Installer" in Microsoft Store). Hit the
 GitHub rate limit? `gh auth login` (gh is a mise tool) or set `GITHUB_TOKEN`, then `chezmoi apply`.
-When it's done, open a new terminal (restart Alacritty) to load PATH, fonts and profile.
+When it's done, open a new terminal (restart Alacritty) to load PATH, fonts and profile. If
+Alacritty won't start from the Start menu / taskbar, sign out and back in: Explorer still holds the
+PATH from before pwsh was installed, so Alacritty can't find `pwsh`.
 
 It asks which profiles to enable, applies the dotfiles, then installs packages and plugins. The
 OS is auto-detected: brew/apt on macOS/Linux, scoop (+ winget for PowerShell 7, as the MSI at the
