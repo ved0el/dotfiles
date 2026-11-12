@@ -59,7 +59,13 @@ jobs:
         # --promptDefaults => tools=true, develop=false, wm=false.
         # wm stays off so yabai/skhd (GUI/SIP, impossible in CI) are skipped.
         run: chezmoi init --apply --source "$PWD" --promptDefaults --no-tty
-      - name: Second apply (what the next `cza` does on a fresh box)
+      - name: Manual step (zsh as login shell + re-login)
+        # Run 1 is stage 1 only (.chezmoitemplates/bootstrap-ready): it waits for $SHELL = zsh.
+        # The runner's shell is bash, so set what a re-login after chsh would.
+        run: echo "SHELL=$(command -v zsh)" >> "$GITHUB_ENV"
+      - name: Stage 2 apply (the user's second `chezmoi apply`)
+        run: chezmoi apply --source "$PWD"
+      - name: Third apply (what the next `cza` does on a fresh box)
         # The bootstrap's `claude plugin marketplace add` rewrites a new marketplace's entry in
         # the managed ~/.claude/settings.json and drops its `autoUpdate` - first run only (the
         # adds are skipped once registered). This apply restores the file; the bootstrap must
@@ -93,7 +99,15 @@ jobs:
         # --promptDefaults => tools=true, develop=false, wm=false.
         shell: pwsh
         run: chezmoi init --apply --source "$env:GITHUB_WORKSPACE" --promptDefaults --no-tty
-      - name: Second apply (what the next `cza` does on a fresh box)
+      - name: Manual step (a new terminal)
+        # Run 1 is stage 1 only (.chezmoitemplates/bootstrap-ready): it waits for the User-scope
+        # SCOOP it persisted, which only a new terminal sees.
+        shell: pwsh
+        run: Add-Content -Path $env:GITHUB_ENV -Value "SCOOP=$([Environment]::GetEnvironmentVariable('SCOOP', 'User'))"
+      - name: Stage 2 apply (the user's second `chezmoi apply`)
+        shell: pwsh
+        run: chezmoi apply --source "$env:GITHUB_WORKSPACE"
+      - name: Third apply (what the next `cza` does on a fresh box)
         # See the e2e job: marketplace add drops `autoUpdate` from settings.json on first run.
         shell: pwsh
         run: chezmoi apply --force --source "$env:GITHUB_WORKSPACE"

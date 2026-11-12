@@ -17,9 +17,12 @@ its commit (`git log -S`).
   script (Windows `15-git-bash-path`) runs on every apply, so it is always "pending" — not drift.
 - **Keep `GITHUB_TOKEN` exported in e2e**: mise resolves `github:`/`aqua:` tools through the API,
   and unauthenticated shared-IP runners hit the 60/hour limit mid-install.
-- **The second `chezmoi apply --force` before verify is required**: `claude plugin marketplace
+- **Run 1 is stage 1 only** (`.chezmoitemplates/bootstrap-ready`): a "Manual step" writes what a
+  re-login / new terminal would give into `$GITHUB_ENV` (`SHELL` = zsh; Windows: the User `SCOOP`),
+  then "Stage 2 apply" installs the rest. Never exempt CI from the gate: the transition is the test.
+- **The third `chezmoi apply --force` before verify is required**: `claude plugin marketplace
   add` drops a new marketplace's `autoUpdate` from the live settings on the first run only; the
-  second apply (= the next `cza`) restores it and proves the bootstrap does not re-run.
+  third apply (= the next `cza`) restores it and proves the bootstrap does not re-run.
 - **`e2e-windows` runs its steps in `pwsh` on purpose** — it reproduces the PSModulePath leak the
   bootstrap guards against. Don't switch it to `powershell`.
 

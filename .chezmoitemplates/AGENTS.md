@@ -7,6 +7,10 @@ pointers (PowerShell profile, WM) are in the root `AGENTS.md`; the "why" is in t
 - Mechanics of that rule: `Invoke-Step` (`bootstrap-steps.ps1`) runs a step under `Continue` and
   counts a throw or non-zero exit; `Complete-Bootstrap` exits 1 if any failed. `install.ps1` (README's one-liner)
   uses `--keep-going` so a failed part 1 doesn't skip part 2; part 2 stops when part 1 left no mise.
+- **Stage 1** (fresh box, `SCOOP` not yet in chezmoi's env — `bootstrap-ready`): part 1 runs
+  preflight → env/roots → scoop → git → pwsh MSI → VC++, then `Complete-Bootstrap` + the "open a new
+  PowerShell 7, `chezmoi apply`" message and `exit 0`. A new step that the next apply doesn't need
+  goes AFTER that gate.
 - **Preflight, before changing anything** (part 1): exit on an elevated terminal (scoop's
   installer `break`s out mid-way; `$env:CI` is exempt, as in scoop's own check) and, when pwsh is
   missing, on a winget that isn't ready (new account) — NO scoop-pwsh fallback; the user updates

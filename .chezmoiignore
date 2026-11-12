@@ -20,6 +20,11 @@ install.ps1
 *-install-*.ps1
 15-git-bash-path.ps1
 {{ end }}
+# Stage 1 of a fresh install (.chezmoitemplates/bootstrap-ready): part 1 installs only the base,
+# so part 2 (Claude, plugins) waits for the manual step + the next apply.
+{{ if not (includeTemplate "bootstrap-ready" .) }}
+*-install-claude.*
+{{ end }}
 
 # OS split for shell config. Windows uses the PowerShell profile; Unix uses the zsh
 # stack (zsh/sheldon/p10k). Each side ignores the other's files.

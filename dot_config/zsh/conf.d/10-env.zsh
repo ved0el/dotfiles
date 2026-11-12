@@ -13,3 +13,9 @@ export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 # a stale value from an older session self-heals.
 unset MISE_GLOBAL_CONFIG_FILE MISE_CONFIG_DIR
 [[ ":$PATH:" == *":$HOME/.local/bin:"* ]] || export PATH="$HOME/.local/bin:$PATH"
+# Homebrew on Apple Silicon (/opt/homebrew) isn't on the default PATH; Intel's /usr/local is.
+# Static, not `brew shellenv` (a subprocess on every shell).
+if [[ -x /opt/homebrew/bin/brew && ":$PATH:" != *":/opt/homebrew/bin:"* ]]; then
+  export HOMEBREW_PREFIX=/opt/homebrew
+  export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:$PATH"
+fi

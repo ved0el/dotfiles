@@ -184,6 +184,16 @@ foreach ($a in $vcArch) {
   } 'accept the UAC prompt (system-wide runtime)'
 }
 
+{{ if not (includeTemplate "bootstrap-ready" .) -}}
+# --- end of stage 1 (.chezmoitemplates/bootstrap-ready): base installs only; part 2 is ignored
+#     meanwhile (.chezmoiignore). A NEW terminal sees SCOOP + PATH, re-renders this as stage 2. ---
+Complete-Bootstrap 'part 1 (stage 1)'
+Write-Host "`n[bootstrap] Stage 1 of 2 done (scoop, git, PowerShell 7). To finish the install:" -ForegroundColor Green
+Write-Host "  1. close this window, open a NEW one: PowerShell 7 (Start menu > PowerShell 7)"
+Write-Host "  2. chezmoi apply"
+exit 0
+{{ end -}}
+
 # --- mise (runtimes + CLI tools, cross-platform — drives the tools/develop profiles) ---
 if (-not (Get-Command mise -ErrorAction SilentlyContinue)) { Invoke-Step 'mise' { scoop install mise } }
 # mise's shims, for what runs outside the profile's `mise env` injection (GUI apps, tasks).

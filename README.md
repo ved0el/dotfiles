@@ -7,6 +7,20 @@ fresh machine applies the config **and** installs the software and plugins it ne
 
 Copy the line for your OS into a terminal and press Enter.
 
+**A fresh machine takes two runs.** The first installs only the base (package manager, git/curl,
+the shell; Windows: scoop, git, PowerShell 7) and ends with the one manual step, then
+`chezmoi apply` installs the rest:
+
+| OS | manual step after run 1 |
+|---|---|
+| Linux | `chsh -s "$(command -v zsh)"`, then log out and back in (SSH: reconnect) |
+| macOS | open a new terminal (Homebrew on PATH); `chsh` too if your shell isn't zsh |
+| Windows | close the window, open PowerShell 7 from the Start menu |
+
+A machine that already meets that (zsh login shell, brew on PATH / scoop set up) does it all in one run.
+Running `chezmoi apply` again before the manual step does nothing: stage 2 starts only from the new
+login / window.
+
 **macOS / Linux** (Terminal):
 
 ```sh

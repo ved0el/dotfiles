@@ -1,0 +1,13 @@
+{{- /* Bootstrap stage gate: "true" once the manual step after stage 1 is done, "" before.
+     Stage 1 installs only what that step and the next `chezmoi apply` need (package manager,
+     git/curl, the shell; Windows: + pwsh 7, VC++); stage 2 = everything else, incl. part 2.
+     Read from chezmoi's own env, so it flips only in a NEW login/terminal — which re-renders
+     the bootstraps (new fingerprint), so the next apply runs stage 2 on its own.
+       Linux/macOS: zsh is the login shell ($SHELL; flips after chsh + re-login), and on macOS
+                    brew is on PATH (10-env.zsh adds Homebrew's prefix; flips in a new terminal).
+       Windows:     SCOOP is set (stage 1 persists it at User scope; flips in a new terminal). */ -}}
+{{- if eq .chezmoi.os "windows" -}}
+{{-   if env "SCOOP" }}true{{ end -}}
+{{- else if ne (base (env "SHELL")) "zsh" -}}
+{{- else if and (eq .chezmoi.os "darwin") (not (lookPath "brew")) -}}
+{{- else -}}true{{- end -}}

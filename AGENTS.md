@@ -36,6 +36,13 @@ Render one template: `chezmoi execute-template < <source-file>`.
     Windows) to its own env.
   - `.chezmoiignore` ships one set per OS (`*-install-*.ps1` ignored on Unix, `.sh` on Windows);
     a `.sh` can't run on Windows, so it MUST be ignored, not rendered empty.
+  - **Two stages on a fresh box** — gate `.chezmoitemplates/bootstrap-ready`, read from chezmoi's
+    env at render time (Unix: `$SHELL` = zsh, + brew on PATH on macOS; Windows: `SCOOP` set). Until
+    it holds, part 1 runs only its base steps (pkg manager, git/curl, zsh; Windows + pwsh MSI, VC++),
+    prints the manual step (chsh + re-login / a new terminal) + `chezmoi apply`, exits 0; part 2 is
+    `.chezmoiignore`d. The new login flips the gate = a new fingerprint, so the next apply runs
+    stage 2. Stage-1 steps stay ungated (run 2 re-walks their guards); everything else goes after
+    the gate. CI flips it in e2e's "Manual step" (`.github/AGENTS.md`).
 
 | path | holds |
 |---|---|

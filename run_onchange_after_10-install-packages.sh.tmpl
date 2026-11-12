@@ -1,6 +1,7 @@
 #!/bin/sh
 # Bootstrap, part 1 of 2: OS packages, mise tools, zsh plugins, git wiring. Re-runs
 # whenever this file's rendered content changes (e.g. you toggle a profile or add a package).
+# A fresh box runs it twice: stage 1 = base packages, stage 2 = the rest (see stage1_done below).
 # Claude Code + its plugins/skills are part 2 (run_onchange_after_20-install-claude), so
 # declaring a plugin doesn't re-run mise install. `after_` => runs once
 # all dotfiles are applied, so mise's conf.d/*.toml are in place when `mise install`
@@ -9,14 +10,35 @@ set -eu
 # run_url <url> <shell> [args]: run an installer script. Never `curl | sh`: a failed download
 # feeds sh an empty script, which exits 0, so the failure is lost and the run is never retried.
 run_url() { _s=$(curl --proto '=https' --tlsv1.2 -fsSL "$1") && shift && printf '%s\n' "$_s" | "$@"; }
+{{- $ready := includeTemplate "bootstrap-ready" . }}
+
+# Two stages (.chezmoitemplates/bootstrap-ready): until zsh is the login shell (+ brew on PATH on
+# macOS), only the base packages install, then this prints the manual step and stops; part 2 is
+# ignored meanwhile (.chezmoiignore). chsh is never run here: its password prompt hangs.
+stage1_done() {
+  echo
+  echo "[bootstrap] Stage 1 of 2 done (base packages). To finish the install:"
+{{- if ne (base (env "SHELL")) "zsh" }}
+  echo "  1. chsh -s \"$(command -v zsh)\"    # zsh as your login shell"
+  echo "  2. log out and back in (SSH: reconnect)"
+  echo "  3. chezmoi apply"
+{{- else }}
+  echo "  1. open a NEW terminal (puts Homebrew on PATH)"
+  echo "  2. chezmoi apply"
+{{- end }}
+  exit 0
+}
 
 # --- base packages: install only what's missing. btop→bottom and tree→eza are handled
 #     by mise + shell aliases now, so they're no longer installed via brew/apt. ---
 {{ if eq .chezmoi.os "darwin" -}}
 command -v brew >/dev/null 2>&1 || /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+# A fresh Apple Silicon install isn't on this shell's PATH yet (new shells: 10-env.zsh).
+if ! command -v brew >/dev/null 2>&1 && [ -x /opt/homebrew/bin/brew ]; then eval "$(/opt/homebrew/bin/brew shellenv)"; fi
 # git/curl ship with macOS — only install if somehow absent.
 command -v git  >/dev/null 2>&1 || brew install git
 command -v curl >/dev/null 2>&1 || brew install curl
+{{ if not $ready }}stage1_done{{ end }}
 # mole — cleanup/optimization CLI. One project, a separate build per OS (Linux/Windows: their
 # own installer below / in the .ps1), so never mise: its github:tw93/Mole picks the newest tag,
 # a macOS-only release. `brew upgrade` updates it here.
@@ -71,6 +93,7 @@ command -v curl >/dev/null 2>&1 || _pkgs="$_pkgs curl"
 # zsh: this repo ships ~/.zshrc + the zsh/conf.d stack + sheldon, so the shell itself has to
 # exist. macOS already ships zsh; Debian/Ubuntu do not.
 command -v zsh  >/dev/null 2>&1 || _pkgs="$_pkgs zsh"
+{{ if $ready -}}
 # Colour emoji: Linux ships no colour emoji font (macOS/Windows do); fontconfig picks it up.
 dpkg -s fonts-noto-color-emoji >/dev/null 2>&1 || _pkgs="$_pkgs fonts-noto-color-emoji"
 {{ if .develop }}command -v make >/dev/null 2>&1 || _pkgs="$_pkgs make"{{ end }}
@@ -80,7 +103,9 @@ command -v alacritty >/dev/null 2>&1 || _pkgs="$_pkgs alacritty"
 command -v xz        >/dev/null 2>&1 || _pkgs="$_pkgs xz-utils"   # Nerd Font tarball below
 command -v fc-cache  >/dev/null 2>&1 || _pkgs="$_pkgs fontconfig"
 {{ end -}}
+{{ end -}}
 if [ -n "$_pkgs" ]; then sudo apt-get update -y && sudo apt-get install -y $_pkgs; fi
+{{ if not $ready }}stage1_done{{ end }}
 # mole (Linux build): its official installer -> ~/.local/share/mole, linking mo/mole into
 # ~/.local/bin (no sudo). After the batch above so curl exists; `mo update` updates it in place.
 [ -e "$HOME/.local/bin/mo" ] || run_url https://raw.githubusercontent.com/tw93/Mole/linux/install.sh bash
@@ -109,14 +134,6 @@ if ! dpkg -s brave-origin >/dev/null 2>&1; then
 fi
 {{ end -}}
 {{ end -}}
-
-# chsh is interactive (it prompts for a password), so it is NOT run here — just say so once.
-# SHELL can be unset in a non-interactive run, and `set -u` makes ${SHELL##*/} fatal, so default it.
-_login_sh="${SHELL:-}"
-if command -v zsh >/dev/null 2>&1 && [ "${_login_sh##*/}" != "zsh" ]; then
-  echo "[shell] login shell is ${_login_sh:-unset} — run: chsh -s \"$(command -v zsh)\"  (then re-login)"
-fi
-unset _login_sh
 
 # ~/.local/bin holds self-installed tools (sheldon, mise).
 export PATH="$HOME/.local/bin:$PATH"
