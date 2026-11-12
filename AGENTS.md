@@ -50,8 +50,8 @@ Render one template: `chezmoi execute-template < <source-file>`.
 
 ## Profiles & OS
 - Profile keys `tools`, `develop`, `tmux` (Linux only, optional, default off — herdr is the multiplexer; macOS = Rex), `wm` (macOS + Windows), `apps` — plus the
-  Windows-only `sshd` (bool), `claudeServer` (bool, Linux + Windows: herdr + claude-rc at boot, opt-in per
-  SSH server, never default) and strings `scoopDir`/`miseDataDir` — are prompted by
+  `sshd` (bool, Linux + Windows, opt-in per SSH server, never default: herdr + claude-rc at boot so Claude
+  auto-resumes after a reboot — other boxes resume by hand; Windows also scoop `no_junction`) and the Windows strings `scoopDir`/`miseDataDir` — are prompted by
   `chezmoi init` (`.chezmoi.toml.tmpl` → `~/.config/chezmoi/chezmoi.toml`, which overrides
   `.chezmoidata.yaml`). `apply` never re-prompts: re-run `init` or edit that file.
 - `.chezmoidata.yaml` must define every key — templates error on a missing one.

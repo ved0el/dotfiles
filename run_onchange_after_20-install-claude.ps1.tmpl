@@ -155,13 +155,13 @@ if (-not $cgHave) {
 }
 {{ end -}}
 
-{{ if and .claudeServer .tools -}}
-# claudeServer profile (opt-in per machine): `herdr server` at logon (with autologon that is right after boot). It holds the
+{{ if and .sshd .tools -}}
+# sshd profile (opt-in per machine): `herdr server` at logon (with autologon that is right after boot). It holds the
 # panes across SSH drops and, after a restart, resumes each Claude pane (`claude --resume <id>`);
 # a conversation that had Remote Control on re-attaches it, so it's reachable from claude.ai /
 # the app with no SSH login. Needs herdr's claude integration (it reports the session ids).
 # Under `conhost --headless`: a bare pwsh flashes a console at logon. Re-registered only when
-# missing or its action differs. Boxes without claudeServer get none of this.
+# missing or its action differs. Boxes without sshd get none of this.
 $herdrStatus = & { $ErrorActionPreference = 'Continue'; mise --cd $HOME exec -- herdr integration status 2>&1 | Out-String }
 if ($herdrStatus -notmatch '(?m)^claude: current') {
   Invoke-Step 'herdr claude integration' { mise --cd $HOME exec -- herdr integration install claude }
