@@ -46,7 +46,6 @@ existing scoop/mise elsewhere is kept, not moved.
 | base | always | zsh + powerlevel10k + sheldon (Unix) or PowerShell + starship (Windows), mise, Claude Code + plugins (incl. impeccable) |
 | **tools** | on | CLI tools via mise (bat, eza, fd, ripgrep, fzf, micro, rtk, codegraph, agent-browser, agent-desktop, vivid, …), delta for git |
 | **develop** | off | language runtimes via mise (`conf.d/develop.toml`: node, python, go, bun, pnpm, uv; Cloudflare's `cf` by hand: `pnpm add -g cf`) + Claude agent skills + agentmemory (Claude memory plugin + its server, started at login; need node) · Windows: scoop `make` (Linux: apt) |
-| **tmux** | off (Linux only) | optional tmux + TPM plugins and `~/.tmux.conf`. The default multiplexer is **herdr** (tools list, Linux + Windows); macOS uses Rex |
 | **apps** | off | essential GUI apps (`.chezmoidata.yaml` `appList`, essentials only — the rest by hand) · Windows: winget (Tailscale, Brave, Flow Launcher, ShareX, Windhawk) · macOS: brew casks (Tailscale, Brave) · Linux: vendor repos (Tailscale, Brave Origin) + apt Alacritty |
 | **wm** | off (not Linux) | macOS: yabai + skhd · Windows: komorebi + whkd + yasb |
 | **sshd** | off (Linux + Windows) | this box is an SSH server. Windows: scoop `no_junction` (+ a one-time `scoop reset *`) so scoop's shims work in an sshd session (it won't follow scoop's `current` junctions). Both OSes: keep Claude reachable across reboots (any other box with herdr: just run `herdr` after a reboot — it restores the layout and resumes every Claude pane): `herdr server` (holds the panes; after a restart resumes each Claude conversation, which re-attaches its Remote Control) + `claude remote-control` (start new sessions from claude.ai / the app, no SSH), both at boot — Linux: systemd user units + linger · Windows: logon tasks (needs autologon; the console is locked right after it). One-time: `claude auth login` and an interactive `claude remote-control` run |
@@ -57,10 +56,10 @@ Answers are stored in `~/.config/chezmoi/chezmoi.toml`. To change them:
 ## Daily use
 
 ```sh
-chezmoi edit ~/.tmux.conf    # edit a managed file
+chezmoi edit ~/.zshrc        # edit a managed file
 chezmoi apply                # apply; re-runs a bootstrap script if it changed
 chezmoi update               # git pull + apply (installs what's missing; doesn't update anything)
-chezmoi re-add ~/.tmux.conf  # capture a $HOME edit (not for .tmpl / modify_ targets)
+chezmoi re-add ~/.zshrc      # capture a $HOME edit (not for .tmpl / modify_ targets)
 chezmoi cd                   # open the source repo to commit/push
 ```
 
@@ -87,12 +86,12 @@ Shell aliases: `cz`, `cza`, `czd`, `czs`, `cze`, `czra`, `czu`, `czcd`; `..` / `
 - **Claude permissions:** only read-only commands are auto-allowed (git/gh/mise read subcommands,
   `ls`, `wc`, `eza`, codegraph); everything else goes through auto mode's check. Secrets and browser
   data (`~/.ssh`, `.env*`, gh/Claude tokens, Brave/Zen/agent profiles) are denied to Read/Edit.
-- **Terminal:** macOS = **Rex** (terminal + multiplexer, replaces Alacritty and tmux; installed from its
+- **Terminal:** macOS = **Rex** (terminal + multiplexer, replaces Alacritty; installed from its
   appcast, self-updates; config `~/.config/rex/init.lua`). Windows + Linux = Alacritty, one config template
   `.chezmoitemplates/alacritty.toml` (applied to `~/.config/alacritty`; Windows' `%APPDATA%\alacritty` just
   imports it). Windows installs it via scoop (`scoop update alacritty`); Linux: apt, with the `apps` profile
   (needs >= 0.13 — Debian 12's is too old).
-  Theme = the `[colors]` block (Catppuccin Mocha; tmux, fzf, bat, rg, starship, micro, vivid use
+  Theme = the `[colors]` block (Catppuccin Mocha; fzf, bat, rg, starship, micro, vivid use
   ANSI colours only, so they follow any theme); JetBrainsMonoNL Nerd Font 14, copy-on-select,
   right-click pastes, `Ctrl+Enter` = Claude newline, Windows starts in `D:/work` (if it exists).
   Tabs/panes stay in herdr.
@@ -110,7 +109,7 @@ Shell aliases: `cz`, `cza`, `czd`, `czs`, `cze`, `czra`, `czu`, `czcd`; `..` / `
 - Visual C++ 2015-2022 runtimes (x64 + x86) from winget, upgraded to the newest on every
   bootstrap run — the one step that shows a UAC prompt (a system-wide runtime).
 - `gsudo` (scoop) for elevation; ssh = Windows' built-in OpenSSH (git uses it via `core.sshCommand`).
-- SSH into the machine (`sshd` profile): scoop runs with `no_junction`, so its shims (tmux, git,
+- SSH into the machine (`sshd` profile): scoop runs with `no_junction`, so its shims (git,
   starship…) work in an sshd session too (sshd won't follow scoop's `current` junctions).
 - Claude Code finds scoop's Git Bash through
   `CLAUDE_CODE_GIT_BASH_PATH`; WinPS 5.1 gets `RemoteSigned` for CurrentUser (its default blocks scripts).
@@ -123,7 +122,7 @@ dot_zshrc, dot_p10k.zsh, dot_config/zsh/     # Unix shell
 dot_config/powershell/, dot_config/starship.toml   # Windows shell
 dot_config/mise/conf.d/                      # tools + runtimes (all OSes)
 dot_config/                                  # other tool configs, gated per profile + OS
-dot_tmux.conf, dot_local/bin/                # optional tmux (Linux)
+dot_local/bin/                               # helper scripts (Unix)
 dot_claude/, .chezmoitemplates/              # Claude Code settings, CLAUDE.md, statuslines
 .chezmoi.toml.tmpl, .chezmoiignore           # profile prompts, what applies where
 run_onchange_after_10-install-packages.*     # bootstrap 1: OS packages, mise, wm

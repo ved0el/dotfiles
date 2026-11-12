@@ -4,15 +4,8 @@
 {{- $wm   := false -}}
 {{- $scoopDir    := "" -}}
 {{- $miseDataDir := "" -}}
-{{- $tmux := false -}}
 {{- $sshd := false -}}
-{{- /* herdr (tools list) is the multiplexer on Linux + Windows; tmux is an optional extra on
-       Linux only. macOS: Rex. Forced off elsewhere, not prompted: an existing tmux = true in
-       chezmoi.toml (e.g. from the psmux days on Windows) would otherwise survive. */ -}}
-{{- if eq .chezmoi.os "linux" -}}
-{{-   $tmux = promptBoolOnce . "tmux" "Also install tmux + plugins (optional; herdr is the default multiplexer)" false -}}
-{{- else if eq .chezmoi.os "darwin" -}}
-{{- else -}}
+{{- if eq .chezmoi.os "windows" -}}
 {{- /* User-scope install roots (SCOOP / MISE_DATA_DIR). Enter keeps the default; an existing
        scoop/mise root elsewhere is kept by the bootstrap regardless (they can't be moved). */ -}}
 {{-   $scoopDir    = promptStringOnce . "scoopDir"    "Scoop install dir"    (printf "%s/.local/share/scoop" .chezmoi.homeDir) -}}
@@ -32,7 +25,6 @@
 [data]
     tools   = {{ $tools }}
     develop = {{ $develop }}
-    tmux    = {{ $tmux }}
     wm      = {{ $wm }}
     apps    = {{ $apps }}
     scoopDir    = {{ $scoopDir | toToml }}

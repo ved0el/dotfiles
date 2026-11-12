@@ -21,14 +21,12 @@ renovate.json
 {{ end }}
 
 # OS split for shell config. Windows uses the PowerShell profile; Unix uses the zsh
-# stack (zsh/sheldon/p10k) (+ optional tmux). Each side ignores the other's files.
+# stack (zsh/sheldon/p10k). Each side ignores the other's files.
 {{ if eq .chezmoi.os "windows" }}
 .zshrc
 .p10k.zsh
 .config/zsh
 .config/sheldon
-.local/bin/tmux-sessionizer
-.tmux.conf
 .local/bin/bp
 .claude/statusline.sh
 {{ else }}
@@ -43,7 +41,7 @@ renovate.json
 {{ if ne .chezmoi.os "windows" }}
 AppData
 {{ end }}
-# macOS: Rex replaces Alacritty (and tmux).
+# macOS: Rex replaces Alacritty.
 {{ if eq .chezmoi.os "darwin" }}
 .config/alacritty
 {{ end }}
@@ -59,10 +57,6 @@ AppData
 .config/whkd
 .config/komorebi
 .config/yasb
-{{ end }}
-{{ if not .tmux }}
-.tmux.conf
-.local/bin/tmux-sessionizer
 {{ end }}
 {{ if not .tools }}
 .config/bat

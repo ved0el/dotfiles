@@ -3,7 +3,6 @@
 # OVERRIDES these defaults. Per-machine overrides live in ~/.config/chezmoi/chezmoi.toml.
 tools: true     # CLI tools via mise
 develop: false  # language runtimes via mise
-tmux: false     # Linux only, optional: tmux + TPM plugins and ~/.tmux.conf (herdr is the default multiplexer)
 scoopDir: ""    # Windows: SCOOP root (prompted; "" = bootstrap default ~/.local/share/scoop)
 miseDataDir: "" # Windows: MISE_DATA_DIR (prompted; "" = bootstrap default ~/.local/share/mise)
 sshd: false     # Linux/Windows SSH server: herdr + claude remote-control at boot (Claude auto-resumes); Windows: scoop no_junction

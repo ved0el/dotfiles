@@ -1,4 +1,4 @@
-# Alacritty: the one terminal on every OS. It only draws; herdr (optionally tmux on Linux) keeps
+# Alacritty: the one terminal on every OS. It only draws; herdr keeps
 # the sessions, splits and restore. Rendered to ~/.config/alacritty on every OS (shared with other
 # tools); Windows' %APPDATA%\alacritty\alacritty.toml only imports it (Alacritty ignores XDG there).
 

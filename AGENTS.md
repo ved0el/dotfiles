@@ -18,7 +18,7 @@ Tool-specific rules live in the nested `AGENTS.md` beside the files.
 | `cz`, `cze`, `czcd` | `chezmoi`, `edit`, `cd` | passthrough / `$EDITOR` / cd into repo |
 
 Aliases: `dot_config/zsh/conf.d/70-aliases.zsh`, `dot_config/powershell/profile.ps1`.
-Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .tmux }}|{{ .wm }}'`,
+Check before apply: `chezmoi execute-template '{{ .tools }}|{{ .develop }}|{{ .wm }}|{{ .sshd }}'`,
 `chezmoi cat-config`, `chezmoi apply -n -v` (script text shows in the diff — grep
 `^diff --git a/.config/` for real file changes), `chezmoi managed` / `chezmoi ignored`.
 Render one template: `chezmoi execute-template < <source-file>`.
@@ -30,7 +30,7 @@ Render one template: `chezmoi execute-template < <source-file>`.
 - **Bootstrap = two `run_onchange_after_` scripts per OS family** (`.sh.tmpl` for brew/apt,
   `.ps1.tmpl` for scoop), run in name order after files apply, each re-running only when ITS
   rendered content changes:
-  - `10-install-packages` — OS packages, mise, tmux/zsh plugins, git wiring, wm, pwsh profile.
+  - `10-install-packages` — OS packages, mise, zsh plugins, git wiring, wm, pwsh profile.
   - `20-install-claude` — Claude Code, marketplaces/plugins/skills, rtk hook, codegraph MCP.
   - Separate processes: part 2 re-adds `~/.local/bin` (+ scoop shims, `XDG_CONFIG_HOME` on
     Windows) to its own env.
@@ -45,11 +45,11 @@ Render one template: `chezmoi execute-template < <source-file>`.
 | `dot_config/mise/conf.d/*.toml` | tools/runtimes, all OSes |
 | `dot_config/{yabai,skhd}` / `{komorebi,whkd,yasb}` | tiling WM: macOS / Windows |
 | `dot_claude/`, `.chezmoitemplates/claude-settings.json` | Claude settings (merged), CLAUDE.md, statuslines |
-| `dot_tmux.conf`, `dot_local/bin/` | optional tmux (Linux, `tmux` profile) + helper scripts; herdr is the default multiplexer |
+| `dot_local/bin/` | helper scripts (Unix) |
 | `.chezmoitemplates/alacritty.toml` | Alacritty, the terminal on Windows + Linux (macOS: Rex) (rendered to `~/.config/alacritty`; Windows' `%APPDATA%\alacritty` only imports it) |
 
 ## Profiles & OS
-- Profile keys `tools`, `develop`, `tmux` (Linux only, optional, default off — herdr is the multiplexer; macOS = Rex), `wm` (macOS + Windows), `apps` — plus the
+- Profile keys `tools`, `develop`, `wm` (macOS + Windows), `apps` — plus the
   `sshd` (bool, Linux + Windows, opt-in per SSH server, never default: herdr + claude-rc at boot so Claude
   auto-resumes after a reboot — other boxes resume by hand; Windows also scoop `no_junction`) and the Windows strings `scoopDir`/`miseDataDir` — are prompted by
   `chezmoi init` (`.chezmoi.toml.tmpl` → `~/.config/chezmoi/chezmoi.toml`, which overrides
@@ -78,8 +78,8 @@ Render one template: `chezmoi execute-template < <source-file>`.
 - **scoop/brew/apt (+winget) only for tools ONE OS needs** (starship, psfzf, gsudo, fonts,
   WMs, mole, zsh, …) **and bootstrap prerequisites** that must exist before mise runs (git, curl,
   mise itself). Never move a cross-platform tool off mise on one OS — not even gh: the lists drift.
-- OS package managers only for what mise can't do, installed only if missing: brew/apt `git curl
-  tmux` (+`zsh` on Linux, `mole`/`yabai`/`skhd` on macOS; mole on Linux/Windows = its official
+- OS package managers only for what mise can't do, installed only if missing: brew/apt `git curl`
+  (+`zsh` on Linux, `mole`/`yabai`/`skhd` on macOS; mole on Linux/Windows = its official
   installer into `~/.local/share/mole`, never mise — one repo tags all 3 OS builds); scoop `git mise openssl starship gsudo
   JetBrainsMono-NF psfzf`; winget `Microsoft.PowerShell` + `Microsoft.VCRedist.2015+.{x64,x86}` (+arm64) — always run:
   `winget install` upgrades an installed package, exit `0x8A15002B`/`0x8A150061` = already current. Guard on the
@@ -104,13 +104,13 @@ Render one template: `chezmoi execute-template < <source-file>`.
   policy file: NEVER auto-allow it (hook-enforced); its app rules are in `dot_claude/CLAUDE.md`.
 - **delta** — wired by an idempotent `include.path` in the UNMANAGED `~/.gitconfig`; never
   manage `~/.gitconfig` (identity/signing stay machine-local).
-- **Colours follow the terminal theme** — CLI configs use ANSI names only (fzf, tmux, bat/delta
+- **Colours follow the terminal theme** — CLI configs use ANSI names only (fzf, bat/delta
   `ansi`, ripgrep, starship palette, micro `simple`, vivid `ansi`); never a hex/`colourNNN`, or a
   terminal theme change breaks them. zsh caches vivid's output and feeds completion `list-colors`.
 - fzf-tab REQUIRES `zstyle ':completion:*' menu no` — never `menu select`.
 - **Alacritty = the terminal** on Windows + Linux (one config: `.chezmoitemplates/alacritty.toml`); install
   paths, font and theme rules: `dot_config/alacritty/AGENTS.md`.
-- **Rex** = the macOS terminal + multiplexer (replaces Alacritty and tmux there): `dot_config/rex/AGENTS.md`.
+- **Rex** = the macOS terminal + multiplexer (replaces Alacritty, and is the multiplexer there): `dot_config/rex/AGENTS.md`.
 - Claude install / plugins / skills: read `dot_claude/AGENTS.md` before editing them.
 
 ## Windows
@@ -132,10 +132,6 @@ Render one template: `chezmoi execute-template < <source-file>`.
   outside `$HOME` (`dot_config/mise/AGENTS.md`). Run mise from scripts as `mise --cd "$HOME"`.
 - `cd` → zoxide on both shells is skipped when `CLAUDECODE` is set: a zoxide miss would leak
   `zoxide: no match found` into Claude's piped output.
-- tmux plugins are `git clone`d by the bootstrap. Do NOT switch to TPM's `install_plugins` — it
-  needs a live server, installs 0 plugins non-interactively and leaves a stale server behind.
-- tmux `#(…)` runs as the SERVER's user and is async — test the script directly, not via
-  `display-message`.
 - `skhdrc` (macOS) and `whkdrc` (Windows) share one keymap scheme — **edit them as a pair**.
   Deliberate divergences: monitor-move `⌃⌘←/→` vs `win+shift+←/→`; macOS-only recent-workspace,
   balance, sticky/pip; Windows has NO workspace binds — komorebi keeps ONE workspace per monitor,

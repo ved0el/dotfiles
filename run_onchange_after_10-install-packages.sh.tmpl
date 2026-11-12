@@ -1,5 +1,5 @@
 #!/bin/sh
-# Bootstrap, part 1 of 2: OS packages, mise tools, tmux/zsh plugins, git wiring. Re-runs
+# Bootstrap, part 1 of 2: OS packages, mise tools, zsh plugins, git wiring. Re-runs
 # whenever this file's rendered content changes (e.g. you toggle a profile or add a package).
 # Claude Code + its plugins/skills are part 2 (run_onchange_after_20-install-claude), so
 # declaring a plugin doesn't re-run mise install. `after_` => runs once
@@ -35,7 +35,7 @@ install_dmg() {
   done
   hdiutil detach -quiet "$_tmp/mnt"; rm -rf "$_tmp"; trap - EXIT
 }
-# Rex = the macOS terminal AND multiplexer (replaces Alacritty + tmux; ~/.config/rex/init.lua). No
+# Rex = the macOS terminal AND multiplexer (replaces Alacritty; ~/.config/rex/init.lua). No
 # cask: the newest .dmg of its Sparkle appcast (first <enclosure>). Notarized -> --verify; self-updates.
 [ -d "/Applications/Rex Beta.app" ] || [ -d /Applications/Rex.app ] || \
   install_dmg "$(curl -fsSL https://blob.superlogical.com/public/rex-app/snapshot/appcast.xml \
@@ -71,7 +71,6 @@ command -v curl >/dev/null 2>&1 || _pkgs="$_pkgs curl"
 # zsh: this repo ships ~/.zshrc + the zsh/conf.d stack + sheldon, so the shell itself has to
 # exist. macOS already ships zsh; Debian/Ubuntu do not.
 command -v zsh  >/dev/null 2>&1 || _pkgs="$_pkgs zsh"
-{{ if .tmux }}command -v tmux >/dev/null 2>&1 || _pkgs="$_pkgs tmux"{{ end }}
 # Colour emoji: Linux ships no colour emoji font (macOS/Windows do); fontconfig picks it up.
 dpkg -s fonts-noto-color-emoji >/dev/null 2>&1 || _pkgs="$_pkgs fonts-noto-color-emoji"
 {{ if .develop }}command -v make >/dev/null 2>&1 || _pkgs="$_pkgs make"{{ end }}
@@ -130,44 +129,6 @@ command -v sheldon >/dev/null 2>&1 || \
 # --- mise (runtimes + CLI tools, cross-platform — drives the tools/develop profiles) ---
 command -v mise >/dev/null 2>&1 || run_url https://mise.run sh
 
-{{ if .tmux -}}
-# --- tmux plugins (TPM) — server-free install --------------------------------
-# A TPM "install" is just `git clone` into ~/.tmux/plugins/<name>, so we clone the
-# plugins directly instead of driving tmux. We deliberately DON'T use TPM's own
-# bin/install_plugins: it needs a live tmux server that has sourced the config (to
-# read TMUX_PLUGIN_MANAGER_PATH), and during a non-interactive bootstrap that path
-# was the source of two bugs —
-#   1. a session-less `tmux start-server` exits before TPM can query it, so TPM
-#      aborted with "not configured" and installed ZERO plugins (silently, because
-#      stderr was sent to /dev/null); and
-#   2. starting a server on the default socket left a stale server behind, which
-#      then made plain `tmux` abort with "server exited unexpectedly" after the
-#      next tmux upgrade (old server vs newly-installed client).
-# Cloning needs no server, touches no socket, never hides errors, and is safe to
-# re-run. TPM still manages updates at runtime via `prefix + I` / `prefix + U`.
-tpm_dir="$HOME/.tmux/plugins"
-mkdir -p "$tpm_dir"
-[ -d "$tpm_dir/tpm" ] || \
-  git clone --depth 1 https://github.com/tmux-plugins/tpm "$tpm_dir/tpm"
-# Clone every `set -g @plugin 'owner/repo'` (or full git URL) declared in the config
-# that isn't present yet. A failed clone doesn't stop the other plugins or the rest of the
-# bootstrap, but fails the script at the end (so chezmoi re-runs it on the next apply).
-sed -n "s/^[[:space:]]*set[^@]*@plugin[[:space:]]*['\"]\([^'\"]*\)['\"].*/\1/p" \
-      "$HOME/.tmux.conf" 2>/dev/null \
-  | { rc=0; while IFS= read -r plugin; do
-      [ -n "$plugin" ] || continue
-      name=${plugin##*/}; name=${name%.git}
-      if [ -d "$tpm_dir/$name" ]; then continue; fi
-      case "$plugin" in
-        *://*) url="$plugin" ;;
-        *)     url="https://github.com/$plugin" ;;
-      esac
-      echo "[tmux] installing plugin: $name"
-      git clone --depth 1 "$url" "$tpm_dir/$name" \
-        || { echo "[tmux] clone failed for $plugin" >&2; rc=1; }
-    done; exit $rc; } || tmux_failed=1
-{{ end -}}
-
 # --- install tools/runtimes declared in ~/.config/mise/conf.d/*.toml, lock sheldon ---
 # --cd "$HOME": mise only auto-discovers the global conf.d/*.toml when CWD is inside the home
 # tree; chezmoi may run this script from elsewhere, so anchor it at $HOME or nothing installs.
@@ -195,4 +156,3 @@ fi
 # `lock` (not `--update`): fetch missing plugins only; updating them is the user's.
 sheldon lock
 
-[ -z "${tmux_failed:-}" ] || { echo "[bootstrap] part 1 had failures; fix them, then re-run chezmoi apply" >&2; exit 1; }

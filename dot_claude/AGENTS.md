@@ -30,9 +30,8 @@ behind each rule is in its commit (`git log -S`). Repo-wide rules: root `AGENTS.
   Test what rtk auto-allows: `printf '{"tool_name":"Bash","tool_input":{"command":"git push"}}' | rtk hook claude`
   (`"permissionDecision":"allow"` = runs unchecked).
 - **No `model` key**: picking "Default" in `/model` deletes the key, so a tracked value drifts.
-- **`teammateMode: "in-process"`**: inside tmux, agent-team teammates otherwise open a pane
-  each.
-  One run in panes: `claude --teammate-mode tmux`.
+- **`teammateMode: "in-process"`**: agent-team teammates stay in the lead's pane
+  (no tmux here).
 - **`~/.claude/CLAUDE.md` is managed** (`dot_claude/CLAUDE.md`): the `@RTK.md` import (so rtk
   finds it present) + the codegraph rule + the shell-tools rule (built-in Read/Grep/Glob first; rg/fd/… preferred if installed, never
   auto-allowed) + the browser rule (agent-browser, per-client profiles, policy, never Zen) + the desktop rule
