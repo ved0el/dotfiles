@@ -9,7 +9,7 @@ Nested rules (the root AGENTS.md points here). Same style: terse; the why is in 
   `.chezmoitemplates/alacritty.toml` → `dot_config/alacritty/` on Windows + Linux (one path shared with
   other tools); Windows reads only `%APPDATA%`, never XDG, so `AppData/Roaming/alacritty/` is a stub
   whose `general.import` loads `~/.config/alacritty/alacritty.toml` (`.chezmoiignore` drops it on Unix). It only draws —
-  sessions, splits and restore stay in tmux/psmux (it has no tabs; never bind `C-b`). Theme = the
+  sessions, splits and restore stay in herdr (it has no tabs; never bind `C-b`). Theme = the
   inline `[colors]` block (Catppuccin Mocha); tmux sets NO pane bg (`window-(active-)style`) so
   every pane uses the theme's bg (fzf too: `bg:` unset, `bg+:-1`). Dim (SGR 2) is darkened by
   Alacritty itself — no font trick. Windows start dir `D:/work` renders only when it exists

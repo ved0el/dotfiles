@@ -45,11 +45,11 @@ Render one template: `chezmoi execute-template < <source-file>`.
 | `dot_config/mise/conf.d/*.toml` | tools/runtimes, all OSes |
 | `dot_config/{yabai,skhd}` / `{komorebi,whkd,yasb}` | tiling WM: macOS / Windows |
 | `dot_claude/`, `.chezmoitemplates/claude-settings.json` | Claude settings (merged), CLAUDE.md, statuslines |
-| `dot_tmux.conf.tmpl`, `dot_local/bin/` | tmux + its helper scripts (Unix); psmux reads the same file (Windows blocks) |
+| `dot_tmux.conf`, `dot_local/bin/` | optional tmux (Linux, `tmux` profile) + helper scripts; herdr is the default multiplexer |
 | `.chezmoitemplates/alacritty.toml` | Alacritty, the terminal on Windows + Linux (macOS: Rex) (rendered to `~/.config/alacritty`; Windows' `%APPDATA%\alacritty` only imports it) |
 
 ## Profiles & OS
-- Profile keys `tools`, `develop`, `tmux` (Linux; Windows = psmux; macOS = off, Rex), `wm` (macOS + Windows), `apps` — plus the
+- Profile keys `tools`, `develop`, `tmux` (Linux only, optional, default off — herdr is the multiplexer; macOS = Rex), `wm` (macOS + Windows), `apps` — plus the
   Windows-only `sshd` (bool), `claudeServer` (bool, Linux + Windows: herdr + claude-rc at boot, opt-in per
   SSH server, never default) and strings `scoopDir`/`miseDataDir` — are prompted by
   `chezmoi init` (`.chezmoi.toml.tmpl` → `~/.config/chezmoi/chezmoi.toml`, which overrides
@@ -75,13 +75,13 @@ Render one template: `chezmoi execute-template < <source-file>`.
   brew casks; Linux: Tailscale + Brave Origin from vendor repos, hardcoded in the .sh bootstrap).
   Essentials only — anything else is installed by hand. winget runs
   with `--no-upgrade` (installed = `0x8A150061`, success); casks are guarded on `brew list --cask`.
-- **scoop/brew/apt (+winget) only for tools ONE OS needs** (starship, psfzf, psmux, gsudo, fonts,
+- **scoop/brew/apt (+winget) only for tools ONE OS needs** (starship, psfzf, gsudo, fonts,
   WMs, mole, zsh, …) **and bootstrap prerequisites** that must exist before mise runs (git, curl,
   mise itself). Never move a cross-platform tool off mise on one OS — not even gh: the lists drift.
 - OS package managers only for what mise can't do, installed only if missing: brew/apt `git curl
   tmux` (+`zsh` on Linux, `mole`/`yabai`/`skhd` on macOS; mole on Linux/Windows = its official
   installer into `~/.local/share/mole`, never mise — one repo tags all 3 OS builds); scoop `git mise openssl starship gsudo
-  JetBrainsMono-NF psfzf` (+`psmux` for `tmux`); winget `Microsoft.PowerShell` + `Microsoft.VCRedist.2015+.{x64,x86}` (+arm64) — always run:
+  JetBrainsMono-NF psfzf`; winget `Microsoft.PowerShell` + `Microsoft.VCRedist.2015+.{x64,x86}` (+arm64) — always run:
   `winget install` upgrades an installed package, exit `0x8A15002B`/`0x8A150061` = already current. Guard on the
   COMMAND (a module: on `scoop list | Out-String` — `Select-String` on its objects never matches; a
   FONT: on its `.ttf` in the user/system Fonts dir — a registered font file is held open, so
@@ -120,8 +120,8 @@ Render one template: `chezmoi execute-template < <source-file>`.
   `fail()` + `exit 1`. Steps stay idempotent so the retry only redoes what's missing.
 - **Before editing a `.ps1` bootstrap or any Windows setup step, read `.chezmoitemplates/AGENTS.md`**
   (preflight, `SCOOP`/`MISE_DATA_DIR`, `no_junction`, pwsh MSI, fonts, WinPS 5.1 quirks).
-- **psmux** (tmux for Windows) + its session restore: read `dot_psmux/AGENTS.md` before editing
-  `dot_psmux/`, the Windows blocks of `dot_tmux.conf.tmpl`, or the psmux steps of the `.ps1` bootstrap.
+- **herdr** is the multiplexer (mise `tools`; Linux + Windows): it resumes Claude panes itself, so no
+  restore scripts. psmux was retired (the `.ps1` bootstrap unregisters `psmux-restore` + uninstalls it once).
 - `XDG_CONFIG_HOME=~/.config` is persisted on Windows and exported on Unix (`10-env.zsh`).
 - Profile, PSReadLine/PSFzf, starship, load budget: `dot_config/powershell/AGENTS.md`.
   WM: `dot_config/komorebi/AGENTS.md`, `dot_config/yasb/AGENTS.md`.

@@ -1,5 +1,5 @@
-# Alacritty: the one terminal on every OS. It only draws; tmux (Windows: psmux) keeps the
-# sessions, splits and restore. Rendered to ~/.config/alacritty on every OS (shared with other
+# Alacritty: the one terminal on every OS. It only draws; herdr (optionally tmux on Linux) keeps
+# the sessions, splits and restore. Rendered to ~/.config/alacritty on every OS (shared with other
 # tools); Windows' %APPDATA%\alacritty\alacritty.toml only imports it (Alacritty ignores XDG there).
 
 [general]
@@ -38,7 +38,7 @@ save_to_clipboard = true
 [mouse]
 bindings = [{ mouse = "Right", action = "Paste" }]
 
-# Claude's newline: Alt+Enter (ESC CR) is the one form psmux and SSH both pass through.
+# Claude's newline: Alt+Enter (ESC CR) is the one form a multiplexer and SSH both pass through.
 [keyboard]
 bindings = [{ key = "Enter", mods = "Control", chars = "\u001b\r" }]
 

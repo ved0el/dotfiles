@@ -46,10 +46,10 @@ existing scoop/mise elsewhere is kept, not moved.
 | base | always | zsh + powerlevel10k + sheldon (Unix) or PowerShell + starship (Windows), mise, Claude Code + plugins (incl. impeccable) |
 | **tools** | on | CLI tools via mise (bat, eza, fd, ripgrep, fzf, micro, rtk, codegraph, agent-browser, agent-desktop, vivid, …), delta for git |
 | **develop** | off | language runtimes via mise (`conf.d/develop.toml`: node, python, go, bun, pnpm, uv; Cloudflare's `cf` by hand: `pnpm add -g cf`) + Claude agent skills + agentmemory (Claude memory plugin + its server, started at login; need node) · Windows: scoop `make` (Linux: apt) |
-| **tmux** | on (not macOS) | tmux + TPM plugins (Linux) · macOS: none, Rex is the multiplexer · Windows: psmux (same `~/.tmux.conf`, `tmux` works) + psmux-plugins |
+| **tmux** | off (Linux only) | optional tmux + TPM plugins and `~/.tmux.conf`. The default multiplexer is **herdr** (tools list, Linux + Windows); macOS uses Rex |
 | **apps** | off | essential GUI apps (`.chezmoidata.yaml` `appList`, essentials only — the rest by hand) · Windows: winget (Tailscale, Brave, Flow Launcher, ShareX, Windhawk) · macOS: brew casks (Tailscale, Brave) · Linux: vendor repos (Tailscale, Brave Origin) + apt Alacritty |
 | **wm** | off (not Linux) | macOS: yabai + skhd · Windows: komorebi + whkd + yasb |
-| **sshd** | off (Windows only) | this box is an SSH server: scoop `no_junction` (+ a one-time `scoop reset *`) so scoop apps work over SSH; a logon task restores the psmux sessions (with autologon: at boot) — unless **claudeServer** is on |
+| **sshd** | off (Windows only) | this box is an SSH server: scoop `no_junction` (+ a one-time `scoop reset *`) so scoop apps work over SSH; (Claude persistence: see **claudeServer**) |
 | **claudeServer** | off (Linux + Windows) | keep Claude reachable on this SSH server: `herdr server` (holds the panes; after a restart resumes each Claude conversation, which re-attaches its Remote Control) + `claude remote-control` (start new sessions from claude.ai / the app, no SSH), both at boot — Linux: systemd user units + linger · Windows: logon tasks (needs autologon; the console is locked right after it). One-time: `claude auth login` and an interactive `claude remote-control` run |
 
 Answers are stored in `~/.config/chezmoi/chezmoi.toml`. To change them:
@@ -65,7 +65,7 @@ chezmoi re-add ~/.tmux.conf  # capture a $HOME edit (not for .tmpl / modify_ tar
 chezmoi cd                   # open the source repo to commit/push
 ```
 
-Shell aliases: `cz`, `cza`, `czd`, `czs`, `cze`, `czra`, `czu`, `czcd`; `..` / `...` / `....`, `lsal` (`ls -al`), `mkcd`, `reload`, `path`, `e` (editor), git `g` `gs` `gl` `gp` `gsw` `glg`, `cat` → bat without line numbers (plain text when piped), `top` → btm, `clc` / `clr` (claude --continue / --resume), `tm` (tmux), `bp` (browser profile, below) — same on zsh and pwsh (+ `which` on pwsh).
+Shell aliases: `cz`, `cza`, `czd`, `czs`, `cze`, `czra`, `czu`, `czcd`; `..` / `...` / `....`, `lsal` (`ls -al`), `mkcd`, `reload`, `path`, `e` (editor), git `g` `gs` `gl` `gp` `gsw` `glg`, `cat` → bat without line numbers (plain text when piped), `top` → btm, `clc` / `clr` (claude --continue / --resume), `bp` (browser profile, below) — same on zsh and pwsh (+ `which` on pwsh).
 
 - **Add a package:** CLI tools go in `dot_config/mise/conf.d/tools.toml.tmpl` (all OSes).
   OS packages go in `run_onchange_after_10-install-packages.{sh,ps1}.tmpl`.
@@ -96,7 +96,7 @@ Shell aliases: `cz`, `cza`, `czd`, `czs`, `cze`, `czra`, `czu`, `czcd`; `..` / `
   Theme = the `[colors]` block (Catppuccin Mocha; tmux, fzf, bat, rg, starship, micro, vivid use
   ANSI colours only, so they follow any theme); JetBrainsMonoNL Nerd Font 14, copy-on-select,
   right-click pastes, `Ctrl+Enter` = Claude newline, Windows starts in `D:/work` (if it exists).
-  Tabs/panes stay in tmux/psmux.
+  Tabs/panes stay in herdr.
 - **Secrets:** never commit them — use chezmoi `encrypted_` files or password-manager template
   functions.
 
@@ -115,8 +115,7 @@ Shell aliases: `cz`, `cza`, `czd`, `czs`, `cze`, `czra`, `czu`, `czcd`; `..` / `
   starship…) work in an sshd session too (sshd won't follow scoop's `current` junctions).
 - Claude Code finds scoop's Git Bash through
   `CLAUDE_CODE_GIT_BASH_PATH`; WinPS 5.1 gets `RemoteSigned` for CurrentUser (its default blocks scripts).
-- psmux: same keys as tmux. Not ported: `C-b f` (sessionizer), `C-b .` (pane-name reset).
-  After a reboot / `kill-server` run `tm` (an interactive SSH login runs it itself; `C-b d` for a plain shell): attaches, or restores the last save (auto-saved every 5 min) first; Claude panes resume their conversation (by pane title), other `node` panes open idle. `Ctrl+Enter` = a newline in Claude, also over SSH (Alacritty sends Alt+Enter) (psmux has no extended-keys; a newline in Claude Code). Status bar: `W: <window number> | P: <dir> | H: hostname` (W/P until renamed) (names cut to 10 chars + `...`); `C-b W` renames the window, `C-b ,` the pane (a program's own title, e.g. Claude's, also shows). No psmux-cpu (it flashed a pwsh error every tick).
+- Multiplexer = herdr (`herdr`); from another machine `herdr --remote <host>`.
 
 ## Layout
 
@@ -125,7 +124,7 @@ dot_zshrc, dot_p10k.zsh, dot_config/zsh/     # Unix shell
 dot_config/powershell/, dot_config/starship.toml   # Windows shell
 dot_config/mise/conf.d/                      # tools + runtimes (all OSes)
 dot_config/                                  # other tool configs, gated per profile + OS
-dot_tmux.conf.tmpl, dot_local/bin/           # tmux (Unix) / psmux (Windows)
+dot_tmux.conf, dot_local/bin/                # optional tmux (Linux)
 dot_claude/, .chezmoitemplates/              # Claude Code settings, CLAUDE.md, statuslines
 .chezmoi.toml.tmpl, .chezmoiignore           # profile prompts, what applies where
 run_onchange_after_10-install-packages.*     # bootstrap 1: OS packages, mise, wm

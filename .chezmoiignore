@@ -21,18 +21,18 @@ renovate.json
 {{ end }}
 
 # OS split for shell config. Windows uses the PowerShell profile; Unix uses the zsh
-# stack (zsh/sheldon/p10k) + tmux. Each side ignores the other's files.
+# stack (zsh/sheldon/p10k) (+ optional tmux). Each side ignores the other's files.
 {{ if eq .chezmoi.os "windows" }}
 .zshrc
 .p10k.zsh
 .config/zsh
 .config/sheldon
 .local/bin/tmux-sessionizer
+.tmux.conf
 .local/bin/bp
 .claude/statusline.sh
 {{ else }}
 .config/powershell
-.psmux
 .config/mise/conf.d/windows.toml
 .config/starship.toml
 .claude/statusline.ps1
@@ -62,7 +62,6 @@ AppData
 {{ end }}
 {{ if not .tmux }}
 .tmux.conf
-.psmux
 .local/bin/tmux-sessionizer
 {{ end }}
 {{ if not .tools }}

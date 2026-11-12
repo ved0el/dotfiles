@@ -177,10 +177,6 @@ if (-not $herdrTask -or $herdrTask.Actions[0].Arguments -ne $herdrArgs) {
     Start-ScheduledTask -TaskName 'herdr-server' -ErrorAction Stop
   }
 }
-# herdr replaces the sshd profile's psmux-restore here: both would resume the same conversations.
-if (Get-ScheduledTask -TaskName 'psmux-restore' -ErrorAction SilentlyContinue) {
-  Invoke-Step 'retire psmux-restore task' { Unregister-ScheduledTask -TaskName 'psmux-restore' -Confirm:$false -ErrorAction Stop }
-}
 # Recovery after a reboot needs autologon (logon tasks), which leaves the console signed in: lock
 # it — but only an autologon right after boot, never a person's own PIN login later.
 $lockArgs = '--headless pwsh.exe -NoLogo -NoProfile -Command if ((Get-ItemProperty ''HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon'').AutoAdminLogon -eq ''1'' -and [Environment]::TickCount64 -lt 300000) { Start-Sleep 20; rundll32.exe user32.dll,LockWorkStation }'

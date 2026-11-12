@@ -12,25 +12,7 @@
 # Line 3  STATUS:   💰 cost  ⏳ duration  🔋 5h X% (14:50) / 7d Y% (Mon 09:05), each only if the plan has it  👤 agent
 # =============================================================================
 
-param([switch]$SessionEnd)
-
 [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
-
-# -SessionEnd (a SessionEnd hook): the conversation was exited on purpose, so drop its
-# ~/.psmux/claude-sessions record — tm-restore resumes every record left behind at a reboot.
-# Only explicit exits: a shutdown that kills Claude may still fire the hook (reason "other").
-# The hook command (claude-settings.json, run by Git Bash) already filters those reasons with bash
-# builtins, so a shutdown never starts pwsh: a process started mid-logoff fails with 0xc0000142
-# and pops an "unable to start correctly" dialog. The check below stays as the authority.
-if ($SessionEnd) {
-    try { $E = [Console]::In.ReadToEnd() | ConvertFrom-Json } catch { exit 0 }
-    if ($E.reason -in 'prompt_input_exit', 'clear', 'logout' -and $E.session_id) {
-        Get-ChildItem (Join-Path $HOME '.psmux\claude-sessions') -File -ErrorAction Ignore |
-            Where-Object { (Get-Content -LiteralPath $_.FullName -Raw) -eq $E.session_id } |
-            Remove-Item -ErrorAction Ignore
-    }
-    exit 0
-}
 
 # No statusline in an agent-team teammate (one pane per teammate would repeat the lead's
 # lines): Claude starts teammates with CLAUDE_CODE_SESSION_ATTENDED=0, the lead with 1.
@@ -40,19 +22,6 @@ if ($env:CLAUDE_CODE_SESSION_ATTENDED -eq '0') { exit 0 }
 # --- Read + parse the statusline JSON payload from stdin ----------------------
 $raw = [Console]::In.ReadToEnd()
 try { $J = $raw | ConvertFrom-Json } catch { exit 0 }
-
-# Inside psmux: record which conversation runs in this directory, for psmux-resurrect's node
-# strategy (~/.psmux/strategies/node_claude.ps1) — psmux saves a Claude pane as just `node` +
-# its dir, and pane titles are human-only (allow-set-title off). Written only on change.
-if ($env:TMUX_PANE -and $J.session_id) {
-    $proj = if ($J.workspace.project_dir) { $J.workspace.project_dir } else { $J.cwd }
-    $mapDir = Join-Path $HOME '.psmux\claude-sessions'
-    $map = Join-Path $mapDir ($proj.ToLower() -replace '[^a-z0-9]', '-')
-    if (-not (Test-Path -LiteralPath $map) -or (Get-Content -LiteralPath $map -Raw) -ne $J.session_id) {
-        $null = New-Item -ItemType Directory -Force -Path $mapDir
-        Set-Content -LiteralPath $map -Value $J.session_id -NoNewline -ErrorAction Ignore
-    }
-}
 
 # --- Extract (official schema; missing props read back as $null) --------------
 $MODEL    = $J.model.display_name

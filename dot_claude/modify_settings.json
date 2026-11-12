@@ -23,9 +23,11 @@
 {{-   end -}}
 {{- end -}}
 {{- /* Retired keys: live-only keys survive the merge above, so a key dropped from the template
-     must be unset here. claude-mem -> agentmemory.
+     must be unset here. claude-mem -> agentmemory; psmux's SessionEnd hook (statusline.ps1
+     -SessionEnd, the only SessionEnd entry we ever shipped) -> herdr.
      ponytail: one-shot; delete once every box has applied it. */ -}}
 {{- $retired := dict
+      "hooks" (list "SessionEnd")
       "env" (list "CLAUDE_MEM_CONTEXT_SHOW_TERMINAL_OUTPUT" "CLAUDE_MEM_WELCOME_HINT_ENABLED" "CLAUDE_MEM_TELEMETRY" "CLAUDE_MEM_TELEMETRY_ERRORS")
       "enabledPlugins" (list "claude-mem@thedotmack")
       "extraKnownMarketplaces" (list "thedotmack") -}}

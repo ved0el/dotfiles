@@ -288,44 +288,12 @@ if ($braveTodo) {
 }
 {{ end -}}
 
-{{ if .tmux -}}
-# --- psmux (tmux for Windows; reads the same ~/.tmux.conf) — the `tmux` profile ---
-# Ships psmux/pmux/tmux.exe shims. Plugins are copied like the Unix TPM clones (no live server,
-# no Prefix+I): one shallow clone of the psmux-plugins monorepo, then each missing plugin dir
-# into ~/.psmux/plugins/ (their plugin.conf files hardcode that path). Keep this list in sync
-# with the Windows @plugin lines in dot_tmux.conf.tmpl.
-if (-not (Get-Command psmux -ErrorAction SilentlyContinue)) { Invoke-Step 'psmux' { scoop install psmux } }
-$psmuxPlugins = Join-Path $HOME '.psmux\plugins'
-$wanted = 'ppm','psmux-resurrect','psmux-continuum'
-$missing = $wanted | Where-Object { -not (Test-Path (Join-Path $psmuxPlugins $_)) }
-if ($missing) {
-  $tmp = Join-Path $env:TEMP "psmux-plugins-$PID"
-  Invoke-Step 'psmux plugins' {
-    git clone --quiet --depth 1 https://github.com/psmux/psmux-plugins.git $tmp
-    if ($LASTEXITCODE -ne 0) { return }
-    New-Item -ItemType Directory -Force -Path $psmuxPlugins | Out-Null
-    foreach ($p in $missing) { Copy-Item -Recurse -ErrorAction Stop (Join-Path $tmp $p) (Join-Path $psmuxPlugins $p) }
-    Write-Host "[psmux] plugins installed: $($missing -join ', ')"
-  }
-  Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue
+# --- psmux retired: herdr is the multiplexer (tools list; resumes Claude panes itself) ---
+# One-time cleanup on boxes that had it. ~/.psmux (old resurrect saves) stays: it's data.
+if (Get-ScheduledTask -TaskName 'psmux-restore' -ErrorAction SilentlyContinue) {
+  Invoke-Step 'retire psmux-restore task' { Unregister-ScheduledTask -TaskName 'psmux-restore' -Confirm:$false -ErrorAction Stop }
 }
-{{   if and .sshd (not .claudeServer) -}}
-# sshd profile (not claudeServer, where herdr resumes Claude instead): restore the saved psmux sessions at logon (with autologon that is right after
-# boot), so an SSH login finds them, Claude conversations resumed, already running. A logon
-# task for this user needs no elevation; a boot/S4U one would, and runs without the user's
-# credentials. Re-registered only when missing or its action differs.
-$restoreArgs = "-NoLogo -NoProfile -WindowStyle Hidden -File `"$HOME\.psmux\tm-restore.ps1`" -Lock"
-$restoreTask = Get-ScheduledTask -TaskName 'psmux-restore' -ErrorAction SilentlyContinue
-if (-not $restoreTask -or $restoreTask.Actions[0].Arguments -ne $restoreArgs) {
-  Invoke-Step 'psmux-restore task' {
-    Register-ScheduledTask -TaskName 'psmux-restore' -Force -ErrorAction Stop `
-      -Action (New-ScheduledTaskAction -Execute 'pwsh.exe' -Argument $restoreArgs) `
-      -Trigger (New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME) `
-      -Settings (New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Minutes 10)) | Out-Null
-  }
-}
-{{   end -}}
-{{ end -}}
+if (Test-Path (Join-Path $ScoopDir 'apps\psmux')) { Invoke-Step 'uninstall psmux' { scoop uninstall psmux } }
 
 # --- install tools/runtimes declared in ~/.config/mise/conf.d/*.toml ---
 # --cd $HOME: mise only auto-discovers the global conf.d/*.toml when CWD is inside the home

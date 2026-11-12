@@ -16,7 +16,7 @@ on:
       - '.chezmoitemplates/**'   # `*` stops at `/`, so '.chezmoi*' alone misses this dir
       - 'dot_config/mise/**'
       - 'dot_config/sheldon/**'
-      - 'dot_tmux.conf.tmpl'
+      - 'dot_tmux.conf'
       - 'dot_claude/modify_settings.json'
       - '.github/workflows/e2e.yml'
   pull_request:
@@ -57,7 +57,7 @@ jobs:
           sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - name: Fresh install (chezmoi init --apply from this commit)
-        # --promptDefaults => tools=true, develop=false, tmux=true, wm=false.
+        # --promptDefaults => tools=true, develop=false, tmux=false, wm=false.
         # wm stays off so yabai/skhd (GUI/SIP, impossible in CI) are skipped.
         run: chezmoi init --apply --source "$PWD" --promptDefaults --no-tty
       - name: Second apply (what the next `cza` does on a fresh box)
@@ -89,7 +89,7 @@ jobs:
           iex "&{$(irm 'https://get.chezmoi.io/ps1')} -b '$bin'"
           Add-Content -Path $env:GITHUB_PATH -Value $bin
       - name: Fresh install (chezmoi init --apply from this commit)
-        # --promptDefaults => tools=true, develop=false. tmux/wm are Windows-skipped.
+        # --promptDefaults => tools=true, develop=false. tmux is Linux-only; wm off.
         shell: pwsh
         run: chezmoi init --apply --source "$env:GITHUB_WORKSPACE" --promptDefaults --no-tty
       - name: Second apply (what the next `cza` does on a fresh box)

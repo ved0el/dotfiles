@@ -1,7 +1,7 @@
 # AGENTS.md — Windows bootstrap (`run_*.ps1.tmpl` + `.chezmoitemplates/bootstrap-steps.ps1`)
 
 Read before editing a `.ps1` bootstrap or any Windows setup step. The fail-the-script rule and the
-pointers (psmux, PowerShell profile, WM) are in the root `AGENTS.md`; the "why" is in the commits
+pointers (PowerShell profile, WM) are in the root `AGENTS.md`; the "why" is in the commits
 (`git log -S`).
 
 - Mechanics of that rule: `Invoke-Step` (`bootstrap-steps.ps1`) runs a step under `Continue` and
