@@ -112,7 +112,9 @@ foreach ($kv in @(@('SCOOP', $ScoopDir), @('MISE_DATA_DIR', $MiseDir))) {
 }
 
 # --- scoop (package manager) — installs per-user; must NOT run elevated ---
-if (-not $scoopCmd) {
+# Guarded on its files too: a process started before stage 1 put the shims on PATH (an old
+# window, a CI step) has no `scoop` command, and the installer aborts on a non-empty dir.
+if (-not $scoopCmd -and -not (Test-Path (Join-Path $ScoopDir 'shims\scoop.ps1'))) {
   Invoke-Step 'scoop' { Invoke-RestMethod -Uri 'https://get.scoop.sh' | Invoke-Expression }
   # Nothing below works without it.
   if (-not (Get-Command scoop -ErrorAction SilentlyContinue)) { Complete-Bootstrap 'part 1'; exit 1 }
