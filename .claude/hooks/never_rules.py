@@ -27,9 +27,10 @@ RULES = [
      "NEVER bake an absolute pwsh path into .chezmoi.toml.tmpl: pwsh moves between install sources. "
      "[cd] uses bare `pwsh`, [interpreters.ps1] the fixed WinPS 5.1 path. See AGENTS.md -> OS gate."),
     ("conhost-headless", r"^(run_.*|dot_config/komorebi/.*)$",
-     r"conhost(\.exe)?['\"]?\s+--headless",
-     "NEVER wrap a komorebi logon launcher in `conhost.exe --headless`: it dies with 0x80070003 at logon. "
-     "See dot_config/komorebi/AGENTS.md."),
+     r"conhost(\.exe)?['\"]?\s+--headless|-Execute\s+['\"]?conhost|['\"]--headless\s",
+     "NEVER run a logon task/launcher under `conhost.exe --headless` (any spelling: inline, "
+     "`-Execute 'conhost.exe'`, or an '--headless ...' argument string): it dies with 0x80070003 at "
+     "LOGON while working on demand. Use pwsh/powershell -WindowStyle Hidden. See dot_config/komorebi/AGENTS.md."),
     ("agentmemory-connect", r"^run_",
      r"agentmemory(@\S+)?\s+connect",
      "Do NOT add `agentmemory connect`: the marketplace plugin already ships its hooks + MCP, and "
@@ -157,6 +158,8 @@ def selftest():
         (".chezmoi.toml.tmpl", "command = \"C:/Program Files/PowerShell/7/pwsh.exe\""),
         ("run_onchange_after_10-install-packages.ps1.tmpl", "$exe = 'conhost.exe' --headless powershell.exe"),
         ("run_onchange_after_10-install-packages.ps1.tmpl", "  $a = New-ScheduledTaskAction -Execute conhost.exe --headless"),
+        ("run_onchange_after_20-install-claude.ps1.tmpl", "      -Action (New-ScheduledTaskAction -Execute 'conhost.exe' -Argument $amArgs) `"),
+        ("run_onchange_after_20-install-claude.ps1.tmpl", "$amArgs = '--headless pwsh.exe -NoLogo -NoProfile -Command x'"),
         ("run_onchange_after_20-install-claude.sh.tmpl", "mise exec -- agentmemory connect claude-code --with-hooks"),
         ("run_onchange_after_20-install-claude.ps1.tmpl", "winget install Anthropic.ClaudeCode"),
         ("run_onchange_after_20-install-claude.sh.tmpl", "npm i -g @anthropic-ai/claude-code"),

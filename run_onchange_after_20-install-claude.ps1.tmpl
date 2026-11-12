@@ -124,14 +124,15 @@ if ((Test-Path (Join-Path $HOME '.claude\skills\brandkit')) -or (Test-Path (Join
 # agentmemory's server (the agentmemory plugin's hooks + MCP talk to it; mise tool in develop.toml)
 # at logon. It detaches its engine and exits, so a one-shot task; CI=1 keeps a first run's
 # onboarding non-interactive. Started right away too, so the next session has memory.
-# Re-registered only when missing or its action differs. Run under `conhost --headless`: a bare
-# `pwsh -WindowStyle Hidden` still flashes a console (titled with pwsh's path) at every logon.
-$amArgs = '--headless pwsh.exe -NoLogo -NoProfile -Command $env:CI = ''1''; mise --cd $HOME exec -- agentmemory'
+# Re-registered only when missing or its action differs. pwsh -WindowStyle Hidden (a brief console
+# flash at logon) — NEVER `conhost.exe --headless`: it dies at LOGON with 0x80070003 (no
+# pseudoconsole that early) while working on demand. See dot_config/komorebi/AGENTS.md.
+$amArgs = '-NoLogo -NoProfile -WindowStyle Hidden -Command $env:CI = ''1''; mise --cd $HOME exec -- agentmemory'
 $amTask = Get-ScheduledTask -TaskName 'agentmemory' -ErrorAction SilentlyContinue
 if (-not $amTask -or $amTask.Actions[0].Arguments -ne $amArgs) {
   Invoke-Step 'agentmemory task' {
     Register-ScheduledTask -TaskName 'agentmemory' -Force -ErrorAction Stop `
-      -Action (New-ScheduledTaskAction -Execute 'conhost.exe' -Argument $amArgs) `
+      -Action (New-ScheduledTaskAction -Execute 'pwsh.exe' -Argument $amArgs) `
       -Trigger (New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME) `
       -Settings (New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Minutes 10)) | Out-Null
     Start-ScheduledTask -TaskName 'agentmemory' -ErrorAction Stop
@@ -170,14 +171,14 @@ if ($herdrStatus -notmatch '(?m)^claude: current') {
 # panes across SSH drops and, after a restart, resumes each Claude pane (`claude --resume <id>`);
 # a conversation that had Remote Control on re-attaches it, so it's reachable from claude.ai /
 # the app with no SSH login (the claude integration it needs is installed above).
-# Under `conhost --headless`: a bare pwsh flashes a console at logon. Re-registered only when
-# missing or its action differs. Boxes without sshd get none of this.
-$herdrArgs = '--headless pwsh.exe -NoLogo -NoProfile -Command mise --cd $HOME exec -- herdr server'
+# pwsh -WindowStyle Hidden, NEVER `conhost --headless` (dies at logon, see the agentmemory task).
+# Re-registered only when missing or its action differs. Boxes without sshd get none of this.
+$herdrArgs = '-NoLogo -NoProfile -WindowStyle Hidden -Command mise --cd $HOME exec -- herdr server'
 $herdrTask = Get-ScheduledTask -TaskName 'herdr-server' -ErrorAction SilentlyContinue
 if (-not $herdrTask -or $herdrTask.Actions[0].Arguments -ne $herdrArgs) {
   Invoke-Step 'herdr-server task' {
     Register-ScheduledTask -TaskName 'herdr-server' -Force -ErrorAction Stop `
-      -Action (New-ScheduledTaskAction -Execute 'conhost.exe' -Argument $herdrArgs -WorkingDirectory $HOME) `
+      -Action (New-ScheduledTaskAction -Execute 'pwsh.exe' -Argument $herdrArgs -WorkingDirectory $HOME) `
       -Trigger (New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME) `
       -Settings (New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero)) | Out-Null
     Start-ScheduledTask -TaskName 'herdr-server' -ErrorAction Stop
@@ -185,12 +186,12 @@ if (-not $herdrTask -or $herdrTask.Actions[0].Arguments -ne $herdrArgs) {
 }
 # Recovery after a reboot needs autologon (logon tasks), which leaves the console signed in: lock
 # it — but only an autologon right after boot, never a person's own PIN login later.
-$lockArgs = '--headless pwsh.exe -NoLogo -NoProfile -Command if ((Get-ItemProperty ''HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon'').AutoAdminLogon -eq ''1'' -and [Environment]::TickCount64 -lt 300000) { Start-Sleep 20; rundll32.exe user32.dll,LockWorkStation }'
+$lockArgs = '-NoLogo -NoProfile -WindowStyle Hidden -Command if ((Get-ItemProperty ''HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon'').AutoAdminLogon -eq ''1'' -and [Environment]::TickCount64 -lt 300000) { Start-Sleep 20; rundll32.exe user32.dll,LockWorkStation }'
 $lockTask = Get-ScheduledTask -TaskName 'autologon-lock' -ErrorAction SilentlyContinue
 if (-not $lockTask -or $lockTask.Actions[0].Arguments -ne $lockArgs) {
   Invoke-Step 'autologon-lock task' {
     Register-ScheduledTask -TaskName 'autologon-lock' -Force -ErrorAction Stop `
-      -Action (New-ScheduledTaskAction -Execute 'conhost.exe' -Argument $lockArgs) `
+      -Action (New-ScheduledTaskAction -Execute 'pwsh.exe' -Argument $lockArgs) `
       -Trigger (New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME) `
       -Settings (New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Minutes 2)) | Out-Null
   }
@@ -202,12 +203,12 @@ if (-not $lockTask -or $lockTask.Actions[0].Arguments -ne $lockArgs) {
 # that fails to START, and the server exits 1 on a network drop or while a killed one's
 # registration is still live ("already served", ~3 min).
 $rcDir = '{{ if stat "D:/work" }}D:\work{{ else }}{{ .chezmoi.homeDir | replace "/" "\\" }}{{ end }}'
-$rcArgs = '--headless pwsh.exe -NoLogo -NoProfile -Command while ($true) { claude remote-control --spawn same-dir --no-create-session-in-dir; Start-Sleep 60 }'
+$rcArgs = '-NoLogo -NoProfile -WindowStyle Hidden -Command while ($true) { claude remote-control --spawn same-dir --no-create-session-in-dir; Start-Sleep 60 }'
 $rcTask = Get-ScheduledTask -TaskName 'claude-rc' -ErrorAction SilentlyContinue
 if (-not $rcTask -or $rcTask.Actions[0].Arguments -ne $rcArgs -or $rcTask.Actions[0].WorkingDirectory -ne $rcDir) {
   Invoke-Step 'claude-rc task' {
     Register-ScheduledTask -TaskName 'claude-rc' -Force -ErrorAction Stop `
-      -Action (New-ScheduledTaskAction -Execute 'conhost.exe' -Argument $rcArgs -WorkingDirectory $rcDir) `
+      -Action (New-ScheduledTaskAction -Execute 'pwsh.exe' -Argument $rcArgs -WorkingDirectory $rcDir) `
       -Trigger (New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME) `
       -Settings (New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero)) | Out-Null
   }

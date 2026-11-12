@@ -139,6 +139,7 @@ dot_config/powershell/, dot_config/starship.toml   # Windows shell
 dot_config/mise/conf.d/                      # tools + runtimes (all OSes)
 dot_config/                                  # other tool configs, gated per profile + OS
 dot_local/bin/                               # helper scripts (Unix)
+install.ps1                                  # Windows one-line installer (repo-only)
 dot_claude/, .chezmoitemplates/              # Claude Code settings, CLAUDE.md, statuslines
 .chezmoi.toml.tmpl, .chezmoiignore           # profile prompts, what applies where
 run_onchange_after_10-install-packages.*     # bootstrap 1: OS packages, mise, wm

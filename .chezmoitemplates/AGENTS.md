@@ -5,7 +5,7 @@ pointers (PowerShell profile, WM) are in the root `AGENTS.md`; the "why" is in t
 (`git log -S`).
 
 - Mechanics of that rule: `Invoke-Step` (`bootstrap-steps.ps1`) runs a step under `Continue` and
-  counts a throw or non-zero exit; `Complete-Bootstrap` exits 1 if any failed. README's one-liner
+  counts a throw or non-zero exit; `Complete-Bootstrap` exits 1 if any failed. `install.ps1` (README's one-liner)
   uses `--keep-going` so a failed part 1 doesn't skip part 2; part 2 stops when part 1 left no mise.
 - **Preflight, before changing anything** (part 1): exit on an elevated terminal (scoop's
   installer `break`s out mid-way; `$env:CI` is exempt, as in scoop's own check) and, when pwsh is

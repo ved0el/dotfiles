@@ -46,6 +46,7 @@ Render one template: `chezmoi execute-template < <source-file>`.
 | `dot_config/{yabai,skhd}` / `{komorebi,whkd,yasb}` | tiling WM: macOS / Windows |
 | `dot_claude/`, `.chezmoitemplates/claude-settings.json` | Claude settings (merged), CLAUDE.md, statuslines |
 | `dot_local/bin/` | helper scripts (Unix) |
+| `install.ps1` | Windows one-line installer (`irm …/install.ps1 \| iex`; repo-only, chezmoi-ignored) |
 | `.chezmoitemplates/alacritty.toml` | Alacritty, the terminal on Windows + Linux (macOS: Rex) (rendered to `~/.config/alacritty`; Windows' `%APPDATA%\alacritty` only imports it) |
 
 ## Profiles & OS

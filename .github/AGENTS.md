@@ -13,7 +13,8 @@ its commit (`git log -S`).
   goes into `paths`. Also weekly (every mise tool is `latest`) and `workflow_dispatch`.
 - Both cancel a superseded run.
 - **The verify step prints `chezmoi status` + `diff` before failing** — bare `chezmoi verify`
-  exits 1 silently. Read that step's log first.
+  exits 1 silently. Read that step's log first. All three run `--exclude scripts`: a `run_after_`
+  script (Windows `15-git-bash-path`) runs on every apply, so it is always "pending" — not drift.
 - **Keep `GITHUB_TOKEN` exported in e2e**: mise resolves `github:`/`aqua:` tools through the API,
   and unauthenticated shared-IP runners hit the 60/hour limit mid-install.
 - **The second `chezmoi apply --force` before verify is required**: `claude plugin marketplace
