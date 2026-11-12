@@ -6,6 +6,7 @@ develop: false  # language runtimes via mise
 scoopDir: ""    # Windows: SCOOP root (prompted; "" = bootstrap default ~/.local/share/scoop)
 miseDataDir: "" # Windows: MISE_DATA_DIR (prompted; "" = bootstrap default ~/.local/share/mise)
 sshd: false     # Linux/Windows SSH server: herdr + claude remote-control at boot (Claude auto-resumes); Windows: scoop no_junction
+claudeRcDir: "" # sshd: folder new sessions from claude.ai / the app start in (prompted; "" = home)
 wm: false       # tiling WM: macOS yabai+skhd / Windows komorebi+whkd+yasb (off on Linux)
 apps: false     # essential GUI apps from appList (each OS's own package manager)
 # The `apps` profile's list, per OS: winget ids / brew casks. Essentials only — everything else

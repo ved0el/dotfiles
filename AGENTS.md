@@ -52,7 +52,8 @@ Render one template: `chezmoi execute-template < <source-file>`.
 ## Profiles & OS
 - Profile keys `tools`, `develop`, `wm` (macOS + Windows), `apps` — plus the
   `sshd` (bool, Linux + Windows, opt-in per SSH server, never default: herdr + claude-rc at boot so Claude
-  auto-resumes after a reboot — other boxes resume by hand; Windows also scoop `no_junction`) and the Windows strings `scoopDir`/`miseDataDir` — are prompted by
+  auto-resumes after a reboot — other boxes resume by hand; Windows also scoop `no_junction`; resumed sessions
+  keep Remote Control via `remoteControlAtStartup`, new ones from the app open in the string `claudeRcDir`, default home) and the Windows strings `scoopDir`/`miseDataDir` — are prompted by
   `chezmoi init` (`.chezmoi.toml.tmpl` → `~/.config/chezmoi/chezmoi.toml`, which overrides
   `.chezmoidata.yaml`). `apply` never re-prompts: re-run `init` or edit that file.
 - `.chezmoidata.yaml` must define every key — templates error on a missing one.

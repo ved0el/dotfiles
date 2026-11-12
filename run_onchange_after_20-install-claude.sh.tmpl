@@ -213,7 +213,7 @@ Description=claude remote-control server
 After=network-online.target
 
 [Service]
-WorkingDirectory=%h
+WorkingDirectory={{ .claudeRcDir | default "%h" }}
 ExecStart=$_claude remote-control --spawn same-dir --no-create-session-in-dir
 Restart=always
 RestartSec=60

@@ -5,6 +5,7 @@
 {{- $scoopDir    := "" -}}
 {{- $miseDataDir := "" -}}
 {{- $sshd := false -}}
+{{- $claudeRcDir := "" -}}
 {{- if eq .chezmoi.os "windows" -}}
 {{- /* User-scope install roots (SCOOP / MISE_DATA_DIR). Enter keeps the default; an existing
        scoop/mise root elsewhere is kept by the bootstrap regardless (they can't be moved). */ -}}
@@ -16,6 +17,11 @@
        Windows scoop runs with no_junction so its shims work in an sshd session. */ -}}
 {{- if ne .chezmoi.os "darwin" -}}
 {{-   $sshd = promptBoolOnce . "sshd" "This machine is an SSH server (Claude auto-resumes after reboot; Windows: scoop no_junction)" false -}}
+{{- /* Where sessions started from claude.ai / the app open (claude-rc). Must not be a folder an
+       interactive Remote Control session runs in: one folder, one server ("already served"). */ -}}
+{{-   if $sshd -}}
+{{-     $claudeRcDir = promptStringOnce . "claudeRcDir" "Folder that new Claude sessions from the app start in" .chezmoi.homeDir -}}
+{{-   end -}}
 {{- end -}}
 {{- if eq .chezmoi.os "darwin" -}}
 {{-   $wm = promptBoolOnce . "wm" "Install the macOS window manager (yabai + skhd) and its config" false -}}
@@ -30,6 +36,7 @@
     scoopDir    = {{ $scoopDir | toToml }}
     miseDataDir = {{ $miseDataDir | toToml }}
     sshd    = {{ $sshd }}
+    claudeRcDir = {{ $claudeRcDir | toToml }}
 {{ if eq .chezmoi.os "windows" }}
 # Windows: run the .ps1 bootstrap via Windows PowerShell 5.1 — ALWAYS. 5.1 lives at a fixed
 # %SystemRoot%\System32\... path that never moves, so it works on a fresh box (no pwsh yet) and

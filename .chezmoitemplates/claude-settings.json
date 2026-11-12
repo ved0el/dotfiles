@@ -305,6 +305,9 @@
     "pr": ""
   },
   "advisorModel": "fable",
+{{- if .sshd }}
+  "remoteControlAtStartup": true,
+{{- end }}
   "awaySummaryEnabled": false,
   "pluginConfigs": {
     "agents-md@builtin": {

@@ -201,8 +201,9 @@ if (-not $lockTask -or $lockTask.Actions[0].Arguments -ne $lockArgs) {
 # herdr pane (herdr only resumes interactive sessions). No pre-created session: one idle session
 # per boot would pile up. Looped, not the task's RestartCount: Task Scheduler only restarts a task
 # that fails to START, and the server exits 1 on a network drop or while a killed one's
-# registration is still live ("already served", ~3 min).
-$rcDir = '{{ if stat "D:/work" }}D:\work{{ else }}{{ .chezmoi.homeDir | replace "/" "\\" }}{{ end }}'
+# registration is still live ("already served", ~3 min). Its folder is per machine (claudeRcDir),
+# apart from the herdr-resumed sessions that serve their own folders (remoteControlAtStartup).
+$rcDir = '{{ .claudeRcDir | default .chezmoi.homeDir | replace "/" "\\" }}'
 $rcArgs = '-NoLogo -NoProfile -WindowStyle Hidden -Command while ($true) { claude remote-control --spawn same-dir --no-create-session-in-dir; Start-Sleep 60 }'
 $rcTask = Get-ScheduledTask -TaskName 'claude-rc' -ErrorAction SilentlyContinue
 if (-not $rcTask -or $rcTask.Actions[0].Arguments -ne $rcArgs -or $rcTask.Actions[0].WorkingDirectory -ne $rcDir) {
