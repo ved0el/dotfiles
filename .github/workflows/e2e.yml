@@ -66,11 +66,13 @@ jobs:
         # NOT re-run (unchanged fingerprint), so verify below also proves the setup converges.
         run: chezmoi apply --force --source "$PWD"
       - name: Verify $HOME matches the repo
-        # verify alone exits 1 with no output; name what drifted before failing.
+        # verify alone exits 1 with no output; name what drifted before failing. Scripts excluded:
+        # a run_after_ script (Windows: 15-git-bash-path) runs on EVERY apply, so it always shows
+        # as pending — that's by design, not drift.
         run: |
-          chezmoi verify --source "$PWD" && exit 0
-          chezmoi status --source "$PWD"
-          chezmoi diff --source "$PWD" | head -200
+          chezmoi verify --source "$PWD" --exclude scripts && exit 0
+          chezmoi status --source "$PWD" --exclude scripts
+          chezmoi diff --source "$PWD" --exclude scripts | head -200
           exit 1
 
   # The steps run in pwsh on purpose: chezmoi then launches the WinPS 5.1 bootstrap from a
@@ -98,8 +100,8 @@ jobs:
       - name: Verify $HOME matches the repo
         shell: pwsh
         run: |
-          chezmoi verify --source "$env:GITHUB_WORKSPACE"
+          chezmoi verify --source "$env:GITHUB_WORKSPACE" --exclude scripts
           if ($LASTEXITCODE -eq 0) { exit 0 }
-          chezmoi status --source "$env:GITHUB_WORKSPACE"
-          chezmoi diff --source "$env:GITHUB_WORKSPACE" | Select-Object -First 200
+          chezmoi status --source "$env:GITHUB_WORKSPACE" --exclude scripts
+          chezmoi diff --source "$env:GITHUB_WORKSPACE" --exclude scripts | Select-Object -First 200
           exit 1
