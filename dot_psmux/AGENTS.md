@@ -15,7 +15,8 @@ Nested rules (the root AGENTS.md points here). Same style: terse; the why is in 
   psmux re-runs `Set-PSReadLineOption -PredictionSource None` after the profile unless
   `allow-predictions on` (+ `prediction-dimming off`) — both set in the Windows block.
   Restore = `~/.psmux/tm-restore.ps1` (never attaches), run by profile `tm` (+ attach) and, `sshd` only, the
-  `psmux-restore` AtLogOn task (autologon = at boot; a logon task needs no elevation, a boot/S4U one does
+  `psmux-restore` AtLogOn task (only that task passes `-Lock`, which locks the console after an autologon;
+  `tm` must never lock — a terminal running `tm` at startup locked every PIN login; autologon = at boot; a logon task needs no elevation, a boot/S4U one does
   and lacks the user's creds — a hand-made boot task running bare `claude` once clobbered the save). `tm` is
   auto-run at the end of the profile on an interactive SSH login — not `pwsh -c`,
   psmux, `CLAUDECODE`; restore runs whenever a saved session isn't running (`psmux ls` exits 0 with no server —

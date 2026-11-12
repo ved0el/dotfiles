@@ -314,7 +314,7 @@ if ($missing) {
 # boot), so an SSH login finds them, Claude conversations resumed, already running. A logon
 # task for this user needs no elevation; a boot/S4U one would, and runs without the user's
 # credentials. Re-registered only when missing or its action differs.
-$restoreArgs = "-NoLogo -NoProfile -WindowStyle Hidden -File `"$HOME\.psmux\tm-restore.ps1`""
+$restoreArgs = "-NoLogo -NoProfile -WindowStyle Hidden -File `"$HOME\.psmux\tm-restore.ps1`" -Lock"
 $restoreTask = Get-ScheduledTask -TaskName 'psmux-restore' -ErrorAction SilentlyContinue
 if (-not $restoreTask -or $restoreTask.Actions[0].Arguments -ne $restoreArgs) {
   Invoke-Step 'psmux-restore task' {

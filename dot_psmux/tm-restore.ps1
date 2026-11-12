@@ -4,11 +4,13 @@
 # Claude conversations — already there). Restore is idempotent: a running session is left
 # alone. `psmux ls` exits 0 with no server, so "running" = its output. Restore reads the
 # strategy/process options from a live server, hence the throwaway `tm-boot` when there is none.
+# -Lock: only the sshd logon task passes it (autologon leaves the console signed in). Never from
+# `tm`: a PIN login + a terminal that runs `tm` at startup would get locked right away.
+param([switch]$Lock)
 $dir = Join-Path $HOME '.psmux\resurrect'
 $last = Join-Path $dir 'last'
 $restore = Join-Path $HOME '.psmux\plugins\psmux-resurrect\scripts\restore.ps1'
-# Only right after boot (the logon task), so an interactive `tm` never hangs on a closed Beeper
-# and never locks the screen.
+# Only right after boot, so an interactive `tm` later never hangs on a closed Beeper.
 $justBooted = [Environment]::TickCount64 -lt 300000
 
 try {
@@ -68,5 +70,5 @@ try {
 } finally {
   # Autologon leaves the console signed in: lock it once the sessions are back. A locked
   # session keeps every app (and the resumed Claude panes) running; SSH/RDP/Remote Control work.
-  if ($justBooted) { rundll32.exe user32.dll,LockWorkStation }
+  if ($Lock -and $justBooted) { rundll32.exe user32.dll,LockWorkStation }
 }
