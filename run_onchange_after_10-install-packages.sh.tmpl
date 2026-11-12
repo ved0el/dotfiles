@@ -128,6 +128,9 @@ command -v sheldon >/dev/null 2>&1 || \
 
 # --- mise (runtimes + CLI tools, cross-platform — drives the tools/develop profiles) ---
 command -v mise >/dev/null 2>&1 || run_url https://mise.run sh
+# The mise.run install never updates itself (Windows' scoop one does), and an old mise fails newer
+# releases' attestation check (sigstore TSA cert rotation). brew/apt installs update with their PM.
+if [ "$(command -v mise)" = "$HOME/.local/bin/mise" ]; then mise self-update --yes; fi
 
 # --- install tools/runtimes declared in ~/.config/mise/conf.d/*.toml, lock sheldon ---
 # --cd "$HOME": mise only auto-discovers the global conf.d/*.toml when CWD is inside the home
