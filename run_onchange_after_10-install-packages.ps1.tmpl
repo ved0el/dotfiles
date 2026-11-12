@@ -140,7 +140,7 @@ if (-not (Get-Command git -ErrorAction SilentlyContinue)) { Invoke-Step 'git' { 
 # lives at the FIXED $env:ProgramFiles\PowerShell\7 (sshd, tasks, WinPS 5.1 can all reach it); the
 # MSIX's WindowsApps\Microsoft.PowerShell_<version>_... dir moves on every update and is ACL-hidden.
 # Updates: USE_MU/ENABLE_MU opt the MSI into Microsoft Update, so Windows Update patches it within
-# its release line (7.x.y); a new line (7.x -> 7.y) is the user's `winget upgrade ... wix` (README).
+# its release line (7.x.y); a new line (7.x -> 7.y) is the user's (README: winget may only have it as MSIX).
 # Machine scope = one UAC prompt, like the VC++ runtimes. Guarded on that path, not
 # `Get-Command pwsh`, so an MSIX/Store pwsh doesn't count. [cd] and Claude's statusLine call bare
 # `pwsh` (AGENTS.md "never bake pwsh's path"). winget readiness was checked in the preflight.

@@ -108,8 +108,10 @@ Shell aliases: `cz`, `cza`, `czd`, `czs`, `cze`, `czra`, `czu`, `czcd`; `..` / `
 - Typing `powershell` in pwsh opens pwsh; WinPS 5.1 stays (an OS component chezmoi's bootstrap runs on).
 - **pwsh 7 = one install, the MSI** at `C:\Program Files\PowerShell\7` (winget `--installer-type wix`,
   never the Store/MSIX one). Updates: patches (7.x.y) come through **Windows Update** (the MSI is
-  opted into Microsoft Update); a new release line (7.x → 7.y) is
-  `winget upgrade --id Microsoft.PowerShell --exact --installer-type wix --custom "USE_MU=1 ENABLE_MU=1"`.
+  opted into Microsoft Update). A new release line (7.x → 7.y): winget often lists it as MSIX only
+  (7.7.0 is) and then refuses ("install technology is different") — install that line's
+  `PowerShell-7.y.z-win-x64.msi` from github.com/PowerShell/PowerShell/releases over the old one
+  (never uninstall first: a failed install leaves no pwsh at all).
   A Store/MSIX pwsh beside it shadows it and hides the MSI from `winget upgrade` — remove it from
   Windows PowerShell with every pwsh closed: `Get-AppxPackage Microsoft.PowerShell | Remove-AppxPackage`.
 - Visual C++ 2015-2022 runtimes (x64 + x86) from winget, upgraded to the newest on every

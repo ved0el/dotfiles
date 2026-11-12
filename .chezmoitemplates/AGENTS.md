@@ -35,7 +35,8 @@ pointers (PowerShell profile, WM) are in the root `AGENTS.md`; the "why" is in t
   --scope machine`, one UAC prompt) at the FIXED `$env:ProgramFiles\PowerShell\7` — NOT winget's
   default MSIX, whose `WindowsApps\Microsoft.PowerShell_<version>_…` dir moves on every update.
   `--custom 'USE_MU=1 ENABLE_MU=1'` opts it into Microsoft Update (patches via Windows Update; a new
-  7.x line = the user's `winget upgrade … --installer-type wix`, README — the bootstrap only installs).
+  7.x line = the user's, README — winget may list it as MSIX only, so the GitHub MSI; the bootstrap only installs,
+  and installs the newest version winget has AS an MSI).
   Guarded on that path (an MSIX pwsh doesn't count); success = the file exists. A leftover MSIX is
   only reported, never removed by the bootstrap (it usually runs from that pwsh); it shares the winget
   id, so `winget upgrade` compares it and skips the MSI. Flags also
