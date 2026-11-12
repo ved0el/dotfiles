@@ -17,13 +17,14 @@ sh -c "$(curl -fsLS get.chezmoi.io/lb)" -- init --apply ved0el
 Windows PowerShell is fine on a new machine):
 
 ```powershell
-[Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12; $b = "$HOME\.local\bin"; iex "&{$(irm 'https://get.chezmoi.io/ps1')} -b '$b'"; $p = [Environment]::GetEnvironmentVariable('Path', 'User'); if (($p -split ';') -notcontains $b) { [Environment]::SetEnvironmentVariable('Path', "$b;$p", 'User') }; $env:Path = "$b;$env:Path"; chezmoi init --apply --keep-going ved0el
+[Net.ServicePointManager]::SecurityProtocol='Tls12'; iex "&{$(irm https://get.chezmoi.io/ps1)} -b '$HOME\.local\bin'"; & "$HOME\.local\bin\chezmoi.exe" init --apply --keep-going ved0el
 ```
 
-What the Windows line does, in order: enables TLS 1.2 (older Windows 10 defaults to TLS 1.0),
-installs chezmoi into `~/.local/bin`, puts that dir on PATH (persisted once, and for this
-window, so `chezmoi` works right away), then runs `chezmoi init --apply --keep-going`
-(`--keep-going`: a failed bootstrap part doesn't skip the other). Safe to paste again.
+What the Windows line does, in order: enables TLS 1.2 for this window (an older Windows 10's
+Windows PowerShell defaults to TLS 1.0, which GitHub refuses), installs chezmoi into `~/.local/bin`,
+then runs it by full path: `chezmoi init --apply --keep-going` (`--keep-going`: a failed bootstrap
+part doesn't skip the other). The bootstrap puts `~/.local/bin` on the User PATH itself. Safe to
+paste again.
 
 Windows: a step that fails (network, GitHub rate limit, …) is reported in red at the end and
 the bootstrap exits non-zero, so the next `chezmoi apply` retries only what's missing — fix and
