@@ -170,4 +170,71 @@ if command -v claude >/dev/null 2>&1; then
 fi
 {{ end -}}
 
+{{ if and .claudeServer .tools (eq .chezmoi.os "linux") -}}
+# claudeServer profile (Linux, opt-in per machine): Claude stays reachable across SSH drops AND reboots.
+# - herdr.service: `herdr server` holds the panes; after a restart it resumes each Claude pane
+#   (`claude --resume <id>`), and a conversation that had Remote Control on re-attaches it.
+# - claude-rc.service: `claude remote-control` server mode, so a NEW session can start from
+#   claude.ai / the app. It exits after ~10 min offline, hence Restart=always.
+# Linger starts the user manager at boot, with no login. Both need a full `claude auth login`
+# and one interactive `claude remote-control` run first (enable + trust + spawn-mode prompts).
+_mise=$(command -v mise || true); _claude=$(command -v claude || true)
+_dir="$HOME/.config/systemd/user"
+if [ -z "$_mise" ] || [ -z "$_claude" ]; then
+  fail "[claudeServer] mise or claude not found"
+elif ! systemctl --user show-environment >/dev/null 2>&1; then
+  echo "[claudeServer] no systemd user session; run \`herdr server\` and \`claude remote-control\` by hand" >&2
+else
+  # herdr's claude integration reports each pane's session id; without it a restart brings
+  # Claude panes back as plain shells.
+  "$_mise" --cd "$HOME" exec -- herdr integration status 2>/dev/null | grep -q '^claude: current' || \
+    "$_mise" --cd "$HOME" exec -- herdr integration install claude || fail "[claudeServer] herdr claude integration failed"
+  _herdr=$(cat <<UNIT
+[Unit]
+Description=herdr server (persistent agent panes)
+
+[Service]
+WorkingDirectory=%h
+ExecStart=$_mise --cd %h exec -- herdr server
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+UNIT
+)
+  _rc=$(cat <<UNIT
+[Unit]
+Description=claude remote-control server
+After=network-online.target
+
+[Service]
+WorkingDirectory=%h
+ExecStart=$_claude remote-control --spawn same-dir --no-create-session-in-dir
+Restart=always
+RestartSec=60
+
+[Install]
+WantedBy=default.target
+UNIT
+)
+  _changed=0
+  for _u in herdr claude-rc; do
+    if [ "$_u" = herdr ]; then _want=$_herdr; else _want=$_rc; fi
+    if [ "$(cat "$_dir/$_u.service" 2>/dev/null)" != "$_want" ]; then
+      { mkdir -p "$_dir" && printf '%s\n' "$_want" > "$_dir/$_u.service"; } || fail "[claudeServer] writing $_u.service failed"
+      _changed=1
+    fi
+  done
+  if [ "$_changed" = 1 ]; then
+    systemctl --user daemon-reload && systemctl --user enable --now herdr.service claude-rc.service || \
+      fail "[claudeServer] enabling the units failed"
+  fi
+  [ "$(loginctl show-user "$USER" -p Linger --value 2>/dev/null)" = yes ] || \
+    loginctl enable-linger "$USER" 2>/dev/null || sudo loginctl enable-linger "$USER" || \
+    fail "[claudeServer] enable-linger failed (needed to start at boot without a login)"
+fi
+unset _mise _claude _dir _herdr _rc _changed _u _want
+{{ end -}}
+
 [ "$failed" = 0 ] || { echo "[bootstrap] part 2 had failures; fix them, then re-run chezmoi apply" >&2; exit 1; }

@@ -49,7 +49,8 @@ existing scoop/mise elsewhere is kept, not moved.
 | **tmux** | on (not macOS) | tmux + TPM plugins (Linux) · macOS: none, Rex is the multiplexer · Windows: psmux (same `~/.tmux.conf`, `tmux` works) + psmux-plugins |
 | **apps** | off | essential GUI apps (`.chezmoidata.yaml` `appList`, essentials only — the rest by hand) · Windows: winget (Tailscale, Brave, Flow Launcher, ShareX, Windhawk) · macOS: brew casks (Tailscale, Brave) · Linux: vendor repos (Tailscale, Brave Origin) + apt Alacritty |
 | **wm** | off (not Linux) | macOS: yabai + skhd · Windows: komorebi + whkd + yasb |
-| **sshd** | off (Windows only) | this box is an SSH server: scoop `no_junction` (+ a one-time `scoop reset *`) so scoop apps work over SSH; a logon task restores the psmux sessions (with autologon: at boot), their Claude panes reachable from the Claude app; another runs `claude remote-control` so new sessions start from the app without SSH |
+| **sshd** | off (Windows only) | this box is an SSH server: scoop `no_junction` (+ a one-time `scoop reset *`) so scoop apps work over SSH; a logon task restores the psmux sessions (with autologon: at boot) — unless **claudeServer** is on |
+| **claudeServer** | off (Linux + Windows) | keep Claude reachable on this SSH server: `herdr server` (holds the panes; after a restart resumes each Claude conversation, which re-attaches its Remote Control) + `claude remote-control` (start new sessions from claude.ai / the app, no SSH), both at boot — Linux: systemd user units + linger · Windows: logon tasks (needs autologon; the console is locked right after it). One-time: `claude auth login` and an interactive `claude remote-control` run |
 
 Answers are stored in `~/.config/chezmoi/chezmoi.toml`. To change them:
 `chezmoi init --prompt`, then `chezmoi apply`.

@@ -19,8 +19,14 @@
 {{-   $miseDataDir = promptStringOnce . "miseDataDir" "mise data dir (tools)" (printf "%s/.local/share/mise" .chezmoi.homeDir) -}}
 {{-   $sshd = promptBoolOnce . "sshd" "This machine is an SSH server (scoop apps over SSH: no_junction + one-time scoop reset)" false -}}
 {{- end -}}
+{{- /* Opt-in per machine, default no: only an SSH server that should keep Claude reachable
+       (from claude.ai / the app, across reboots) runs these always-on services. */ -}}
+{{- $claudeServer := false -}}
+{{- if ne .chezmoi.os "darwin" -}}
+{{-   $claudeServer = promptBoolOnce . "claudeServer" "Claude server: herdr + claude remote-control start at boot (reachable from claude.ai/app; SSH servers only)" false -}}
+{{- end -}}
 {{- if eq .chezmoi.os "darwin" -}}
-{{-   $wm = promptBoolOnce . "wm" "Install the macOS window manager (yabai + skhd) and its config" false -}}
+{{-   $wm =promptBoolOnce . "wm" "Install the macOS window manager (yabai + skhd) and its config" false -}}
 {{- else if eq .chezmoi.os "windows" -}}
 {{-   $wm = promptBoolOnce . "wm" "Install the Windows window manager (komorebi + whkd + yasb) and its config" false -}}
 {{- end -}}
@@ -33,6 +39,7 @@
     scoopDir    = {{ $scoopDir | toToml }}
     miseDataDir = {{ $miseDataDir | toToml }}
     sshd    = {{ $sshd }}
+    claudeServer = {{ $claudeServer }}
 {{ if eq .chezmoi.os "windows" }}
 # Windows: run the .ps1 bootstrap via Windows PowerShell 5.1 — ALWAYS. 5.1 lives at a fixed
 # %SystemRoot%\System32\... path that never moves, so it works on a fresh box (no pwsh yet) and

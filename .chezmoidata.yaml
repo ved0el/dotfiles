@@ -7,6 +7,7 @@ tmux: true      # tmux + TPM plugins (Windows: psmux + ppm plugins), and ~/.tmux
 scoopDir: ""    # Windows: SCOOP root (prompted; "" = bootstrap default ~/.local/share/scoop)
 miseDataDir: "" # Windows: MISE_DATA_DIR (prompted; "" = bootstrap default ~/.local/share/mise)
 sshd: false     # Windows: this box is an SSH server (scoop no_junction + one-time reset)
+claudeServer: false # Linux/Windows SSH server: herdr + claude remote-control start at boot (Claude reachable from claude.ai/app)
 wm: false       # tiling WM: macOS yabai+skhd / Windows komorebi+whkd+yasb (off on Linux)
 apps: false     # essential GUI apps from appList (each OS's own package manager)
 # The `apps` profile's list, per OS: winget ids / brew casks. Essentials only — everything else
