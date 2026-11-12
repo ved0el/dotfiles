@@ -1,0 +1,5 @@
+{{- /* agentmemory REST port for THIS account: the default 3111 is machine-wide, so a second
+     user's server would take it (and our hooks would talk to theirs). One port per account:
+     3111 + 100 * (uid or Windows RID mod 50) — agentmemory's own instance spacing; viewer = +2.
+     shortcut: two accounts whose ids differ by a multiple of 50 collide; make it a data key then. */ -}}
+{{- add 3111 (mul 100 (mod (.chezmoi.uid | splitList "-" | last | atoi) 50)) -}}

@@ -2,7 +2,8 @@
   "env": {
     "PONYTAIL_DEFAULT_MODE": "ultra",
     "ECC_HOOK_PROFILE": "minimal",
-    "ECC_GATEGUARD": "off"
+    "ECC_GATEGUARD": "off",
+    "AGENTMEMORY_URL": "http://localhost:{{ includeTemplate "agentmemory-port" . }}"
   },
   "deniedMcpServers": [
     { "serverName": "plugin:ecc:chrome-devtools" },

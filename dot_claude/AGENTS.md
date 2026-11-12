@@ -74,10 +74,15 @@ behind each rule is in its commit (`git log -S`). Repo-wide rules: root `AGENTS.
     0.9.32+ lost npm provenance), started at login by part 2 (Windows logon task `agentmemory`,
     Linux systemd user unit, macOS LaunchAgent `local.agentmemory`). It detaches and exits, so
     one-shot units. With the server down, hooks spool to disk and recall is empty.
+  - **One port per account** (`.chezmoitemplates/agentmemory-port`, from the uid / Windows RID):
+    the default 3111 is machine-wide, so on a shared box another user's server holds it. The
+    server units start with `--port` (NOT `--instance`: that moves the data dir) and the managed
+    `env.AGENTMEMORY_URL` points the plugin's hooks + MCP at it. Data + secret are per-account
+    already (`~/.agentmemory`, app-data dir). Changing the port stops the old server first.
   - **NEVER `agentmemory connect claude-code`** (hook-enforced): the plugin already wires hooks +
     MCP; connect adds a second copy to settings.json / `~/.claude.json`. Same for a hand-added
     user-scope `agentmemory` MCP — remove it (`claude mcp remove -s user agentmemory`).
-  - Diagnose: `agentmemory status` / `doctor`; viewer `http://localhost:3113`. Updating the
+  - Diagnose: `agentmemory status --port <port>` / `doctor`; viewer = port + 2. Updating the
     server is the user's (`agentmemory upgrade` after a backup), never the bootstrap.
 
 ## Skills

@@ -127,9 +127,12 @@ if ((Test-Path (Join-Path $HOME '.claude\skills\brandkit')) -or (Test-Path (Join
 # Re-registered only when missing or its action differs. pwsh -WindowStyle Hidden (a brief console
 # flash at logon) — NEVER `conhost.exe --headless`: it dies at LOGON with 0x80070003 (no
 # pseudoconsole that early) while working on demand. See dot_config/komorebi/AGENTS.md.
-$amArgs = '-NoLogo -NoProfile -WindowStyle Hidden -Command $env:CI = ''1''; mise --cd $HOME exec -- agentmemory'
+# --port: this account's own port (.chezmoitemplates/agentmemory-port), so users don't collide.
+$amArgs = '-NoLogo -NoProfile -WindowStyle Hidden -Command $env:CI = ''1''; mise --cd $HOME exec -- agentmemory --port {{ includeTemplate "agentmemory-port" . }}'
 $amTask = Get-ScheduledTask -TaskName 'agentmemory' -ErrorAction SilentlyContinue
 if (-not $amTask -or $amTask.Actions[0].Arguments -ne $amArgs) {
+  # A server already up on the old port shares this account's data dir: stop it first.
+  if ($amTask) { & { $ErrorActionPreference = 'Continue'; mise --cd $HOME exec -- agentmemory stop 2>&1 | Out-Null } }
   Invoke-Step 'agentmemory task' {
     Register-ScheduledTask -TaskName 'agentmemory' -Force -ErrorAction Stop `
       -Action (New-ScheduledTaskAction -Execute 'pwsh.exe' -Argument $amArgs) `

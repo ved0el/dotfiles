@@ -103,6 +103,7 @@ fi
 # so oneshot + RemainAfterExit / AbandonProcessGroup keep the engine alive; CI=1 keeps a first
 # run's onboarding non-interactive. mise's absolute path: neither gets shell activation.
 # Rewritten + (re)loaded only when the unit's content changes; loading also starts it now.
+# --port: this account's own port (.chezmoitemplates/agentmemory-port), so users don't collide.
 _mise=$(command -v mise || true)
 {{- if eq .chezmoi.os "darwin" }}
 _unit="$HOME/Library/LaunchAgents/local.agentmemory.plist"
@@ -112,7 +113,7 @@ _want=$(cat <<UNIT
 <plist version="1.0"><dict>
   <key>Label</key><string>local.agentmemory</string>
   <key>ProgramArguments</key><array>
-    <string>$_mise</string><string>--cd</string><string>$HOME</string><string>exec</string><string>--</string><string>agentmemory</string>
+    <string>$_mise</string><string>--cd</string><string>$HOME</string><string>exec</string><string>--</string><string>agentmemory</string><string>--port</string><string>{{ includeTemplate "agentmemory-port" . }}</string>
   </array>
   <key>EnvironmentVariables</key><dict><key>CI</key><string>1</string></dict>
   <key>WorkingDirectory</key><string>$HOME</string>
@@ -126,6 +127,7 @@ if [ -z "$_mise" ]; then
 elif [ "$(cat "$_unit" 2>/dev/null)" != "$_want" ]; then
   { mkdir -p "${_unit%/*}" && printf '%s\n' "$_want" > "$_unit" && \
     { launchctl bootout "gui/$(id -u)/local.agentmemory" 2>/dev/null || true; } && \
+    { "$_mise" --cd "$HOME" exec -- agentmemory stop >/dev/null 2>&1 || true; } && \
     launchctl bootstrap "gui/$(id -u)" "$_unit"; } || fail "[agentmemory] LaunchAgent failed"
 fi
 {{- else }}
@@ -139,7 +141,7 @@ Type=oneshot
 RemainAfterExit=yes
 WorkingDirectory=%h
 Environment=CI=1
-ExecStart=$_mise --cd %h exec -- agentmemory
+ExecStart=$_mise --cd %h exec -- agentmemory --port {{ includeTemplate "agentmemory-port" . }}
 ExecStop=$_mise --cd %h exec -- agentmemory stop
 
 [Install]
