@@ -14,17 +14,22 @@ sh -c "$(curl -fsLS get.chezmoi.io/lb)" -- init --apply ved0el
 ```
 
 **Windows** (PowerShell — a normal window, **not** "Run as administrator"; the built-in
-Windows PowerShell is fine on a new machine):
+Windows PowerShell is fine on a new machine, pwsh 7 too):
 
 ```powershell
-[Net.ServicePointManager]::SecurityProtocol='Tls12'; iex "&{$(irm https://get.chezmoi.io/ps1)} -b '$HOME\.local\bin'"; & "$HOME\.local\bin\chezmoi.exe" init --apply --keep-going ved0el
+irm https://raw.githubusercontent.com/ved0el/dotfiles/main/install.ps1 | iex
 ```
 
-What the Windows line does, in order: enables TLS 1.2 for this window (an older Windows 10's
-Windows PowerShell defaults to TLS 1.0, which GitHub refuses), installs chezmoi into `~/.local/bin`,
-then runs it by full path: `chezmoi init --apply --keep-going` (`--keep-going`: a failed bootstrap
-part doesn't skip the other). The bootstrap puts `~/.local/bin` on the User PATH itself. Safe to
-paste again.
+It runs [`install.ps1`](install.ps1): enables TLS 1.2 for the window, installs chezmoi into
+`~/.local/bin` (the bootstrap puts that dir on the User PATH), then `chezmoi init --apply
+--keep-going` (a failed bootstrap part doesn't skip the other). Safe to run again.
+
+An older, unpatched Windows 10 whose Windows PowerShell still defaults to TLS 1.0 can't even fetch
+that file — there, prefix TLS 1.2:
+
+```powershell
+[Net.ServicePointManager]::SecurityProtocol='Tls12'; irm https://raw.githubusercontent.com/ved0el/dotfiles/main/install.ps1 | iex
+```
 
 Windows: a step that fails (network, GitHub rate limit, …) is reported in red at the end and
 the bootstrap exits non-zero, so the next `chezmoi apply` retries only what's missing — fix and

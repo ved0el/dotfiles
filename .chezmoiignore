@@ -4,6 +4,7 @@ AGENTS.md
 **/AGENTS.md
 !.ssh/AGENTS.md
 renovate.json
+install.ps1
 
 # Machine-local mise config — `mise use -g` writes here by default (no env var; never
 # set MISE_GLOBAL_CONFIG_FILE, it breaks conf.d discovery outside $HOME).
