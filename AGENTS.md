@@ -133,6 +133,8 @@ Render one template: `chezmoi execute-template < <source-file>`.
   **herdr-core (`hc`)** = herdr-app's daemon (not herdr server's; sessions not shared): mise `aqua:` on every
   `tools` box, `postinstall` adds the `hc` the release lacks; herdr-app installs AFTER `mise install` so its
   installer skips its own core (one copy). Update: `mise up` + `hc server restart`, never `hc update`.
+  Windows: `%LOCALAPPDATA%\Programs\herdr-core` = a junction to mise's `latest` — a client reaches a Windows
+  box's hc by that fixed path, not PATH (Unix boxes: PATH, hence `~/.zshenv`).
   herdr-app (desktop GUI, Windows + Linux clients: the `apps` profile runs its official installer; servers keep the CLI; macOS = Rex): `dot_config/herdr-app/` = herdr CLI's theme set in `themes/`
   + `modify_settings.json` fills DEFAULTS only (never overwrites a box's own pick). Never manage
   `layouts/.state/`, `view.json`, `window.json`, `shared.json`: runtime state.
