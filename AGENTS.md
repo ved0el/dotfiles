@@ -144,6 +144,8 @@ Render one template: `chezmoi execute-template < <source-file>`.
 - chezmoi **copies**, never symlinks.
 - mise: **NEVER set `MISE_GLOBAL_CONFIG_FILE` / `MISE_CONFIG_DIR`** — it breaks conf.d discovery
   outside `$HOME` (`dot_config/mise/AGENTS.md`). Run mise from scripts as `mise --cd "$HOME"`.
+- `~/.zshenv` (Unix) puts `~/.local/bin` + mise's shims on PATH: `ssh host <cmd>` (a client's
+  `hc machine add`, `herdr --remote`) runs a non-interactive zsh that never reads `.zshrc`/`mise activate`.
 - `cd` → zoxide on both shells is skipped when `CLAUDECODE` is set: a zoxide miss would leak
   `zoxide: no match found` into Claude's piped output.
 - `skhdrc` (macOS) and `whkdrc` (Windows) share one mnemonic scheme (alt = focus, ctrl+alt =

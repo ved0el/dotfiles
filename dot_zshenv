@@ -1,0 +1,6 @@
+# Read by EVERY zsh, also the non-interactive one `ssh host <cmd>` runs (a client's
+# `hc machine add`/`hc connect`, `herdr --remote`), which never reads ~/.zshrc and so never
+# runs `mise activate`. Put ~/.local/bin (mise itself) and mise's shims on PATH so those
+# commands find hc & co. Interactive shells still activate mise in conf.d/60-mise.zsh.
+typeset -U path
+path=("$HOME/.local/bin" "${MISE_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/mise}/shims" $path)
