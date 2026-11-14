@@ -560,9 +560,11 @@ widgets:
       desktop_notifications:
         ssl: false
         offline: false
-      # .chezmoidata.yaml serverMonitor, merged with this machine's chezmoi.toml; "" = dropped.
+      # This machine's serverMonitorSites ("Name=host, ...") if set, else .chezmoidata.yaml serverMonitor.
+{{- $sites := .serverMonitor }}
+{{- if trim .serverMonitorSites }}{{ $sites = dict }}{{ range splitList "," .serverMonitorSites }}{{ $p := splitn "=" 2 . }}{{ if trim $p._0 }}{{ $_ := set $sites (trim $p._0) (trim (default "" $p._1)) }}{{ end }}{{ end }}{{ end }}
       servers:
-{{- range $name, $url := .serverMonitor }}{{ if $url }}
+{{- range $name, $url := $sites }}{{ if $url }}
         - { name: {{ $name | quote }}, url: {{ $url | quote }} }
 {{- end }}{{ end }}
       callbacks:

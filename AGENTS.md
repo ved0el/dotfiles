@@ -14,6 +14,7 @@ Tool-specific rules live in the nested `AGENTS.md` beside the files.
 | `cza` | `chezmoi apply` | source → `$HOME`; re-runs a bootstrap script whose rendered content changed (installs missing plugins, never updates) |
 | `czd` / `czs` | `diff` / `status` | preview; `R` in status = a script will run |
 | `czra` | `re-add` | capture a `$HOME` edit |
+| `czi` | `init` | re-render `chezmoi.toml` (asks only new prompts; `czi --prompt` = all), then `cza` |
 | `czu` | `update` | git pull + apply (installs what's missing; never updates plugins/skills — that's the user's, in Claude) |
 | `cz`, `cze`, `czcd` | `chezmoi`, `edit`, `cd` | passthrough / `$EDITOR` / cd into repo |
 
@@ -59,7 +60,7 @@ Render one template: `chezmoi execute-template < <source-file>`.
 - Profile keys `tools`, `develop`, `wm` (macOS + Windows), `apps` — plus the
   `sshd` (bool, Linux + Windows, opt-in per SSH server, never default: herdr + hc (herdr-core, herdr-app's daemon) + claude-rc at boot so Claude
   auto-resumes after a reboot — other boxes resume by hand; Windows also scoop `no_junction`; resumed sessions
-  keep Remote Control via `remoteControlAtStartup`, new ones from the app open in the string `claudeRcDir`, default home) and the Windows strings `scoopDir`/`miseDataDir` — are prompted by
+  keep Remote Control via `remoteControlAtStartup`, new ones from the app open in the string `claudeRcDir`, default home), the Windows strings `scoopDir`/`miseDataDir` and, with `wm` on Windows, `serverMonitorSites` (yasb, `dot_config/yasb/AGENTS.md`) — are prompted by
   `chezmoi init` (`.chezmoi.toml.tmpl` → `~/.config/chezmoi/chezmoi.toml`, which overrides
   `.chezmoidata.yaml`). `apply` never re-prompts: re-run `init` or edit that file.
 - `.chezmoidata.yaml` must define every key — templates error on a missing one.

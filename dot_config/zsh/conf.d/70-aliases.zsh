@@ -37,6 +37,7 @@ if command -v chezmoi >/dev/null 2>&1; then
   alias cza='chezmoi apply'        # apply changes to $HOME
   alias cze='chezmoi edit'         # edit a managed file in $EDITOR
   alias czu='chezmoi update'       # git pull, then apply
+  alias czi='chezmoi init'         # re-render chezmoi.toml (asks only new prompts; --prompt = all)
   alias czd='chezmoi diff'         # show what apply would change
   alias czs='chezmoi status'       # short per-file status
   alias czra='chezmoi re-add'      # capture $HOME edits back into the source repo

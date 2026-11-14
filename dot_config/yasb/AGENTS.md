@@ -77,8 +77,8 @@ yasb 2.0.8; `yasbc reload` after a structural change (CSS hot-reloads). The prev
   exists), right = Windows Notification Center. Its `default` icon (`EA8F`) is reused in the empty
   menu, which the wiki CSS draws with a Nerd font — overridden to Segoe.
 - Taskbar `monitor_exclusive: true`: each bar lists only the windows on its own monitor.
-- `server_monitor` hosts = `.chezmoidata.yaml` `serverMonitor` (name -> host), deep-merged with a
-  box's `[data.serverMonitor]` in `chezmoi.toml` (`""` drops one); `.chezmoi.toml.tmpl` re-emits it on init.
+- `server_monitor` hosts = the box's prompted string `serverMonitorSites` (`Name=host, ...`), which
+  REPLACES `.chezmoidata.yaml` `serverMonitor` (name -> host); empty = those defaults.
 - Grouper starts collapsed; `exclude_widgets: []` hides every child until the chevron is clicked.
 
 ## Restart traps

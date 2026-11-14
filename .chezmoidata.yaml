@@ -9,9 +9,10 @@ sshd: false     # Linux/Windows SSH server: herdr + hc + claude remote-control a
 claudeRcDir: "" # sshd: folder new sessions from claude.ai / the app start in (prompted; "" = home)
 wm: false       # tiling WM: macOS yabai+skhd / Windows komorebi+whkd+yasb (off on Linux)
 apps: false     # essential GUI apps from appList (each OS's own package manager)
-# yasb's server_monitor (secondary bar): name -> host it checks. Per machine, add or change entries
-# under [data.serverMonitor] in ~/.config/chezmoi/chezmoi.toml (MERGED with these; kept across
-# `chezmoi init`); `Name = ""` drops a default. Shown sorted by name.
+# yasb's server_monitor (secondary bar): name -> host it checks, shown sorted by name. Per machine,
+# serverMonitorSites (prompted by init when wm is on): "Name=host, Name2=host2" REPLACES this
+# list; empty = this list. Change it later with `chezmoi init --prompt`.
+serverMonitorSites: ""
 serverMonitor:
   Anthropic API: api.anthropic.com
   GitHub: github.com

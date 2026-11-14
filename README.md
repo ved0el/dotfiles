@@ -75,14 +75,9 @@ Answers are stored in `~/.config/chezmoi/chezmoi.toml`. To change them:
 `chezmoi init --prompt`, then `chezmoi apply`.
 
 Per-machine list: the sites yasb's server monitor checks (`wm`, Windows). Defaults in
-`.chezmoidata.yaml` `serverMonitor`; on one machine, add/override in `chezmoi.toml` (kept by
-`init`), then `chezmoi apply`:
-
-```toml
-[data.serverMonitor]
-    "Home NAS" = "nas.lan"   # add
-    Google = ""              # drop a default
-```
+`.chezmoidata.yaml` `serverMonitor`; `init` asks for this machine's own list as
+`Home NAS=nas.lan, GitHub=github.com`, which REPLACES the defaults (empty = defaults). Change later
+with `czi --prompt` (`chezmoi init`), then `cza` and `yasbc reload`.
 
 ## Daily use
 

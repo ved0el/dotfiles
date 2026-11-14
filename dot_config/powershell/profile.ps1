@@ -51,6 +51,7 @@ if (Get-Command chezmoi -ErrorAction SilentlyContinue) {
   function cza  { chezmoi apply @args }   # apply changes to $HOME
   function cze  { chezmoi edit @args }    # edit a managed file in $EDITOR
   function czu  { chezmoi update @args }  # git pull, then apply
+  function czi  { chezmoi init @args }    # re-render chezmoi.toml (asks only new prompts; --prompt = all)
   function czd  { chezmoi diff @args }    # show what apply would change
   function czs  { chezmoi status @args }  # short per-file status
   function czra { chezmoi re-add @args }  # capture $HOME edits back into the source repo

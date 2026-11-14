@@ -28,6 +28,12 @@
 {{- else if eq .chezmoi.os "windows" -}}
 {{-   $wm = promptBoolOnce . "wm" "Install the Windows window manager (komorebi + whkd + yasb) and its config" false -}}
 {{- end -}}
+{{- /* yasb's server monitor (wm, Windows): this machine's sites, REPLACING .chezmoidata's
+       serverMonitor; empty = those defaults. */ -}}
+{{- $serverMonitorSites := "" -}}
+{{- if and $wm (eq .chezmoi.os "windows") -}}
+{{-   $serverMonitorSites = promptStringOnce . "serverMonitorSites" "Sites for the yasb server monitor, replacing the defaults (Name=host, comma-separated; empty = defaults)" "" -}}
+{{- end -}}
 [data]
     tools   = {{ $tools }}
     develop = {{ $develop }}
@@ -37,12 +43,7 @@
     miseDataDir = {{ $miseDataDir | toToml }}
     sshd    = {{ $sshd }}
     claudeRcDir = {{ $claudeRcDir | toToml }}
-{{- /* Hand-added per-machine yasb server_monitor entries (see .chezmoidata.yaml): re-emitted so a
-       re-init keeps them. Only this file's data is visible here, never .chezmoidata's defaults. */}}
-{{- if hasKey . "serverMonitor" }}
-[data.serverMonitor]
-{{ .serverMonitor | toToml | indent 4 }}
-{{- end }}
+    serverMonitorSites = {{ $serverMonitorSites | toToml }}
 {{ if eq .chezmoi.os "windows" }}
 # Windows: run the .ps1 bootstrap via Windows PowerShell 5.1 — ALWAYS. 5.1 lives at a fixed
 # %SystemRoot%\System32\... path that never moves, so it works on a fresh box (no pwsh yet) and
