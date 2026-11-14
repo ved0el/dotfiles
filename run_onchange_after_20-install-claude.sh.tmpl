@@ -224,9 +224,25 @@ RestartSec=60
 WantedBy=default.target
 UNIT
 )
+  # hc.service: herdr-core, what herdr-app clients and `hc` attach to (separate from herdr server,
+  # sessions not shared). hc is copied here by a client's `hc machine add`; `start` detaches.
+  _hc=$(cat <<UNIT
+[Unit]
+Description=herdr-core (hc) server
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=%h
+ExecStart=/usr/bin/env PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin hc server start
+
+[Install]
+WantedBy=default.target
+UNIT
+)
   _changed=0
-  for _u in herdr claude-rc; do
-    if [ "$_u" = herdr ]; then _want=$_herdr; else _want=$_rc; fi
+  for _u in herdr claude-rc hc; do
+    case $_u in herdr) _want=$_herdr ;; claude-rc) _want=$_rc ;; hc) _want=$_hc ;; esac
     if [ "$(cat "$_dir/$_u.service" 2>/dev/null)" != "$_want" ]; then
       { mkdir -p "$_dir" && printf '%s\n' "$_want" > "$_dir/$_u.service"; } || fail "[sshd] writing $_u.service failed"
       _changed=1
@@ -235,12 +251,14 @@ UNIT
   if [ "$_changed" = 1 ]; then
     systemctl --user daemon-reload && systemctl --user enable --now herdr.service claude-rc.service || \
       fail "[sshd] enabling the units failed"
+    # enable only: until a client's `hc machine add` copies hc here, starting it would fail
+    systemctl --user enable hc.service || fail "[sshd] enabling hc.service failed"
   fi
   [ "$(loginctl show-user "$USER" -p Linger --value 2>/dev/null)" = yes ] || \
     loginctl enable-linger "$USER" 2>/dev/null || sudo loginctl enable-linger "$USER" || \
     fail "[sshd] enable-linger failed (needed to start at boot without a login)"
 fi
-unset _mise _claude _dir _herdr _rc _changed _u _want
+unset _mise _claude _dir _herdr _rc _hc _changed _u _want
 {{ end -}}
 
 [ "$failed" = 0 ] || { echo "[bootstrap] part 2 had failures; fix them, then re-run chezmoi apply" >&2; exit 1; }

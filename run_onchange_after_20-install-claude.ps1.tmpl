@@ -187,6 +187,19 @@ if (-not $herdrTask -or $herdrTask.Actions[0].Arguments -ne $herdrArgs) {
     Start-ScheduledTask -TaskName 'herdr-server' -ErrorAction Stop
   }
 }
+# herdr-core (`hc`) at logon: what herdr-app clients and `hc` attach to — a separate daemon from
+# `herdr server`, sessions not shared. hc is copied here by a client's `hc machine add`, so the task
+# is registered even before it exists. `hc server start` detaches and exits.
+$hcArgs = '-NoLogo -NoProfile -WindowStyle Hidden -Command & "$env:LOCALAPPDATA\Programs\herdr-core\hc.exe" server start'
+$hcTask = Get-ScheduledTask -TaskName 'hc-server' -ErrorAction SilentlyContinue
+if (-not $hcTask -or $hcTask.Actions[0].Arguments -ne $hcArgs) {
+  Invoke-Step 'hc-server task' {
+    Register-ScheduledTask -TaskName 'hc-server' -Force -ErrorAction Stop `
+      -Action (New-ScheduledTaskAction -Execute 'pwsh.exe' -Argument $hcArgs -WorkingDirectory $HOME) `
+      -Trigger (New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME) `
+      -Settings (New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero)) | Out-Null
+  }
+}
 # Recovery after a reboot needs autologon (logon tasks), which leaves the console signed in: lock
 # it — but only an autologon right after boot, never a person's own PIN login later.
 $lockArgs = '-NoLogo -NoProfile -WindowStyle Hidden -Command if ((Get-ItemProperty ''HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon'').AutoAdminLogon -eq ''1'' -and [Environment]::TickCount64 -lt 300000) { Start-Sleep 20; rundll32.exe user32.dll,LockWorkStation }'

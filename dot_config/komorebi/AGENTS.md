@@ -15,7 +15,7 @@ commit (`git log -S`).
   that. The bootstrap unregisters the old `komorebi` task so the two can't race.
   - **NEVER wrap a logon launcher in `conhost.exe --headless`** — it fails at LOGON with
     `0x80070003` while working on demand. Applies to EVERY logon task (agentmemory, the sshd
-    profile's herdr-server / claude-rc / autologon-lock): they use `pwsh -WindowStyle Hidden`. No VBScript/mshta launcher.
+    profile's herdr-server / hc-server / claude-rc / autologon-lock): they use `pwsh -WindowStyle Hidden`. No VBScript/mshta launcher.
 - **Restart = `komorebic stop --whkd; Wait-Process …; komorebic-no-console start --whkd` in its OWN
   `powershell.exe` process** (whkd `alt+ctrl+o`, yasb `reload_command`) (whkd `alt+ctrl+o`, yasb
   `reload_command`). Never chain `komorebic stop --whkd; komorebic start` inside whkd: `stop --whkd`
