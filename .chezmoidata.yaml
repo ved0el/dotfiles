@@ -9,6 +9,14 @@ sshd: false     # Linux/Windows SSH server: herdr + hc + claude remote-control a
 claudeRcDir: "" # sshd: folder new sessions from claude.ai / the app start in (prompted; "" = home)
 wm: false       # tiling WM: macOS yabai+skhd / Windows komorebi+whkd+yasb (off on Linux)
 apps: false     # essential GUI apps from appList (each OS's own package manager)
+# yasb's server_monitor (secondary bar): name -> host it checks. Per machine, add or change entries
+# under [data.serverMonitor] in ~/.config/chezmoi/chezmoi.toml (MERGED with these; kept across
+# `chezmoi init`); `Name = ""` drops a default. Shown sorted by name.
+serverMonitor:
+  Anthropic API: api.anthropic.com
+  GitHub: github.com
+  Cloudflare: cloudflare.com
+  Google: google.com
 # The `apps` profile's list, per OS: winget ids / brew casks. Essentials only — everything else
 # is installed by hand. Linux has no list: Tailscale + Brave Origin come from their vendor repos
 # (not in Debian's own apt), set up in run_onchange_after_10-install-packages.sh.tmpl.

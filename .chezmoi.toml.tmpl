@@ -37,6 +37,12 @@
     miseDataDir = {{ $miseDataDir | toToml }}
     sshd    = {{ $sshd }}
     claudeRcDir = {{ $claudeRcDir | toToml }}
+{{- /* Hand-added per-machine yasb server_monitor entries (see .chezmoidata.yaml): re-emitted so a
+       re-init keeps them. Only this file's data is visible here, never .chezmoidata's defaults. */}}
+{{- if hasKey . "serverMonitor" }}
+[data.serverMonitor]
+{{ .serverMonitor | toToml | indent 4 }}
+{{- end }}
 {{ if eq .chezmoi.os "windows" }}
 # Windows: run the .ps1 bootstrap via Windows PowerShell 5.1 — ALWAYS. 5.1 lives at a fixed
 # %SystemRoot%\System32\... path that never moves, so it works on a fresh box (no pwsh yet) and

@@ -560,11 +560,11 @@ widgets:
       desktop_notifications:
         ssl: false
         offline: false
+      # .chezmoidata.yaml serverMonitor, merged with this machine's chezmoi.toml; "" = dropped.
       servers:
-        - { name: "Anthropic API", url: "api.anthropic.com" }
-        - { name: "GitHub", url: "github.com" }
-        - { name: "Cloudflare", url: "cloudflare.com" }
-        - { name: "Google", url: "google.com" }
+{{- range $name, $url := .serverMonitor }}{{ if $url }}
+        - { name: {{ $name | quote }}, url: {{ $url | quote }} }
+{{- end }}{{ end }}
       callbacks:
         on_left: "toggle_menu"
         on_middle: "do_nothing"

@@ -74,6 +74,16 @@ existing scoop/mise elsewhere is kept, not moved.
 Answers are stored in `~/.config/chezmoi/chezmoi.toml`. To change them:
 `chezmoi init --prompt`, then `chezmoi apply`.
 
+Per-machine list: the sites yasb's server monitor checks (`wm`, Windows). Defaults in
+`.chezmoidata.yaml` `serverMonitor`; on one machine, add/override in `chezmoi.toml` (kept by
+`init`), then `chezmoi apply`:
+
+```toml
+[data.serverMonitor]
+    "Home NAS" = "nas.lan"   # add
+    Google = ""              # drop a default
+```
+
 ## Daily use
 
 ```sh
