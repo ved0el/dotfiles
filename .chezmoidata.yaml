@@ -22,8 +22,8 @@ serverMonitor:
 # is installed by hand. Linux has no list: Tailscale + Brave Origin come from their vendor repos
 # (not in Debian's own apt), set up in run_onchange_after_10-install-packages.sh.tmpl.
 appList:
-  windows: [Tailscale.Tailscale, Brave.Brave, Flow-Launcher.Flow-Launcher, ShareX.ShareX, RamenSoftware.Windhawk]
-  darwin: [tailscale-app, brave-browser]
+  windows: [Tailscale.Tailscale, Brave.Brave, Zen-Team.Zen-Browser, Flow-Launcher.Flow-Launcher, voidtools.Everything, ShareX.ShareX, RamenSoftware.Windhawk]
+  darwin: [tailscale-app, brave-browser, zen]
 # Brave ~ Brave Origin (the paid build without the extras; Linux installs brave-origin itself) with
 # no telemetry. Browser policies set by the `apps` profile on Windows (HKLM) and macOS (defaults).
 # Shields and the privacy features stay. bool = feature switch, int = enum policy.
