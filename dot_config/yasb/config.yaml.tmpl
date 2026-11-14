@@ -8,16 +8,22 @@ komorebi:
   reload_command: 'powershell.exe -NoProfile -WindowStyle Hidden -Command "komorebic stop --whkd; Wait-Process komorebi,whkd -Timeout 10 -ErrorAction SilentlyContinue; komorebic-no-console start --whkd"'
 
 bars:
-  # No monitor names: "primary" = Windows' main display; "*" = every screen no other bar
-  # names (yasb 2.0.7 bar_manager), so any machine gets one primary + N secondary bars.
+  # "Mocha Islands": style "adaptive" hangs the left, centre and right groups off a thin top
+  # rail as three islands. Shape and colour live in styles.css (.yasb-bar.adaptive). No DWM
+  # blur: it would also blur the transparent gaps between islands.
   primary-bar:
     enabled: true
     screens: ["primary"]
     class_name: "yasb-bar"
+    style: "adaptive"
     alignment:
       position: "top"
-    blur_effect:
+      align: "center"
+    animation:
       enabled: true
+      duration: 200
+    blur_effect:
+      enabled: false
       dark_mode: true
       round_corners: false
       border_color: None
@@ -26,26 +32,31 @@ bars:
       windows_app_bar: true
     dimensions:
       width: "100%"
-      height: 34
+      height: 42
     padding:
-      top: 6
-      left: 10
+      top: 0
+      left: 0
       bottom: 0
-      right: 10
+      right: 0
     widgets:
-      left: ["home","komorebi_active_layout","active_window"]
-      center: ["komorebi_workspaces"]
-      # weather only where its API key is set (yasb errors on every start without it)
-      right: ["systray",{{ if env "YASB_WEATHER_API_KEY" }}"weather", {{ end }}"pomodoro","language", "media", "clock", "notifications","power_menu"]
+      left: ["home","komorebi_active_layout","komorebi_workspaces","active_window"]
+      # Centre: open apps, then the visualizer and the track title (both hide when nothing plays).
+      center: ["taskbar","audio_visualizer","media"]
+      right: ["claude_usage","systray","open_meteo","language","clock","notifications","control_center"]
 
   secondary-bar:
     enabled: true
     screens: ["*"]
     class_name: "yasb-bar"
+    style: "adaptive"
     alignment:
       position: "top"
-    blur_effect:
+      align: "center"
+    animation:
       enabled: true
+      duration: 200
+    blur_effect:
+      enabled: false
       dark_mode: true
       round_corners: false
       border_color: None
@@ -54,23 +65,30 @@ bars:
       windows_app_bar: true
     dimensions:
       width: "100%"
-      height: 34
+      height: 42
     padding:
-      top: 6
-      left: 10
+      top: 0
+      left: 0
       bottom: 0
-      right: 10
+      right: 0
     widgets:
-      left: ["home","komorebi_active_layout", "active_window"]
-      center: ["media"]
-      right: ["whkd","cpu","memory","wifi","volume","clock"]
+      left: ["home","komorebi_active_layout","komorebi_workspaces","active_window"]
+      center: ["taskbar","audio_visualizer","media"]
+      right: ["whkd","system_info","wifi","volume_text","clock","notifications","control_center"]
 
 widgets:
   # Left widgets (primary & secondary bars)
   home:
     type: "yasb.home.HomeWidget"
     options:
-      label: "<span class='icon'></span> "
+      label: "<span class='icon'></span>"
+      system_menu: true
+      blur: true
+      round_corners: true
+      round_corners_type: "small"
+      border_color: "System"
+      alignment: "left"
+      offset_top: 6
       menu_list:
       - { separator: true }
       - { title: "🖥️ This PC", command: "explorer.exe shell:MyComputerFolder" }
@@ -105,147 +123,243 @@ widgets:
         - "horizontal_stack"
         - "ultrawide_vertical_stack"
         - "right_main_vertical_stack"
+      # One Material set, all solid glyphs (layouts + the menu's toggle rows)
       layout_icons:
-        bsp: "󰕮"
-        columns: "󰕶"
-        rows: "󰕪"
-        grid: "󰝘"
-        scrolling: "󰕱"
-        vertical_stack: "󰕫"
-        horizontal_stack: "󰕵"
-        ultrawide_vertical_stack: "󰕬"
-        right_main_vertical_stack: "󰕴"
-        monocle: "󰊓"
-        maximized: "󰊓"
-        floating: "󰖯"
-        paused: "󰾉"
-        tiling: "󰙀"
+        bsp: "\U000F056E"
+        columns: "\U000F0576"
+        rows: "\U000F056A"
+        grid: "\U000F0570"
+        scrolling: "\U000F0569"
+        vertical_stack: "\U000F056B"
+        horizontal_stack: "\U000F0575"
+        ultrawide_vertical_stack: "\U000F056C"
+        right_main_vertical_stack: "\U000F0574"
+        monocle: "\U000F0764"
+        maximized: "\U000F0764"
+        floating: "\U000F0136"
+        paused: "\U000F03E5"
+        tiling: "\U000F0640"
       callbacks:
         on_left: "toggle_layout_menu"
         on_middle: "toggle_tiling"
         on_right: "next_layout"
+      # Layout glyphs stay Material (Nerd Font): Segoe Fluent has no tiling-layout set.
+      layout_menu:
+        blur: true
+        round_corners: true
+        round_corners_type: "small"
+        border_color: "System"
+        alignment: "left"
+        direction: "down"
+        offset_top: 6
+        offset_left: 0
+        show_layout_icons: true
+
+  komorebi_workspaces:
+    type: "komorebi.workspaces.WorkspaceWidget"
+    options:
+      hide_if_offline: true
+      # Dots like the island theme's pager: the label is empty, the pill is drawn in styles.css
+      label_workspace_btn: ""
+      label_workspace_active_btn: ""
+      label_workspace_populated_btn: ""
+      hide_empty_workspaces: false
 
   active_window:
     type: "yasb.active_window.ActiveWindowWidget"
     options:
       label: "{win[title]}"
       label_alt: "[class_name='{win[class_name]}' exe='{win[process][name]}' hwnd={win[hwnd]}]"
+      label_no_window: ""
       label_icon: true
       label_icon_size: 16
-      max_length: 56
+      max_length: 48
+      max_length_ellipsis: "…"
 
-  # Center widgets
-  komorebi_workspaces:
-    type: "komorebi.workspaces.WorkspaceWidget"
+  # Center (primary): open apps
+  taskbar:
+    type: "yasb.taskbar.TaskbarWidget"
     options:
-      hide_if_offline: true
-
-  media:
-    type: "yasb.media.MediaWidget"
-    options:
-      label: "{title} - {artist}"
+      icon_size: 20
+      tooltip: true
+      show_only_visible: true
+      strict_filtering: true
+      monitor_exclusive: true
       hide_empty: true
-      callbacks:
-        on_left: "toggle_play_pause"
-        on_right: "toggle_media_menu"
-      show_thumbnail: true
-      controls_left: true
-      # Popup (right-click) buttons. yasb's defaults are Segoe Fluent codepoints (E768...), which
-      # this Nerd Font maps to unrelated artwork (E768 = dev-clojure). Material, like the rest.
-      media_menu_icons:
-        play: "󰐊"
-        pause: "󰏤"
-        prev_track: "󰒮"
-        next_track: "󰒭"
-        mute: "󰕾"
-        unmute: "󰖁"
-      max_field_size:
-        label: 20
-        label_alt: 40
-      scrolling_label:
+      grouping:
         enabled: true
-        update_interval_ms: 33
-        style: "bounce-ease"  # can be "left", "right", "bounce", "bounce-ease"
-        separator: "     "
-        label_padding: 1
-        # Easing curve params: https://www.desmos.com/calculator/j7eamemxzi
-        ease_slope: 20
-        ease_pos: 0.8
-        ease_min: 0.5
+        show_count: false
+      animation:
+        enabled: true
+        duration: 200
+      preview:
+        enabled: true
+        width: 200
+        delay: 400
+        padding: 8
+        margin: 8
+        blur: true
+        peek: true
+      title_label:
+        enabled: false
 
-
-
-  # Right widgets (primary bar)
+  # Right widgets (primary bar). Icons are Segoe Fluent codepoints (the native Windows set).
   systray:
     type: "yasb.systray.SystrayWidget"
     options:
       class_name: "systray"
-      label_collapsed: "󰄽"
-      label_expanded: "󰄾"
+      label_collapsed: ""
+      label_expanded: ""
+      label_position: "left"
       icon_size: 16
       pin_click_modifier: "alt"
       show_unpinned: false
+      show_battery: false
+      show_volume: false
+      use_hook: true
+      show_in_popup: true
+      icons_per_row: 5
+      popup:
+        blur: true
+        round_corners: true
+        round_corners_type: "small"
+        border_color: "System"
+        alignment: "center"
+        direction: "down"
+        offset_top: 6
+        offset_left: 0
 
-  pomodoro:
-    type: "yasb.pomodoro.PomodoroWidget"
+  audio_visualizer:
+    type: "yasb.audio_visualizer.AudioVisualizerWidget"
     options:
-      label: "<span class='icon'>{icon}</span> {remaining}"
-      work_duration: 25
-      break_duration: 5
-      long_break_duration: 15
-      long_break_interval: 4
-      auto_start_breaks: true
-      auto_start_work: true
-      sound_notification: true
-      show_notification: true
-      session_target: 8
-      icons:
-        work: "󱎫"
-        break: "󰅶"
-        paused: "󰏤"
-      callbacks:
-        on_left: "toggle_menu"
-        on_middle: "reset_timer"
-        on_right: "toggle_label"
+      style: bars
+      height: 14
+      smoothness: 80
+      sensitivity: 50
+      auto_gain: true
+      framerate: 30
+      freq_min: 500
+      freq_max: 12000
+      hide_idle: true
+      hide_idle_after: 3000
+      channels: stereo
+      mono_option: average
+      reverse: false
+      mirror: true
+      edge_fade: 0
+      bars:
+        count: 8
+        width: 2
+        gap: 3
 
+  open_meteo:
+    type: "yasb.open_meteo.OpenMeteoWidget"
+    options:
+      # Segoe has no full weather set: sun / moon / cloud / bolt cover the cases in one style.
+      label: "<span class='icon'>{icon}</span> {temp}"
+      label_alt: "<span class='icon'>{icon}</span> {min_temp} / {max_temp}"
+      tooltip: true
+      update_interval: 600
+      hide_decimal: true
+      units: metric
+      icons:
+        sunnyDay: ""
+        clearNight: ""
+        cloudyDay: ""
+        cloudyNight: ""
+        rainyDay: ""
+        rainyNight: ""
+        drizzleDay: ""
+        drizzleNight: ""
+        snowyDay: ""
+        snowyNight: ""
+        foggyDay: ""
+        foggyNight: ""
+        thunderstormDay: ""
+        thunderstormNight: ""
+        default: ""
+      callbacks:
+        on_left: toggle_card
+        on_middle: do_nothing
+        on_right: toggle_label
+      weather_card:
+        blur: true
+        round_corners: true
+        alignment: right
+        border_color: System
+        direction: down
+        icon_size: 32
+        show_hourly_forecast: true
+        time_format: 24h
+        hourly_point_spacing: 76
+        hourly_icon_size: 16
+        icon_smoothing: true
+        temp_line_width: 2
+        current_line_color: "#89b4fa"
+        current_line_width: 1
+        current_line_style: dot
+        hourly_forecast_buttons:
+          enabled: false
+        weather_animation:
+          enabled: true
+          snow_overrides_rain: true
+          temp_line_animation_style: both
+          rain_effect_intensity: 1.0
+          snow_effect_intensity: 1.0
+          scale_with_chance: true
+
+  # Input language as text, like the Windows 11 tray (no icon).
   language:
     type: "yasb.language.LanguageWidget"
     options:
-      label: "<span class='icon'>󰖟</span> {lang[country_code]}"
-      label_alt: "<span class='icon'>󰖟</span> {lang[full_name]}"
+      label: "<span class='icon'></span> {lang[country_code]}"
+      label_alt: "<span class='icon'></span> {lang[full_name]}"
       update_interval: 1 # seconds; yasb's minimum, the widget only polls (no layout-change event)
       callbacks:
         on_left: "toggle_menu"
+        on_middle: "do_nothing"
         on_right: "toggle_label"
+      language_menu:
+        blur: true
+        round_corners: true
+        round_corners_type: "small"
+        border_color: "System"
+        alignment: "right"
+        direction: "down"
+        offset_top: 6
+        offset_left: 0
+        show_layout_icon: true
+        layout_icon: ""
 
-  volume:
-    type: "yasb.volume.VolumeWidget"
+  notifications:
+    type: "yasb.notifications.NotificationsWidget"
     options:
-      label: "V: {level}"
-      volume_icons:
-        - "󰖁" # Icon for muted
-        - "󰝟" # Icon for 0-10% volume
-        - "󰕿" # Icon for 11-30% volume
-        - "󰖀" # Icon for 31-60% volume
-        - "󰕾" # Icon for 61-100% volume
+      label: "<span class='icon'>{icon}</span>"
+      label_alt: "{count} notifications"
+      hide_empty: false
+      tooltip: true
+      icons:
+        new: ""
+        default: ""
       callbacks:
-        on_left: "toggle_volume_menu"
-        on_right: "toggle_mute"
+        on_left: "toggle_menu"            # yasb's menu: Do Not Disturb toggle + clear-all in its header
+        on_middle: "do_nothing"
+        on_right: "toggle_notification"   # Windows Notification Center
 
   clock:
     type: "yasb.clock.ClockWidget"
     options:
-      label: "{%H:%M}"
-      label_alt: "{%m/%d (%a) %H:%M:%S}"
+      label: "{%m/%d (%a)  %H:%M}"
+      label_alt: "{%A, %d %B %Y  %H:%M:%S}"
       callbacks:
         on_left: "toggle_calendar"
         on_right: "toggle_label"
       calendar:
         blur: true
-        round_corners: false
-        round_corners_type: "normal"
-        border_color: "system"
-        alignment: "center"
+        round_corners: true
+        round_corners_type: "small"
+        border_color: "System"
+        alignment: "right"
         direction: "down"
         offset_top: 6
         offset_left: 0
@@ -256,28 +370,283 @@ widgets:
         country_code: "JP"
         extended: false
 
-  power_menu:
-    type: "yasb.power_menu.PowerMenuWidget"
+  control_center:
+    type: "yasb.control_center.ControlCenterWidget"
     options:
-      label: "<span class='icon'>󰐥</span>"
-      uptime: True
-      show_user: false
-      blur: false
-      blur_background: true
-      button_row: 5
-      buttons:
-        hibernate: ["󰜗", "Hibernate"]
-        sleep: ["󰤄", "Sleep"]
-        restart: ["󰜉", "Restart"]
-        signout: ["󰍃", "Sign out"]
-        shutdown: ["󰤆", "Shut Down"]
-        cancel: ["", "Cancel"]
+      label: "<span class='icon'></span>"
+      tooltip: true
+      sections_order:
+        - "system_controls"
+        - "quick_actions"
+        - "sliders"
+        - "power"
+        - "media"
+      popup:
+        blur: true
+        alignment: "right"
+        direction: "down"
+        border_color: "System"
+        round_corners: true
+        round_corners_type: "small"
+        offset_top: 6
+      sections:
+        system_controls:
+          profile_image_size: 28
+          power_icon: ""
+          lock_icon: ""
+          settings_icon: ""
+        quick_actions:
+          show: true
+          columns: 3
+          label_position: "default"
+          actions:
+            - id: "toggle_dnd"
+              label: "Do Not Disturb"
+              icon: ""
+            - id: "toggle_mute"
+              label: "Mute"
+              icon: ""
+            - id: "toggle_mic_mute"
+              label: "Mic Mute"
+              icon: ""
+            - id: "screenshot"
+              label: "Screenshot"
+              icon: ""
+            - id: "touch_keyboard"
+              label: "Keyboard"
+              icon: ""
+            - id: "toggle_theme"
+              label: "Dark Mode"
+              icon: ""
+        sliders:
+          show: true
+          brightness:
+            show_slider: true
+            icon: ""
+            show_source_selector: true
+            source_selector_icon: ""
+          volume:
+            show_slider: true
+            icon: ""
+            show_source_selector: true
+            source_selector_icon: ""
+          microphone:
+            show_slider: true
+            icon: ""
+            show_source_selector: true
+            source_selector_icon: ""
+        media:
+          show: true
+          thumbnail_size: 36
+          thumbnail_radius: 6
+          icons:
+            prev_track: ""
+            next_track: ""
+            play: ""
+            pause: ""
+        power:
+          show: true
+          power_plan_title: "Power Plan"
+          power_mode_title: "Power Mode"
+          button_menu_icon: ""
+      callbacks:
+        on_left: "toggle_menu"
+
+  # Now playing: scrolling title over the blurred-down album cover (no buttons on the bar);
+  # left click opens the media popup (cover, transport, progress), right click plays/pauses.
+  media:
+    type: "yasb.media.MediaWidget"
+    options:
+      label: "{title}{s}{artist}"
+      label_alt: "{title}"
+      separator: " - "
+      hide_empty: true
+      callbacks:
+        on_left: "toggle_media_menu"
+        on_middle: "do_nothing"
+        on_right: "toggle_play_pause"
+      max_field_size:
+        label: 28
+        label_alt: 40
+      show_thumbnail: true
+      thumbnail_alpha: 150
+      thumbnail_padding: 10
+      thumbnail_corner_radius: 4
+      controls_only: false
+      controls_hide: true
+      media_menu:
+        blur: true
+        round_corners: true
+        round_corners_type: "small"
+        border_color: "System"
+        alignment: "center"
+        direction: "down"
+        offset_top: 6
+        offset_left: 0
+        thumbnail_corner_radius: 6
+        thumbnail_size: 110
+        max_title_size: 60
+        max_artist_size: 50
+        show_source: true
+      media_menu_icons:
+        play: ""
+        pause: ""
+        prev_track: ""
+        next_track: ""
+        mute: ""
+        unmute: ""
+      scrolling_label:
+        enabled: true
+        update_interval_ms: 33
+        style: "bounce-ease"
+        separator: "     "
+        label_padding: 1
+        always_scroll: false
+        ease_slope: 20
+        ease_pos: 0.8
+        ease_min: 0.5
+
+  # Claude Code plan usage — reads the local Claude Code OAuth token, no extra key.
+  claude_usage:
+    type: "yasb.claude_usage.ClaudeUsageWidget"
+    options:
+      # Only token totals on the bar: they come from local transcripts and exist on every plan.
+      # Plan limits (5h / 7d / per-model) differ per plan, so they live in the menu, which
+      # shows whichever windows the account actually has.
+      label: "<span class='icon'>󰛄</span> {today_tokens}"
+      label_alt: "<span class='icon'>󰛄</span> <span class='tag'>7d</span>{week_tokens}"
+      # /api/oauth/usage is a separate, tightly rate-limited endpoint (HTTP 429 at 60s polling);
+      # every yasb reload also triggers an immediate fetch. Poll every 15 min instead.
+      update_interval: 900
+      cache_ttl: 900
+      five_hour_reset_format: "relative"
+      seven_day_reset_format: "absolute"
+      tooltip: true
+      token_history:
+        enabled: true
+        default_period: "today"
+        show_graph: true
+        show_graph_grid: false
+        show_models: true
+      status:
+        enabled: true
+        show_in_menu: true
+      callbacks:
+        on_left: "toggle_menu"
+        on_middle: "refresh"
+        on_right: "toggle_label"
+      menu:
+        blur: true
+        round_corners: true
+        round_corners_type: "small"
+        border_color: "System"
+        alignment: "right"
+        direction: "down"
+        offset_top: 6
+        offset_left: 0
+
+  # Secondary bar: reachability of the services this machine depends on.
+  server_monitor:
+    type: "yasb.server_monitor.ServerMonitor"
+    options:
+      label: "<span class='icon'></span> {online}/{total}"
+      label_alt: "<span class='icon'></span> {online} online · {offline} offline"
+      tooltip: true
+      update_interval: 300
+      timeout: 5
+      ssl_check: true
+      ssl_verify: true
+      ssl_warning: 14
+      desktop_notifications:
+        ssl: false
+        offline: false
+      servers:
+        - { name: "Anthropic API", url: "api.anthropic.com" }
+        - { name: "GitHub", url: "github.com" }
+        - { name: "Cloudflare", url: "cloudflare.com" }
+        - { name: "Google", url: "google.com" }
+      callbacks:
+        on_left: "toggle_menu"
+        on_middle: "do_nothing"
+        on_right: "toggle_label"
+      menu:
+        blur: true
+        round_corners: true
+        round_corners_type: "small"
+        border_color: "System"
+        alignment: "right"
+        direction: "down"
+        offset_top: 6
+        offset_left: 0
+
+  # Server · CPU · RAM · disk folded behind one chevron; starts collapsed.
+  system_info:
+    type: "yasb.grouper.GrouperWidget"
+    options:
+      class_name: "system-info"
+      widgets: ["server_monitor", "cpu", "memory", "disk"]
+      collapse_options:
+        enabled: true
+        exclude_widgets: []
+        expanded_label: ""
+        collapsed_label: ""
+        label_position: "right"
+
+  disk:
+    type: "yasb.disk.DiskWidget"
+    options:
+      label: "<span class='icon'></span> {space[used][percent]}"
+      label_alt: "<span class='icon'></span> {space[free][gb]} free"
+      volume_label: "C"
+      decimal_display: 0
+      update_interval: 60
+      callbacks:
+        on_left: "toggle_group"
+        on_middle: "toggle_label"
+        on_right: "exec explorer C:\\"
+      group_label:
+        volume_labels: ["C", "D", "E", "F", "G", "H"]
+        show_label_name: true
+        blur: true
+        round_corners: true
+        round_corners_type: "small"
+        border_color: "System"
+        alignment: "right"
+        direction: "down"
+        offset_top: 6
+        offset_left: 0
+
+  # Secondary bar readout (text tag, unchanged); the primary's `volume` is the icon control.
+  volume_text:
+    type: "yasb.volume.VolumeWidget"
+    options:
+      label: "<span class='icon'>{icon}</span> {level}"
+      icons:
+        muted: ""
+        "10": ""
+        "30": ""
+        "60": ""
+        "100": ""
+      callbacks:
+        on_left: "toggle_volume_menu"
+        on_right: "toggle_mute"
+      audio_menu:
+        blur: true
+        round_corners: true
+        round_corners_type: "small"
+        border_color: "System"
+        alignment: "right"
+        direction: "down"
+        offset_top: 6
+        app_icons:
+          toggle_down: ""
+          toggle_up: ""
 
   # Right widgets (secondary bar)
   whkd:
     type: "yasb.whkd.WhkdWidget"
     options:
-      label: "<span class='icon'>󰌌</span> "
+      label: "<span class='icon'></span>"
       special_keys:
         - key: "win"
           key_replace: "󰖳"
@@ -296,41 +665,10 @@ widgets:
         - key: "down"
           key_replace: "↓"
 
-  weather:
-    type: "yasb.weather.WeatherWidget"
-    options:
-      label: "<span class='icon'>{icon}</span> {temp}"
-      label_alt: "{location}: Min {min_temp}, Max {max_temp}, Humidity {humidity}"
-      api_key: "$env:YASB_WEATHER_API_KEY"
-      show_alerts: true
-      update_interval: 600
-      hide_decimal: true
-      units: "metric"
-      location: "$env:YASB_WEATHER_LOCATION"
-      callbacks:
-        on_left: "toggle_card"
-        on_right: "toggle_label"
-      icons:
-        sunnyDay: "󰖨"
-        clearNight: "󰖔"
-        cloudyDay: "󰖐"
-        cloudyNight: "󰼱"
-        rainyDay: "󰖗"
-        rainyNight: "󰖖"
-        # snowyIcyDay: "󰼶"
-        # snowyIcyNight: "󰼶"
-        blizzardDay: "󰖘"
-        blizzardNight: "󰖘"
-        foggyDay: "󰖑"
-        foggyNight: "󰖑"
-        thunderstormDay: "󰖓"
-        thunderstormNight: "󰙾"
-        default: "󰖐"
-
   cpu:
     type: "yasb.cpu.CpuWidget"
     options:
-      label: "C: {info[percent][total]}%"
+      label: "<span class='icon'></span> {info[percent][total]}%"
       update_interval: 2000
       cpu_thresholds:
         low: 25
@@ -354,8 +692,8 @@ widgets:
   memory:
     type: "yasb.memory.MemoryWidget"
     options:
-      label: "R: {virtual_mem_percent}%"
-      label_alt: "R: {virtual_mem_free}/{virtual_mem_total}"
+      label: "<span class='icon'></span> {virtual_mem_percent}%"
+      label_alt: "<span class='icon'></span> {virtual_mem_used}/{virtual_mem_total}"
       update_interval: 5000
       callbacks:
         on_left: "toggle_label"
@@ -377,7 +715,7 @@ widgets:
   wifi:
     type: "yasb.wifi.WifiWidget"
     options:
-      label: "W: {wifi_name}"
+      label: "<span class='icon'></span> {wifi_name}"
       update_interval: 5000
       callbacks:
         on_left: "toggle_menu"
@@ -393,8 +731,8 @@ widgets:
       ]
       menu_config:
         blur: true
-        round_corners: false
-        round_corners_type: "normal"
+        round_corners: true
+        round_corners_type: "small"
         border_color: "System"
         alignment: "right"
         direction: "down"
@@ -412,14 +750,3 @@ widgets:
           "󰤥",
           "󰤨",
         ]
-
-  notifications:
-    type: "yasb.notifications.NotificationsWidget"
-    options:
-      label: "<span class='icon'>󰂚</span> {count}"
-      label_alt: "{count} notifications"
-      hide_empty: false
-      tooltip: true
-      callbacks:
-        on_left: "toggle_notification"
-        on_right: "do_nothing"
