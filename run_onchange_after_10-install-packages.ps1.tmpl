@@ -323,24 +323,24 @@ if (Get-Command mise -ErrorAction SilentlyContinue) {
 }
 
 {{ if .tools -}}
-# herdr-core's vendor dir = a junction to mise's `latest` (itself a junction mise retargets on
-# upgrade): a client's `hc machine add` to a WINDOWS box runs the fixed path
-# .\AppData\Local\Programs\herdr-core\herdr-core.exe over ssh, not PATH. One copy, mise's.
-# A real dir there = the old vendor copy: not removed here (its running core holds every hc
-# terminal). By hand: close herdr-app, `hc server stop`, delete it + its PATH entry, re-apply.
+# herdr-core (`hc`): official installer, per-user, into %LOCALAPPDATA%\Programs\herdr-core (+ PATH);
+# self-updates (`hc update`), so guard on the exe. Never mise: a client's `hc machine add` to a
+# Windows box runs that FIXED path over ssh, and an elevated sshd session won't follow a junction.
+# A junction there = left by the brief mise setup: drop the link (not its target) first.
 $hcDir = "$env:LOCALAPPDATA\Programs\herdr-core"
-$hcItem = Get-Item $hcDir -ErrorAction SilentlyContinue
-if ($hcItem -and $hcItem.LinkType -ne 'Junction') {
-  Write-Warning "[herdr-core] old vendor copy in $hcDir (mise owns it now): remove it by hand"
-} elseif (-not $hcItem -and (Get-Command herdr-core -ErrorAction SilentlyContinue)) {
-  $hcLatest = Join-Path (Split-Path (mise --cd $HOME where aqua:herdrdev/herdr-core)) 'latest'
-  Invoke-Step 'herdr-core junction' { New-Item -ItemType Junction -Path $hcDir -Target $hcLatest -ErrorAction Stop | Out-Null }
+if ((Get-Item $hcDir -ErrorAction SilentlyContinue).LinkType -eq 'Junction') { [IO.Directory]::Delete($hcDir) }
+if (-not (Test-Path "$hcDir\herdr-core.exe")) {
+  Invoke-Step 'herdr-core' { Invoke-RestMethod https://releases.herdr.dev/core/install.ps1 | Invoke-Expression }
+}
+# The installer adds hc.exe only when no `hc` resolves (a leftover mise shim would): ensure it.
+if ((Test-Path "$hcDir\herdr-core.exe") -and -not (Test-Path "$hcDir\hc.exe")) {
+  Invoke-Step 'hc link' { New-Item -ItemType HardLink -Path "$hcDir\hc.exe" -Target "$hcDir\herdr-core.exe" -ErrorAction Stop | Out-Null }
 }
 {{ end -}}
 {{ if .apps -}}
 # herdr-app = the terminal (desktop GUI; not on winget: Herdr.Herdr there is the CLI zip). Its
-# official installer, per-user; self-updates, so guard on the exe. AFTER mise + the junction: it
-# skips its own herdr-core when one is there, so mise's (tools.toml) stays the only copy.
+# official installer, per-user; self-updates, so guard on the exe. AFTER herdr-core: it installs
+# a core only when there's none.
 if (-not (Test-Path "$env:LOCALAPPDATA\Programs\herdr-app\herdr-app.exe")) {
   Invoke-Step 'herdr-app' { Invoke-RestMethod https://releases.herdr.dev/app/install.ps1 | Invoke-Expression }
 }

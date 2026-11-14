@@ -130,11 +130,10 @@ Render one template: `chezmoi execute-template < <source-file>`.
   (preflight, `SCOOP`/`MISE_DATA_DIR`, `no_junction`, pwsh MSI, fonts, WinPS 5.1 quirks).
 - **herdr** is the multiplexer (mise `tools`; Linux + Windows): it resumes Claude panes itself, so no
   restore scripts. psmux was retired (the `.ps1` bootstrap unregisters `psmux-restore` + uninstalls it once).
-  **herdr-core (`hc`)** = herdr-app's daemon (not herdr server's; sessions not shared): mise `aqua:` on every
-  `tools` box, `postinstall` adds the `hc` the release lacks; herdr-app installs AFTER `mise install` so its
-  installer skips its own core (one copy). Update: `mise up` + `hc server restart`, never `hc update`.
-  Windows: `%LOCALAPPDATA%\Programs\herdr-core` = a junction to mise's `latest` — a client reaches a Windows
-  box's hc by that fixed path, not PATH (Unix boxes: PATH, hence `~/.zshenv`).
+  **herdr-core (`hc`)** = herdr-app's daemon (not herdr server's; sessions not shared): its official installer
+  on every `tools` box, before herdr-app (whose installer then skips its own core); self-updates (`hc update`).
+  NEVER mise: a client reaches a Windows box's hc by the FIXED path `%LOCALAPPDATA%\Programs\herdr-core`
+  (not PATH), and an elevated sshd session won't follow a junction there (RedirectionGuard). Unix: `~/.local/bin` (a client checks it when PATH has no herdr-core).
   herdr-app (desktop GUI, Windows + Linux clients: the `apps` profile runs its official installer; servers keep the CLI; macOS = Rex): `dot_config/herdr-app/` = herdr CLI's theme set in `themes/`
   + `modify_settings.json` fills DEFAULTS only (never overwrites a box's own pick). Never manage
   `layouts/.state/`, `view.json`, `window.json`, `shared.json`: runtime state.
@@ -146,8 +145,6 @@ Render one template: `chezmoi execute-template < <source-file>`.
 - chezmoi **copies**, never symlinks.
 - mise: **NEVER set `MISE_GLOBAL_CONFIG_FILE` / `MISE_CONFIG_DIR`** — it breaks conf.d discovery
   outside `$HOME` (`dot_config/mise/AGENTS.md`). Run mise from scripts as `mise --cd "$HOME"`.
-- `~/.zshenv` (Unix) puts `~/.local/bin` + mise's shims on PATH: `ssh host <cmd>` (a client's
-  `hc machine add`, `herdr --remote`) runs a non-interactive zsh that never reads `.zshrc`/`mise activate`.
 - `cd` → zoxide on both shells is skipped when `CLAUDECODE` is set: a zoxide miss would leak
   `zoxide: no match found` into Claude's piped output.
 - `skhdrc` (macOS) and `whkdrc` (Windows) share one mnemonic scheme (alt = focus, ctrl+alt =

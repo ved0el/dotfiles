@@ -187,9 +187,9 @@ if (-not $herdrTask -or $herdrTask.Actions[0].Arguments -ne $herdrArgs) {
     Start-ScheduledTask -TaskName 'herdr-server' -ErrorAction Stop
   }
 }
-# herdr-core (`hc`, mise tools.toml) at logon: what herdr-app clients and `hc` attach to — a
-# separate daemon from `herdr server`, sessions not shared. `hc server start` detaches and exits.
-$hcArgs = '-NoLogo -NoProfile -WindowStyle Hidden -Command mise --cd $HOME exec -- hc server start'
+# herdr-core (`hc`, part 1's official install) at logon: what herdr-app clients and `hc` attach
+# to — a separate daemon from `herdr server`, sessions not shared. `server start` detaches and exits.
+$hcArgs = '-NoLogo -NoProfile -WindowStyle Hidden -Command & "$env:LOCALAPPDATA\Programs\herdr-core\herdr-core.exe" server start'
 $hcTask = Get-ScheduledTask -TaskName 'hc-server' -ErrorAction SilentlyContinue
 if (-not $hcTask -or $hcTask.Actions[0].Arguments -ne $hcArgs) {
   Invoke-Step 'hc-server task' {

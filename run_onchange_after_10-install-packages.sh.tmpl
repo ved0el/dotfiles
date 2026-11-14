@@ -151,20 +151,20 @@ if [ "$(command -v mise)" = "$HOME/.local/bin/mise" ]; then mise self-update --y
 [ -n "${GITHUB_TOKEN:-}" ] || { GITHUB_TOKEN=$(mise --cd "$HOME" exec -- gh auth token 2>/dev/null) && export GITHUB_TOKEN; } || unset GITHUB_TOKEN
 mise --cd "$HOME" install --yes
 
+{{ if .tools -}}
+# herdr-core (`hc`): official installer, per-user, into ~/.local/bin (`hc` beside it); self-updates
+# (`hc update`), so guard on it. Not mise: one install path on every OS (Windows can't use mise,
+# see the .ps1). A client's ssh finds it there even off PATH.
+[ -x "$HOME/.local/bin/herdr-core" ] || run_url https://releases.herdr.dev/core/install.sh sh
+# It adds `hc` only when no `hc` resolves (a leftover mise shim would): ensure it.
+[ -e "$HOME/.local/bin/hc" ] || ln -s herdr-core "$HOME/.local/bin/hc"
+{{ end -}}
 {{ if and .apps (eq .chezmoi.os "linux") -}}
 # herdr-app = the terminal on a Linux client (`apps`; a server keeps just the herdr CLI; macOS
-# has Rex). Official installer, per-user; self-updates, so guard on it. AFTER mise, with its
-# shims on PATH: it skips its own herdr-core when one is there, so mise's stays the only copy.
-# Needs a desktop session and a Vulkan driver. A warning, not a stop.
-export PATH="${MISE_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/mise}/shims:$PATH"
+# has Rex). Official installer, per-user; self-updates, so guard on it. AFTER herdr-core: it
+# installs a core only when there's none. Needs a desktop session and a Vulkan driver. A warning, not a stop.
 [ -e "${XDG_DATA_HOME:-$HOME/.local/share}/herdr-app/herdr-app" ] || \
   run_url https://releases.herdr.dev/app/install.sh sh || echo "[herdr-app] install failed - see above"
-{{ end -}}
-{{ if .tools -}}
-# A vendor herdr-core from before mise managed it = a 2nd copy; not removed here (its running core
-# holds every hc terminal). By hand: `hc server stop`, then delete ~/.local/bin/herdr-core and hc.
-[ ! -e "$HOME/.local/bin/herdr-core" ] || \
-  echo "[herdr-core] old vendor copy in ~/.local/bin (mise owns it now): remove it by hand" >&2
 {{ end -}}
 
 {{ if .tools -}}

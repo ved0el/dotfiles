@@ -30,7 +30,6 @@ install.ps1
 # stack (zsh/sheldon/p10k). Each side ignores the other's files.
 {{ if eq .chezmoi.os "windows" }}
 .zshrc
-.zshenv
 .p10k.zsh
 .config/zsh
 .config/sheldon

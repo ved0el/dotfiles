@@ -44,13 +44,7 @@ ripgrep = "latest"
 # across SSH drops and, after a restart, resumes Claude panes (`claude --resume <id>`, which also
 # re-attaches their Remote Control). The opt-in `sshd` profile starts `herdr server` at boot.
 herdr = "latest"
-# herdr-core (`hc`): the daemon herdr-app and `hc ls/attach/run --on` talk to (separate from herdr
-# server; sessions not shared). Here, not the vendor installer, so a box has ONE copy: herdr-app's
-# installer skips its own core when `herdr-core` is on PATH (the bootstrap installs the app after
-# mise). The release has no `hc`, which herdr-app runs by name: postinstall adds it beside
-# herdr-core, and the reshim gives it a shim. Update with `mise up`, then `hc server restart`
-# (programs keep running); never `hc update` / a client's `hc machine update` (a 2nd copy).
-"aqua:herdrdev/herdr-core" = { version = "latest", postinstall = {{ if eq .chezmoi.os "windows" }}'mklink /H "%MISE_TOOL_INSTALL_PATH%\hc.exe" "%MISE_TOOL_INSTALL_PATH%\herdr-core.exe"'{{ else }}'ln -sf herdr-core "$MISE_TOOL_INSTALL_PATH/hc"'{{ end }} }
+# herdr-core (`hc`) is NOT here: the bootstrap runs its official installer (see AGENTS.md).
 sd = "latest"
 # vivid: generates LS_COLORS. github backend = prebuilt binary (cross-platform), not the
 # cargo source build. zsh uses its built-in `ansi` theme for file + completion list colors.

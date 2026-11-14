@@ -225,7 +225,7 @@ WantedBy=default.target
 UNIT
 )
   # hc.service: herdr-core, what herdr-app clients and `hc` attach to (separate from herdr server,
-  # sessions not shared; mise tools.toml). `hc server start` detaches, hence oneshot.
+  # sessions not shared; part 1's official install). `server start` detaches, hence oneshot.
   _hc=$(cat <<UNIT
 [Unit]
 Description=herdr-core (hc) server
@@ -234,7 +234,7 @@ Description=herdr-core (hc) server
 Type=oneshot
 RemainAfterExit=yes
 WorkingDirectory=%h
-ExecStart=$_mise --cd %h exec -- hc server start
+ExecStart=%h/.local/bin/herdr-core server start
 
 [Install]
 WantedBy=default.target
