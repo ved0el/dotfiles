@@ -174,12 +174,5 @@
       "id": "DeltaForceClient.exe",
       "matching_strategy": "Equals"
     }
-  ],
-  "remove_titlebar_applications": [
-    {
-      "kind": "Exe",
-      "id": "alacritty.exe",
-      "matching_strategy": "Equals"
-    }
   ]
 }

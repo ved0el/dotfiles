@@ -54,7 +54,6 @@ Render one template: `chezmoi execute-template < <source-file>`.
 | `dot_claude/`, `.chezmoitemplates/claude-settings.json` | Claude settings (merged), CLAUDE.md, statuslines |
 | `dot_local/bin/` | helper scripts (Unix) |
 | `install.ps1` | Windows one-line installer (`irm …/install.ps1 \| iex`; repo-only, chezmoi-ignored) |
-| `.chezmoitemplates/alacritty.toml` | Alacritty, the terminal on Windows + Linux (macOS: Rex) (rendered to `~/.config/alacritty`; Windows' `%APPDATA%\alacritty` only imports it) |
 
 ## Profiles & OS
 - Profile keys `tools`, `develop`, `wm` (macOS + Windows), `apps` — plus the
@@ -117,9 +116,9 @@ Render one template: `chezmoi execute-template < <source-file>`.
   `ansi`, ripgrep, starship palette, micro `simple`, vivid `ansi`); never a hex/`colourNNN`, or a
   terminal theme change breaks them. zsh caches vivid's output and feeds completion `list-colors`.
 - fzf-tab REQUIRES `zstyle ':completion:*' menu no` — never `menu select`.
-- **Alacritty = the terminal** on Windows + Linux (one config: `.chezmoitemplates/alacritty.toml`); install
-  paths, font and theme rules: `dot_config/alacritty/AGENTS.md`.
-- **Rex** = the macOS terminal + multiplexer (replaces Alacritty, and is the multiplexer there): `dot_config/rex/AGENTS.md`.
+- **herdr-app = the terminal** on Windows + Linux (Alacritty retired); config notes under herdr below.
+  Its font family must be one the bootstrap installs (`JetBrainsMonoNL Nerd Font`).
+- **Rex** = the macOS terminal + multiplexer (and is the multiplexer there): `dot_config/rex/AGENTS.md`.
 - Claude install / plugins / skills: read `dot_claude/AGENTS.md` before editing them.
 
 ## Windows
@@ -131,6 +130,9 @@ Render one template: `chezmoi execute-template < <source-file>`.
   (preflight, `SCOOP`/`MISE_DATA_DIR`, `no_junction`, pwsh MSI, fonts, WinPS 5.1 quirks).
 - **herdr** is the multiplexer (mise `tools`; Linux + Windows): it resumes Claude panes itself, so no
   restore scripts. psmux was retired (the `.ps1` bootstrap unregisters `psmux-restore` + uninstalls it once).
+  herdr-app (desktop GUI, Windows + Linux clients: the `apps` profile runs its official installer; servers keep the CLI; macOS = Rex): `dot_config/herdr-app/` = herdr CLI's theme set in `themes/`
+  + `modify_settings.json` fills DEFAULTS only (never overwrites a box's own pick). Never manage
+  `layouts/.state/`, `view.json`, `window.json`, `shared.json`: runtime state.
 - `XDG_CONFIG_HOME=~/.config` is persisted on Windows and exported on Unix (`10-env.zsh`).
 - Profile, PSReadLine/PSFzf, starship, load budget: `dot_config/powershell/AGENTS.md`.
   WM: `dot_config/komorebi/AGENTS.md`, `dot_config/yasb/AGENTS.md`.

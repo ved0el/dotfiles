@@ -50,9 +50,8 @@ the bootstrap exits non-zero, so the next `chezmoi apply` retries only what's mi
 re-run until it's clean. It stops up front, before changing anything, when run as administrator
 or when winget isn't ready yet (a new account: update "App Installer" in Microsoft Store). Hit the
 GitHub rate limit? `gh auth login` (gh is a mise tool) or set `GITHUB_TOKEN`, then `chezmoi apply`.
-When it's done, open a new terminal (restart Alacritty) to load PATH, fonts and profile. If
-Alacritty won't start from the Start menu / taskbar, sign out and back in: Explorer still holds the
-PATH from before pwsh was installed, so Alacritty can't find `pwsh`.
+When it's done, open a new terminal (restart herdr-app) to load PATH, fonts and profile. If
+it can't find `pwsh`, sign out and back in: Explorer still holds the PATH from before pwsh was installed.
 
 It asks which profiles to enable, applies the dotfiles, then installs packages and plugins. The
 OS is auto-detected: brew/apt on macOS/Linux, scoop (+ winget for PowerShell 7, as the MSI at the
@@ -68,7 +67,7 @@ existing scoop/mise elsewhere is kept, not moved.
 | base | always | zsh + powerlevel10k + sheldon (Unix) or PowerShell + starship (Windows), mise, Claude Code + plugins (incl. impeccable) |
 | **tools** | on | CLI tools via mise (bat, eza, fd, ripgrep, fzf, micro, rtk, codegraph, agent-browser, agent-desktop, vivid, …), delta for git |
 | **develop** | off | language runtimes via mise (`conf.d/develop.toml`: node, python, go, bun, pnpm, uv; Cloudflare's `cf` by hand: `pnpm add -g cf`) + Claude agent skills + agentmemory (Claude memory plugin + its server, started at login on a port of its own per account, so several users can share a machine; need node) · Windows: scoop `make` (Linux: apt) |
-| **apps** | off | essential GUI apps (`.chezmoidata.yaml` `appList`, essentials only — the rest by hand) · Windows: winget (Tailscale, Brave, Flow Launcher, ShareX, Windhawk) · macOS: brew casks (Tailscale, Brave) · Linux: vendor repos (Tailscale, Brave Origin) + apt Alacritty |
+| **apps** | off | essential GUI apps (`.chezmoidata.yaml` `appList`, essentials only — the rest by hand) · Windows: winget (Tailscale, Brave, Flow Launcher, ShareX, Windhawk) + herdr-app (its installer) · macOS: brew casks (Tailscale, Brave) · Linux: vendor repos (Tailscale, Brave Origin) + herdr-app + JetBrainsMono Nerd Font |
 | **wm** | off (not Linux) | macOS: yabai + skhd · Windows: komorebi + whkd + yasb |
 | **sshd** | off (Linux + Windows) | this box is an SSH server. Windows: scoop `no_junction` (+ a one-time `scoop reset *`) so scoop's shims work in an sshd session (it won't follow scoop's `current` junctions). Both OSes: keep Claude reachable across reboots (any other box with herdr: just run `herdr` after a reboot — it restores the layout and resumes every Claude pane): `herdr server` (holds the panes; after a restart resumes each Claude conversation, which re-attaches its Remote Control) + `claude remote-control` (start new sessions from claude.ai / the app, no SSH), both at boot — Linux: systemd user units + linger · Windows: logon tasks (needs autologon; the console is locked right after it). One-time: `claude auth login` and an interactive `claude remote-control` run |
 
@@ -108,15 +107,12 @@ Shell aliases: `cz`, `cza`, `czd`, `czs`, `cze`, `czra`, `czu`, `czcd`; `..` / `
 - **Claude permissions:** only read-only commands are auto-allowed (git/gh/mise read subcommands,
   `ls`, `wc`, `eza`, codegraph); everything else goes through auto mode's check. Secrets and browser
   data (`~/.ssh`, `.env*`, gh/Claude tokens, Brave/Zen/agent profiles) are denied to Read/Edit.
-- **Terminal:** macOS = **Rex** (terminal + multiplexer, replaces Alacritty; installed from its
-  appcast, self-updates; config `~/.config/rex/init.lua`). Windows + Linux = Alacritty, one config template
-  `.chezmoitemplates/alacritty.toml` (applied to `~/.config/alacritty`; Windows' `%APPDATA%\alacritty` just
-  imports it). Windows installs it via scoop (`scoop update alacritty`); Linux: apt, with the `apps` profile
-  (needs >= 0.13 — Debian 12's is too old).
-  Theme = the `[colors]` block (Catppuccin Mocha; fzf, bat, rg, starship, micro, vivid use
-  ANSI colours only, so they follow any theme); JetBrainsMonoNL Nerd Font 14, copy-on-select,
-  right-click pastes, `Ctrl+Enter` = Claude newline, Windows starts in `D:/work` (if it exists).
-  Tabs/panes stay in herdr.
+- **Terminal:** macOS = **Rex** (terminal + multiplexer; installed from its appcast, self-updates;
+  config `~/.config/rex/init.lua`). Windows + Linux = **herdr-app** (herdr's desktop app, clients only:
+  the `apps` profile runs its official installer; servers keep just the herdr CLI): `~/.config/herdr-app` gets herdr CLI's theme set (`themes/`,
+  pick one in Settings) and DEFAULTS only (theme nord, JetBrainsMonoNL Nerd Font 16), filled into the
+  app's `settings.json` when missing, so each box changes them in the app. Claude newline: Alt+Enter
+  or Ctrl+J. fzf, bat, rg, starship, micro, vivid use ANSI colours only, so they follow any theme.
 - **Secrets:** never commit them — use chezmoi `encrypted_` files or password-manager template
   functions.
 

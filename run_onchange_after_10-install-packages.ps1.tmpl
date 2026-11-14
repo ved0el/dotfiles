@@ -205,7 +205,7 @@ Add-UserPath (Join-Path $MiseDir 'shims')
 # Windows' own sudo is enabled, System32\sudo.exe wins — `gsudo` always works). A font ships NO
 # command, so that one is guarded on `scoop list` (through Out-String: Select-String on its
 # objects never matches). The font is JetBrainsMono-NF (nerd-fonts bucket), NOT -NF-Mono: every
-# consumer names the family `JetBrainsMonoNL Nerd Font` (Alacritty, yasb's Qt CSS, the
+# consumer names the family `JetBrainsMonoNL Nerd Font` (herdr-app, yasb's Qt CSS, the
 # komorebi bar as `JetBrainsMonoNL NF`), and -NF-Mono only registers `… Nerd Font Mono` — Qt
 # then falls back to Tahoma.
 # Fonts install per-user (HKCU) — no elevation.
@@ -242,13 +242,6 @@ if (-not $propoHave) {
   Invoke-Step 'font-propo' {
     if ((scoop bucket list 2>$null | Out-String) -notmatch 'nerd-fonts') { scoop bucket add nerd-fonts }
     scoop install JetBrainsMono-NF-Propo
-  }
-}
-# Alacritty (the cross-OS terminal, config in ~/.config/alacritty, imported by %APPDATA%\alacritty). `scoop update alacritty` upgrades.
-if (-not (Get-Command alacritty -ErrorAction SilentlyContinue)) {
-  Invoke-Step 'alacritty' {
-    if ((scoop bucket list 2>$null | Out-String) -notmatch 'extras') { scoop bucket add extras }
-    scoop install extras/alacritty
   }
 }
 
@@ -292,6 +285,11 @@ foreach ($id in @('{{ .appList.windows | join "','" }}')) {
       --accept-package-agreements --accept-source-agreements --disable-interactivity
     if ($LASTEXITCODE -in -1978335189, -1978335135) { $global:LASTEXITCODE = 0 }
   }
+}
+# herdr-app = the terminal (desktop GUI; not on winget: Herdr.Herdr there is the CLI zip). Its
+# official installer, per-user (+ herdr-core if missing); both self-update, so guard on the exe.
+if (-not (Test-Path "$env:LOCALAPPDATA\Programs\herdr-app\herdr-app.exe")) {
+  Invoke-Step 'herdr-app' { Invoke-RestMethod https://releases.herdr.dev/app/install.ps1 | Invoke-Expression }
 }
 # Brave ~ Brave Origin, no telemetry: the policies in .chezmoidata.yaml bravePolicy (macOS: the
 # .sh). HKLM (HKCU\...\Policies isn't user-writable either), so one UAC prompt, and only while a

@@ -30,7 +30,7 @@ pointers (PowerShell profile, WM) are in the root `AGENTS.md`; the "why" is in t
   sshd runs with RedirectionGuard, which won't follow a non-admin junction, so a shim through
   `apps\<app>\current` fails over SSH (Scoop#6594). So paths are versioned: never hardcode
   `apps\<app>\current` (use `scoop prefix <app>`). An app's `persist` junctions aren't covered.
-- **Windows Terminal is not managed** (Alacritty is the terminal). A font a config names must be one
+- **Windows Terminal is not managed** (herdr-app is the terminal). A font a config names must be one
   the bootstrap installs — check the FAMILY NAME the package registers (its manifest's `-Filter`,
   then the .ttf's name table), not just the files it ships: `JetBrainsMono-NF` →
   `JetBrainsMonoNL Nerd Font`, `-NF-Mono` → only `… Nerd Font Mono`.

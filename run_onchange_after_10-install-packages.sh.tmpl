@@ -57,7 +57,7 @@ install_dmg() {
   done
   hdiutil detach -quiet "$_tmp/mnt"; rm -rf "$_tmp"; trap - EXIT
 }
-# Rex = the macOS terminal AND multiplexer (replaces Alacritty; ~/.config/rex/init.lua). No
+# Rex = the macOS terminal AND multiplexer (~/.config/rex/init.lua). No
 # cask: the newest .dmg of its Sparkle appcast (first <enclosure>). Notarized -> --verify; self-updates.
 [ -d "/Applications/Rex Beta.app" ] || [ -d /Applications/Rex.app ] || \
   install_dmg "$(curl -fsSL https://blob.superlogical.com/public/rex-app/snapshot/appcast.xml \
@@ -97,10 +97,9 @@ command -v zsh  >/dev/null 2>&1 || _pkgs="$_pkgs zsh"
 # Colour emoji: Linux ships no colour emoji font (macOS/Windows do); fontconfig picks it up.
 dpkg -s fonts-noto-color-emoji >/dev/null 2>&1 || _pkgs="$_pkgs fonts-noto-color-emoji"
 {{ if .develop }}command -v make >/dev/null 2>&1 || _pkgs="$_pkgs make"{{ end }}
-# Alacritty (the cross-OS terminal): a GUI app, so the `apps` profile — a headless server skips it.
+# Desktop font tooling: the `apps` profile — a headless server skips it.
 {{ if .apps -}}
-command -v alacritty >/dev/null 2>&1 || _pkgs="$_pkgs alacritty"
-command -v xz        >/dev/null 2>&1 || _pkgs="$_pkgs xz-utils"   # Nerd Font tarball below
+command -v xz       >/dev/null 2>&1 || _pkgs="$_pkgs xz-utils"   # Nerd Font tarball below
 command -v fc-cache  >/dev/null 2>&1 || _pkgs="$_pkgs fontconfig"
 {{ end -}}
 {{ end -}}
@@ -110,17 +109,13 @@ if [ -n "$_pkgs" ]; then sudo apt-get update -y && sudo apt-get install -y $_pkg
 # ~/.local/bin (no sudo). After the batch above so curl exists; `mo update` updates it in place.
 [ -e "$HOME/.local/bin/mo" ] || run_url https://raw.githubusercontent.com/tw93/Mole/linux/install.sh bash
 {{ if .apps -}}
-# The font family Alacritty names (no apt package): Nerd Fonts' release tarball, per-user.
+# The font family herdr-app names (no apt package): Nerd Fonts' release tarball, per-user.
 if [ ! -f "$HOME/.local/share/fonts/JetBrainsMono/JetBrainsMonoNLNerdFont-Regular.ttf" ]; then
   mkdir -p "$HOME/.local/share/fonts/JetBrainsMono"
   curl -fsSL https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.tar.xz \
     | tar -xJ -C "$HOME/.local/share/fonts/JetBrainsMono"
   fc-cache -f "$HOME/.local/share/fonts" >/dev/null
 fi
-# The shared config is TOML (Alacritty >= 0.13); Debian 12's apt ships 0.11 (YAML only).
-case "$(alacritty --version | cut -d' ' -f2)" in
-  0.[0-9].*|0.1[0-2].*) echo "[terminal] apt's Alacritty is too old for ~/.config/alacritty/alacritty.toml (needs >= 0.13)" ;;
-esac
 {{ end -}}
 {{ if .apps -}}
 # Essential GUI apps (the `apps` profile) from vendor repos, after the batch above so curl exists.
@@ -133,6 +128,13 @@ if ! dpkg -s brave-origin >/dev/null 2>&1; then
   sudo apt-get update -y && sudo apt-get install -y brave-origin
 fi
 {{ end -}}
+{{ end -}}
+{{ if and .apps (eq .chezmoi.os "linux") -}}
+# herdr-app = the terminal on a Linux client (`apps`; a server keeps just the herdr CLI; macOS
+# has Rex). Official installer, per-user, + herdr-core if missing; self-updates, so guard on it.
+# Needs a desktop session and a Vulkan driver. A warning, not a stop.
+[ -e "${XDG_DATA_HOME:-$HOME/.local/share}/herdr-app/herdr-app" ] || \
+  run_url https://releases.herdr.dev/app/install.sh sh || echo "[herdr-app] install failed - see above"
 {{ end -}}
 
 # ~/.local/bin holds self-installed tools (sheldon, mise).

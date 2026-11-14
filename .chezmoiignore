@@ -42,14 +42,9 @@ install.ps1
 .claude/statusline.ps1
 {{ end }}
 
-# Alacritty's real config is ~/.config/alacritty on every OS; Windows only reads
-# %APPDATA%\alacritty, so AppData holds a stub that imports it (Unix drops AppData).
-{{ if ne .chezmoi.os "windows" }}
-AppData
-{{ end }}
-# macOS: Rex replaces Alacritty.
-{{ if eq .chezmoi.os "darwin" }}
-.config/alacritty
+# herdr-app only on clients (`apps`) off macOS (Rex there); a server keeps just the herdr CLI.
+{{ if or (eq .chezmoi.os "darwin") (not .apps) }}
+.config/herdr-app
 {{ end }}
 # Rex (terminal + multiplexer) is a macOS-only app.
 {{ if ne .chezmoi.os "darwin" }}
