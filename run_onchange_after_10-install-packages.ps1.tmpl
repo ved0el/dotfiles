@@ -232,6 +232,18 @@ if (-not $fontHave) {
     scoop install JetBrainsMono-NF
   }
 }
+# Propo cut too: yasb draws its Nerd Font glyphs (komorebi layouts, notification menu, whkd keys)
+# with `JetBrainsMono Nerd Font Propo` - each glyph advances by its own width, so nothing clips.
+# Qt matches only that full family name; the short `JetBrainsMono NFP` resolves to Tahoma.
+$propoFile = 'JetBrainsMonoNerdFontPropo-Regular.ttf'
+$propoHave = (Test-Path (Join-Path $env:LOCALAPPDATA "Microsoft\Windows\Fonts\$propoFile")) -or
+             (Test-Path (Join-Path $env:SystemRoot "Fonts\$propoFile"))
+if (-not $propoHave) {
+  Invoke-Step 'font-propo' {
+    if ((scoop bucket list 2>$null | Out-String) -notmatch 'nerd-fonts') { scoop bucket add nerd-fonts }
+    scoop install JetBrainsMono-NF-Propo
+  }
+}
 # Alacritty (the cross-OS terminal, config in ~/.config/alacritty, imported by %APPDATA%\alacritty). `scoop update alacritty` upgrades.
 if (-not (Get-Command alacritty -ErrorAction SilentlyContinue)) {
   Invoke-Step 'alacritty' {
