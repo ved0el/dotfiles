@@ -1,7 +1,7 @@
 {{- /* chezmoi:modify-template */ -}}
 {{- /* Defaults only: fill a key the LIVE settings.json lacks, never touch one it has, so each
      box picks its own font/theme in the app and chezmoi never reverts it or shows a diff.
-     The app writes zoom, sounds, appearance here itself. A theme picked in the app's menu is
+     The app writes zoom, sounds, appearance here itself. telemetry off (on in releases when absent). A theme picked in the app's menu is
      stored per layout (layouts/.state/<layout>.json) and wins anyway. Themes: ./themes. */ -}}
 {{- $live := dict -}}
 {{- if .chezmoi.stdin -}}{{- $live = fromJson .chezmoi.stdin -}}{{- end -}}
