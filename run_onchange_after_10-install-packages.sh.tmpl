@@ -129,14 +129,6 @@ if ! dpkg -s brave-origin >/dev/null 2>&1; then
 fi
 {{ end -}}
 {{ end -}}
-{{ if and .apps (eq .chezmoi.os "linux") -}}
-# herdr-app = the terminal on a Linux client (`apps`; a server keeps just the herdr CLI; macOS
-# has Rex). Official installer, per-user, + herdr-core if missing; self-updates, so guard on it.
-# Needs a desktop session and a Vulkan driver. A warning, not a stop.
-[ -e "${XDG_DATA_HOME:-$HOME/.local/share}/herdr-app/herdr-app" ] || \
-  run_url https://releases.herdr.dev/app/install.sh sh || echo "[herdr-app] install failed - see above"
-{{ end -}}
-
 # ~/.local/bin holds self-installed tools (sheldon, mise).
 export PATH="$HOME/.local/bin:$PATH"
 
@@ -158,6 +150,22 @@ if [ "$(command -v mise)" = "$HOME/.local/bin/mise" ]; then mise self-update --y
 # .ps1's Set-GitHubToken. gh is itself a mise tool, so this only helps on a re-run.
 [ -n "${GITHUB_TOKEN:-}" ] || { GITHUB_TOKEN=$(mise --cd "$HOME" exec -- gh auth token 2>/dev/null) && export GITHUB_TOKEN; } || unset GITHUB_TOKEN
 mise --cd "$HOME" install --yes
+
+{{ if and .apps (eq .chezmoi.os "linux") -}}
+# herdr-app = the terminal on a Linux client (`apps`; a server keeps just the herdr CLI; macOS
+# has Rex). Official installer, per-user; self-updates, so guard on it. AFTER mise, with its
+# shims on PATH: it skips its own herdr-core when one is there, so mise's stays the only copy.
+# Needs a desktop session and a Vulkan driver. A warning, not a stop.
+export PATH="${MISE_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/mise}/shims:$PATH"
+[ -e "${XDG_DATA_HOME:-$HOME/.local/share}/herdr-app/herdr-app" ] || \
+  run_url https://releases.herdr.dev/app/install.sh sh || echo "[herdr-app] install failed - see above"
+{{ end -}}
+{{ if .tools -}}
+# A vendor herdr-core from before mise managed it = a 2nd copy; not removed here (its running core
+# holds every hc terminal). By hand: `hc server stop`, then delete ~/.local/bin/herdr-core and hc.
+[ ! -e "$HOME/.local/bin/herdr-core" ] || \
+  echo "[herdr-core] old vendor copy in ~/.local/bin (mise owns it now): remove it by hand" >&2
+{{ end -}}
 
 {{ if .tools -}}
 # delta: point git at the tracked delta config via include.path (idempotent), leaving

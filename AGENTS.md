@@ -130,6 +130,9 @@ Render one template: `chezmoi execute-template < <source-file>`.
   (preflight, `SCOOP`/`MISE_DATA_DIR`, `no_junction`, pwsh MSI, fonts, WinPS 5.1 quirks).
 - **herdr** is the multiplexer (mise `tools`; Linux + Windows): it resumes Claude panes itself, so no
   restore scripts. psmux was retired (the `.ps1` bootstrap unregisters `psmux-restore` + uninstalls it once).
+  **herdr-core (`hc`)** = herdr-app's daemon (not herdr server's; sessions not shared): mise `aqua:` on every
+  `tools` box, `postinstall` adds the `hc` the release lacks; herdr-app installs AFTER `mise install` so its
+  installer skips its own core (one copy). Update: `mise up` + `hc server restart`, never `hc update`.
   herdr-app (desktop GUI, Windows + Linux clients: the `apps` profile runs its official installer; servers keep the CLI; macOS = Rex): `dot_config/herdr-app/` = herdr CLI's theme set in `themes/`
   + `modify_settings.json` fills DEFAULTS only (never overwrites a box's own pick). Never manage
   `layouts/.state/`, `view.json`, `window.json`, `shared.json`: runtime state.
