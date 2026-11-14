@@ -2,3 +2,8 @@
 # (the same path as every other OS), so edits there apply here too.
 [general]
 import = ["~/.config/alacritty/alacritty.toml"]
+
+# Windows only: keep a DWM frame so Windows rounds the corners and Windhawk's accent-border mod
+# can colour the border; komorebi strips the title bar (remove_titlebar_applications).
+[window]
+decorations = "Full"

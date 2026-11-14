@@ -8,18 +8,24 @@
   "border": true,
   "border_width": 2,
   "border_offset": 0,
-  "border_style": "Square",
-  "theme": {
-    "palette": "Catppuccin",
-    "name": "Mocha",
-    "single_border": "Blue",
-    "unfocused_border": "Surface1"
+  "border_style": "Rounded",
+  "border_implementation": "Komorebi",
+  "border_colours": {
+    "single": "#89B4FA",
+    "stack": "#89B4FA",
+    "monocle": "#89B4FA",
+    "floating": "#89B4FA",
+    "unfocused": "#45475A",
+    "unfocused_locked": "#F38BA8"
   },
   "stackbar": {
     "height": 40,
     "mode": "OnStack",
     "tabs": {
-      "width": 300
+      "width": 300,
+      "focused_text": "#CDD6F4",
+      "unfocused_text": "#6C7086",
+      "background": "#11111B"
     }
   },
   "monitors": [
@@ -28,6 +34,18 @@
         {
           "name": "I",
           "layout": "BSP"
+        },
+        {
+          "name": "II",
+          "layout": "BSP"
+        },
+        {
+          "name": "III",
+          "layout": "BSP"
+        },
+        {
+          "name": "IV",
+          "layout": "BSP"
         }
       ]
     },
@@ -35,6 +53,18 @@
       "workspaces": [
         {
           "name": "1",
+          "layout": "Columns"
+        },
+        {
+          "name": "2",
+          "layout": "Columns"
+        },
+        {
+          "name": "3",
+          "layout": "Columns"
+        },
+        {
+          "name": "4",
           "layout": "Columns"
         }
       ]
@@ -142,6 +172,13 @@
     {
       "kind": "Exe",
       "id": "DeltaForceClient.exe",
+      "matching_strategy": "Equals"
+    }
+  ],
+  "remove_titlebar_applications": [
+    {
+      "kind": "Exe",
+      "id": "alacritty.exe",
       "matching_strategy": "Equals"
     }
   ]

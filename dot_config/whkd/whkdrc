@@ -3,12 +3,16 @@
 # =============================================================================
 # whkd — komorebi hotkeys (Windows)
 # =============================================================================
-# Kept in lockstep with the macOS skhd/yabai config (dot_config/skhd/skhdrc).
+# Mnemonics shared with the macOS skhd/yabai config (dot_config/skhd/skhdrc); the Mac is
+# low priority now, so the workspace binds below are Windows-first and not mirrored there.
 # Shared mnemonic scheme:
-#   alt        = focus      (window direction; no workspaces here — one per monitor)
+#   alt        = focus      (window direction)
 #   alt+ctrl   = move       (window in tile)
+#   alt+1..4 / alt+shift+1..4 = workspace (jump / take window along)
+#   ctrl+alt+shift+left/right = workspace prev/next
 #   ctrl+alt p/n, win+shift = monitor (focus / throw window)
-#   oem_4 / oem_6 = [ / ]   = prev/next   ·   numbers = direct jump
+# Every chord is at most two modifiers + one key on a stock US board as well as the Iris
+# (the ctrl+alt+shift pair has a one-key MEH() bind on the Iris layer 3).
 # Monitor binds differ from macOS by necessity (Win+arrow=Snap, Win+P=Projection),
 # so they're machine-specific. komorebi workspaces are 0-indexed.
 # =============================================================================
@@ -62,12 +66,25 @@ alt + ctrl + r          : komorebic retile
 # g = game (alt + ctrl + p is monitor-prev below).
 alt + ctrl + g          : komorebic toggle-pause
 
-# --- No workspace binds: ONE workspace per monitor (komorebi.json) -----------
-# Deliberate divergence from skhdrc (macOS keeps its Space jumps): focus/move-to-workspace N
-# on a monitor with one workspace makes komorebi create workspace N on demand. Move windows
-# between monitors instead (below).
+# --- Cycle workspaces on the focused monitor --------------------------------
+# Walks the workspaces declared in komorebi.json (4 per monitor); it never creates one.
+ctrl + alt + shift + left  : komorebic cycle-workspace previous
+ctrl + alt + shift + right : komorebic cycle-workspace next
 
-# --- Monitors (3 displays) --------------------------------------------------
+# --- Workspaces 1-4 (komorebi.json declares exactly 4 per monitor) -----------
+# Only 1-4: jumping past the declared ones would make komorebi create workspace N on demand.
+# Takes alt+1..4 from Zed/VSCodium (activate tab N) - accepted; tabs still cycle with ctrl+tab.
+alt + 1                 : komorebic focus-workspace 0
+alt + 2                 : komorebic focus-workspace 1
+alt + 3                 : komorebic focus-workspace 2
+alt + 4                 : komorebic focus-workspace 3
+# Take the focused window to workspace N and follow it.
+alt + shift + 1         : komorebic move-to-workspace 0
+alt + shift + 2         : komorebic move-to-workspace 1
+alt + shift + 3         : komorebic move-to-workspace 2
+alt + shift + 4         : komorebic move-to-workspace 3
+
+# --- Monitors -----------------------------------------------------------------
 # Focus monitor prev/next.
 ctrl + alt + p          : komorebic cycle-monitor previous
 ctrl + alt + n          : komorebic cycle-monitor next
@@ -75,7 +92,4 @@ ctrl + alt + n          : komorebic cycle-monitor next
 # win+shift+arrow mirrors the native Windows "move window to next monitor" gesture.
 win + shift + left      : komorebic cycle-move-to-monitor previous
 win + shift + right     : komorebic cycle-move-to-monitor next
-# Numbered move-to-monitor kept as a conflict-free fallback for 3 screens.
-alt + shift + 1         : komorebic move-to-monitor 0
-alt + shift + 2         : komorebic move-to-monitor 1
-alt + shift + 3         : komorebic move-to-monitor 2
+# (alt+shift+N now moves to workspace N; monitors are reached with win+shift+left/right.)

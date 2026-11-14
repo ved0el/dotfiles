@@ -141,11 +141,17 @@ Render one template: `chezmoi execute-template < <source-file>`.
   outside `$HOME` (`dot_config/mise/AGENTS.md`). Run mise from scripts as `mise --cd "$HOME"`.
 - `cd` → zoxide on both shells is skipped when `CLAUDECODE` is set: a zoxide miss would leak
   `zoxide: no match found` into Claude's piped output.
-- `skhdrc` (macOS) and `whkdrc` (Windows) share one keymap scheme — **edit them as a pair**.
-  Deliberate divergences: monitor-move `⌃⌘←/→` vs `win+shift+←/→`; macOS-only recent-workspace,
-  balance, sticky/pip; Windows has NO workspace binds — komorebi keeps ONE workspace per monitor,
-  and `focus/move-to-workspace N` would create workspace N on demand. yabai Space binds need SIP
-  partly off + the scripting addition.
+- `skhdrc` (macOS) and `whkdrc` (Windows) share one mnemonic scheme (alt = focus, ctrl+alt =
+  move), but the Mac is low priority now: Windows-first binds are not mirrored. Windows has 4
+  workspaces per monitor (komorebi.json) — `alt+1..4` jump, `alt+shift+1..4` take the window,
+  `ctrl+alt+shift+←/→` cycle; never bind past 4 (`focus/move-to-workspace N` creates workspace N
+  on demand). Other divergences: monitor-move `⌃⌘←/→` vs `win+shift+←/→`; macOS-only
+  recent-workspace, balance, sticky/pip. yabai Space binds need SIP partly off + the scripting
+  addition. Chords must stay ≤ 2 modifiers on a stock US board; the Iris keymap
+  (github.com/ved0el/qmk_keymap) adds one-key shortcuts for the rest.
+- Window chrome is shared by three tools: Windhawk "Custom Window Corner Radius" (radius 8,
+  small 4; not managed by chezmoi), komorebi `border_style: Rounded` + fixed `border_colours`
+  (#89B4FA), and yasb's island radii/accent — change them together (`dot_config/yasb/AGENTS.md`).
 - CI (workflows, verify, GITHUB_TOKEN, Renovate): `.github/AGENTS.md`. A new file the bootstrap
   reads goes into e2e's `paths`.
 - Scripted edits on Windows: Python `write_text` writes CRLF — pass `newline="\n"` (or use Edit);
