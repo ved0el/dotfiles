@@ -57,7 +57,8 @@ Render one template: `chezmoi execute-template < <source-file>`.
 | `install.ps1` | Windows one-line installer (`irm …/install.ps1 \| iex`; repo-only, chezmoi-ignored) |
 
 ## Profiles & OS
-- Profile keys `tools`, `develop`, `wm` (macOS + Windows), `apps` — plus the
+- Profile keys `tools`, `develop`, `wm` (macOS + Windows; Windows sub-key `komorebi`, default true,
+  false = komorebi/whkd don't autostart, yasb only), `apps` — plus the
   `sshd` (bool, Linux + Windows, opt-in per SSH server, never default: herdr + hc (herdr-core, herdr-app's daemon) + claude-rc at boot so Claude
   auto-resumes after a reboot — other boxes resume by hand; Windows also scoop `no_junction`; resumed sessions
   keep Remote Control via `remoteControlAtStartup`, new ones from the app open in the string `claudeRcDir`, default home), the Windows strings `scoopDir`/`miseDataDir` and, with `wm` on Windows, `serverMonitorSites` (yasb, `dot_config/yasb/AGENTS.md`) — are prompted by

@@ -2,6 +2,7 @@
 {{- $develop := promptBoolOnce . "develop" "Install development tools (ex: nodejs, golang, python, etc)" false -}}
 {{- $apps    := promptBoolOnce . "apps"    "Install essential GUI apps (ex: Tailscale, Brave)" false -}}
 {{- $wm   := false -}}
+{{- $komorebi := true -}}
 {{- $scoopDir    := "" -}}
 {{- $miseDataDir := "" -}}
 {{- $sshd := false -}}
@@ -27,6 +28,9 @@
 {{-   $wm = promptBoolOnce . "wm" "Install the macOS window manager (yabai + skhd) and its config" false -}}
 {{- else if eq .chezmoi.os "windows" -}}
 {{-   $wm = promptBoolOnce . "wm" "Install the Windows window manager (komorebi + whkd + yasb) and its config" false -}}
+{{-   if $wm -}}
+{{-     $komorebi = promptBoolOnce . "komorebi" "Start komorebi tiling + whkd at login (no = yasb bar only)" true -}}
+{{-   end -}}
 {{- end -}}
 {{- /* yasb's server monitor (wm, Windows): this machine's sites, REPLACING .chezmoidata's
        serverMonitor; empty = those defaults. */ -}}
@@ -38,6 +42,7 @@
     tools   = {{ $tools }}
     develop = {{ $develop }}
     wm      = {{ $wm }}
+    komorebi = {{ $komorebi }}
     apps    = {{ $apps }}
     scoopDir    = {{ $scoopDir | toToml }}
     miseDataDir = {{ $miseDataDir | toToml }}

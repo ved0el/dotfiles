@@ -8,6 +8,7 @@ miseDataDir: "" # Windows: MISE_DATA_DIR (prompted; "" = bootstrap default ~/.lo
 sshd: false     # Linux/Windows SSH server: herdr + hc + claude remote-control at boot (Claude auto-resumes); Windows: scoop no_junction
 claudeRcDir: "" # sshd: folder new sessions from claude.ai / the app start in (prompted; "" = home)
 wm: false       # tiling WM: macOS yabai+skhd / Windows komorebi+whkd+yasb (off on Linux)
+komorebi: true  # Windows wm: komorebi + whkd start at login (prompted; false = yasb bar only)
 apps: false     # essential GUI apps from appList (each OS's own package manager)
 # yasb's server_monitor (secondary bar): name -> host it checks, shown sorted by name. Per machine,
 # serverMonitorSites (prompted by init when wm is on): "Name=host, Name2=host2" REPLACES this

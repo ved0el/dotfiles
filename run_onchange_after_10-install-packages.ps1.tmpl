@@ -392,7 +392,12 @@ if (Get-Command komorebic -ErrorAction SilentlyContinue) {
   # Community app rules (komorebi.json's app_specific_configuration_path): downloaded, NOT
   # tracked — the tracked copy only ever went stale. Writes $KOMOREBI_CONFIG_HOME/applications.json.
   Invoke-Step 'komorebi app rules' { komorebic fetch-app-specific-configuration | Out-Null } 'run: komorebic fetch-asc'
+{{- if .komorebi }}
   Invoke-Step 'komorebi autostart' { komorebic enable-autostart --whkd -c (Join-Path $XdgConfig 'komorebi\komorebi.json') | Out-Null }
+{{- else }}
+  # komorebi = false (per machine): yasb only; its komorebi widgets stay empty.
+  Invoke-Step 'komorebi autostart off' { komorebic disable-autostart | Out-Null }
+{{- end }}
   # Drop the legacy logon task so it can't race the shortcut.
   Unregister-ScheduledTask -TaskName 'komorebi' -Confirm:$false -ErrorAction SilentlyContinue
 }
