@@ -44,6 +44,12 @@ commit (`git log -S`).
 - **No "skip fullscreen" switch exists** — games go in `ignore_rules` by `Exe`. UE games: add both
   `<Name>-Win64-Shipping.exe` and the launcher exe (separate windows).
 - `alt + ctrl + g` (`komorebic toggle-pause`) covers any game with no config edit.
+- **Empty gap after a minimize / close-to-tray = a ghost tile**: komorebi missed the event and
+  keeps the window. `retile` and a restart don't drop it (a restart re-adopts minimized windows);
+  whkd `alt + ctrl + r` runs `fix-gaps.ps1`, which re-shows + re-minimizes each minimized/hidden
+  tile on the focused workspaces so komorebi sees a real event, then retiles. An app that closes
+  to the tray and isn't in `applications.json` as `tray_and_multi_window` goes in
+  `tray_and_multi_window_applications` (Zalo) — otherwise its Hide event never drops the tile.
 - **`applications.json` is NOT tracked**: bootstrap part 1 runs `komorebic
   fetch-app-specific-configuration` (`fetch-asc` by hand to refresh). Own rules go in
   `komorebi.json` — the next fetch overwrites `applications.json`. Grep it before adding a rule.

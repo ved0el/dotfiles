@@ -62,7 +62,8 @@ alt + x                 : komorebic flip-layout horizontal
 alt + y                 : komorebic flip-layout vertical
 
 # --- Window manager options -------------------------------------------------
-alt + ctrl + r          : komorebic retile
+# Retile after dropping ghost tiles (a missed minimize / close-to-tray left a gap).
+alt + ctrl + r          : & "$Env:KOMOREBI_CONFIG_HOME\fix-gaps.ps1"
 # g = game (alt + ctrl + p is monitor-prev below).
 alt + ctrl + g          : komorebic toggle-pause
 
