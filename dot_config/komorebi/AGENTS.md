@@ -52,6 +52,11 @@ commit (`git log -S`).
   tile on the focused workspaces so komorebi sees a real event, then retiles. An app that closes
   to the tray and isn't in `applications.json` as `tray_and_multi_window` goes in
   `tray_and_multi_window_applications` (Zalo) — otherwise its Hide event never drops the tile.
+- **Monitor binds go through `monitor.ps1 left|right [-Move]`** (picks the neighbour by screen
+  position), never `cycle-monitor` / `cycle-move-to-monitor`: those follow monitor INDEX order
+  (Windows' enumeration, not left-to-right) and wrap, so with 3+ screens "previous" isn't "left".
+  Don't pin the order with `display_index_preferences` (machine-specific serials, dropped).
+  Not alt+\` for a WM bind: the Japanese IME takes it before whkd. `monitor.ps1 test` = self-check.
 - **`applications.json` is NOT tracked**: bootstrap part 1 runs `komorebic
   fetch-app-specific-configuration` (`fetch-asc` by hand to refresh). Own rules go in
   `komorebi.json` — the next fetch overwrites `applications.json`. Grep it before adding a rule.

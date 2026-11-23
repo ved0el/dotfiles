@@ -8,10 +8,9 @@
 # Shared mnemonic scheme:
 #   alt        = focus      (window direction)
 #   alt+ctrl   = move       (window in tile)
-#   alt+e / alt+shift+e = next monitor (focus only / take the window)
 #   alt+1..4 / alt+shift+1..4 = workspace (jump / take window along)
 #   ctrl+alt+shift+left/right = workspace prev/next
-#   ctrl+alt p/n, win+shift = monitor (focus / throw window)
+#   alt+shift+a/d (ctrl+alt p/n), win+shift+left/right = monitor left/right (focus / take window)
 # Every chord is at most two modifiers + one key on a stock US board as well as the Iris
 # (the ctrl+alt+shift pair has a one-key MEH() bind on the Iris layer 3).
 # Monitor binds differ from macOS by necessity (Win+arrow=Snap, Win+P=Projection),
@@ -88,15 +87,14 @@ alt + shift + 3         : komorebic move-to-workspace 2
 alt + shift + 4         : komorebic move-to-workspace 3
 
 # --- Monitors -----------------------------------------------------------------
-# One-hand pair beside wasd: focus the next monitor, windows stay put / take the window along.
-# Not alt+` : the Japanese IME takes it (hankaku/zenkaku toggle) before whkd sees it.
-alt + e                 : komorebic cycle-monitor next
-alt + shift + e         : komorebic cycle-move-to-monitor next
-# Focus monitor prev/next.
-ctrl + alt + p          : komorebic cycle-monitor previous
-ctrl + alt + n          : komorebic cycle-monitor next
-# Throw window to the monitor on the left/right and follow — daily driver.
+# By screen position via monitor.ps1 — cycle-monitor follows index order, wrong with 3+ screens.
+# Focus the monitor on the left/right, windows stay put: alt+a/d = window, +shift = whole monitor
+# (takes VSCodium's alt+shift+a block comment). ctrl+alt p/n = the same, for the Iris layer 3 P/N.
+alt + shift + a         : & "$Env:KOMOREBI_CONFIG_HOME\monitor.ps1" left
+alt + shift + d         : & "$Env:KOMOREBI_CONFIG_HOME\monitor.ps1" right
+ctrl + alt + p          : & "$Env:KOMOREBI_CONFIG_HOME\monitor.ps1" left
+ctrl + alt + n          : & "$Env:KOMOREBI_CONFIG_HOME\monitor.ps1" right
+# Take the window to the monitor on the left/right and follow (Iris layer 3 M and /).
 # win+shift+arrow mirrors the native Windows "move window to next monitor" gesture.
-win + shift + left      : komorebic cycle-move-to-monitor previous
-win + shift + right     : komorebic cycle-move-to-monitor next
-# (alt+shift+N now moves to workspace N; monitors are reached with win+shift+left/right.)
+win + shift + left      : & "$Env:KOMOREBI_CONFIG_HOME\monitor.ps1" left -Move
+win + shift + right     : & "$Env:KOMOREBI_CONFIG_HOME\monitor.ps1" right -Move
