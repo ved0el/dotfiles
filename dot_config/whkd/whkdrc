@@ -7,8 +7,8 @@
 # low priority now, so the workspace binds below are Windows-first and not mirrored there.
 # Shared mnemonic scheme:
 #   alt        = focus      (window direction)
-#   alt+ctrl   = move       (window in tile; Windows also alt+shift+wasd)
-#   alt+`      = last workspace
+#   alt+ctrl   = move       (window in tile)
+#   alt+e / alt+shift+e = next monitor (focus only / take the window)
 #   alt+1..4 / alt+shift+1..4 = workspace (jump / take window along)
 #   ctrl+alt+shift+left/right = workspace prev/next
 #   ctrl+alt p/n, win+shift = monitor (focus / throw window)
@@ -39,11 +39,6 @@ alt + ctrl + left       : komorebic move left
 alt + ctrl + down       : komorebic move down
 alt + ctrl + up         : komorebic move up
 alt + ctrl + right      : komorebic move right
-# Same move on the focus keys: one hand, no arrows (takes VSCodium's alt+shift+a block comment).
-alt + shift + a         : komorebic move left
-alt + shift + s         : komorebic move down
-alt + shift + w         : komorebic move up
-alt + shift + d         : komorebic move right
 
 # --- Stack windows ----------------------------------------------------------
 alt + j                 : komorebic stack left
@@ -86,8 +81,6 @@ alt + 1                 : komorebic focus-workspace 0
 alt + 2                 : komorebic focus-workspace 1
 alt + 3                 : komorebic focus-workspace 2
 alt + 4                 : komorebic focus-workspace 3
-# Back and forth between the two most recent workspaces (oem_3 is `).
-alt + oem_3             : komorebic focus-last-workspace
 # Take the focused window to workspace N and follow it.
 alt + shift + 1         : komorebic move-to-workspace 0
 alt + shift + 2         : komorebic move-to-workspace 1
@@ -95,6 +88,10 @@ alt + shift + 3         : komorebic move-to-workspace 2
 alt + shift + 4         : komorebic move-to-workspace 3
 
 # --- Monitors -----------------------------------------------------------------
+# One-hand pair beside wasd: focus the next monitor, windows stay put / take the window along.
+# Not alt+` : the Japanese IME takes it (hankaku/zenkaku toggle) before whkd sees it.
+alt + e                 : komorebic cycle-monitor next
+alt + shift + e         : komorebic cycle-move-to-monitor next
 # Focus monitor prev/next.
 ctrl + alt + p          : komorebic cycle-monitor previous
 ctrl + alt + n          : komorebic cycle-monitor next

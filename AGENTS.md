@@ -150,10 +150,10 @@ Render one template: `chezmoi execute-template < <source-file>`.
 - `cd` → zoxide on both shells is skipped when `CLAUDECODE` is set: a zoxide miss would leak
   `zoxide: no match found` into Claude's piped output.
 - `skhdrc` (macOS) and `whkdrc` (Windows) share one mnemonic scheme (alt = focus, ctrl+alt =
-  move), but the Mac is low priority now: Windows-first binds are not mirrored (Windows also moves
-  with `alt+shift+wasd`; focus/move cross monitor edges). Windows has 4
+  move), but the Mac is low priority now: Windows-first binds are not mirrored (Windows focus/move
+  cross monitor edges). Windows has 4
   workspaces per monitor (komorebi.json) — `alt+1..4` jump, `alt+shift+1..4` take the window,
-  `alt+\`` last workspace, `ctrl+alt+shift+←/→` cycle; never bind past 4 (`focus/move-to-workspace N` creates workspace N
+  `ctrl+alt+shift+←/→` cycle; `alt+e` / `alt+shift+e` = next monitor (focus / take the window; not alt+\`, the JP IME eats it); never bind past 4 (`focus/move-to-workspace N` creates workspace N
   on demand). Other divergences: monitor-move `⌃⌘←/→` vs `win+shift+←/→`; macOS-only
   recent-workspace, balance, sticky/pip. yabai Space binds need SIP partly off + the scripting
   addition. Chords must stay ≤ 2 modifiers on a stock US board; the Iris keymap
